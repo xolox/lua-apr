@@ -1,0 +1,42 @@
+# This is the Windows makefile for the Lua/APR binding.
+#
+# Author: Peter Odding <peter@peterodding.com>
+# Last Change: September 25, 2010
+# Homepage: http://peterodding.com/code/lua/apr/
+# License: MIT
+#
+# This has been tested on Windows XP with NMAKE from the free Microsoft Visual
+# C++ Express 2005/2008 tool chain and requires the Windows Platform SDK.
+
+# Directories where Lua and the APR and APR-util libraries are stored.
+APR = ..\lib\apr
+APU = ..\lib\apr-util
+LUA = ..\..\lua-5.1.2
+
+# Static link libraries.
+LIBRARIES = $(LUA)\lua51.lib \
+            $(APR)\release\libapr-1.lib \
+            $(APU)\release\libaprutil-1.lib
+
+# Directories to search for headers.
+INCLUDE_DIRS = /I $(LUA)\src \
+               /I $(APR)\include \
+               /I $(APU)\include
+
+# Names of compiled object files.
+OBJECTS = base64.obj buffer.obj crypt.obj env.obj filepath.obj fnmatch.obj \
+          getopt.obj io_dir.obj io_file.obj io_pipe.obj lua_apr.obj \
+          permissions.obj proc.obj stat.obj str.obj time.obj uri.obj \
+          user.obj uuid.obj
+
+core.dll: $(OBJECTS) $(LIBRARIES)
+	@link /nologo /dll /out:$@ /export:luaopen_apr_core $(OBJECTS) $(LIBRARIES)
+	@if exist $@.manifest mt -nologo -manifest $@.manifest -outputresource:$@;2
+
+.c.obj:
+	@cl /W3 /nologo /MD /D"WIN32" /D"LUA_BUILD_AS_DLL" /D"_CRT_SECURE_NO_DEPRECATE" $(INCLUDE_DIRS) /TC /c $<
+
+clean:
+	@del *.obj
+
+# vim: ts=4 sw=4
