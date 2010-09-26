@@ -45,7 +45,9 @@ install: $(BINARY_MODULE)
 	cp $(BINARY_MODULE) $(LUA_LIBDIR)/apr/core.so
 
 uninstall:
-	@rm -Rf $(LUA_LIBDIR)/apr/ $(LUA_SHAREDIR)/apr.lua
+	@rm $(LUA_SHAREDIR)/apr.lua
+	@rm $(LUA_LIBDIR)/apr/core.so
+	@rmdir $(LUA_LIBDIR)/apr
 
 test: install
 	@which shake >/dev/null && shake etc/tests.lua || lua etc/tests.lua
