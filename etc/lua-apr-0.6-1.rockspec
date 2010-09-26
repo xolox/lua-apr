@@ -24,26 +24,40 @@ description = {
 }
 dependencies = { 'lua >= 5.1' }
 external_dependencies = {
-  APR = { header = 'apr-1.0/apr.h', library = 'apr-1' },
-  APU = { header = 'apr-1.0/apu.h', library = 'aprutil-1' },
+  platforms = {
+    unix = {
+      APR = { header = 'apr-1.0/apr.h', library = 'apr-1' },
+      APU = { header = 'apr-1.0/apu.h', library = 'aprutil-1' },
+    },
+    macosx = {
+      APR = { header = 'apr-1/apr.h', library = 'apr-1'},
+      APU = { header = 'apr-1/apu.h', library = 'aprutil-1' },
+    },
+  }
 }
-local CFLAGS = '$(CFLAGS) -I$(LUA_INCDIR) -I$(APR_INCDIR)/apr-1.0 -I$(APU_INCDIR)/apr-1.0'
 build = {
   type = 'make',
   variables = {
     LUA_DIR = '$(PREFIX)',
     LUA_LIBDIR = '$(LIBDIR)',
     LUA_SHAREDIR = '$(LUADIR)',
-    CFLAGS = CFLAGS,
+    CFLAGS = '$(CFLAGS) -I$(LUA_INCDIR) -I$(APR_INCDIR)/apr-1.0 -I$(APU_INCDIR)/apr-1.0',
     LFLAGS = '$(LFLAGS) -L$(APR_LIBDIR) -L$(APU_LIBDIR) -llua5.1 -lapr-1 -laprutil-1',
   },
   platforms = {
     linux = {
       variables = {
         -- Make sure "apr_off_t" is defined correctly.
-        CFLAGS = CFLAGS .. ' -D_GNU_SOURCE',
+        CFLAGS = '$(CFLAGS) -I$(LUA_INCDIR) -I$(APR_INCDIR)/apr-1.0 -I$(APU_INCDIR)/apr-1.0 -D_GNU_SOURCE',
       }
     },
+    macosx = {
+      variables = {
+        -- Custom location for APR/APU headers on Mac OS X.
+        -- FIXME I'm not sure whether _GNU_SOURCE needs to be defined.
+        CFLAGS = '$(CFLAGS) -I$(LUA_INCDIR) -I$(APR_INCDIR)/apr-1 -I$(APU_INCDIR)/apr-1 -D_GNU_SOURCE',
+      }
+    }
   }
 }
 
