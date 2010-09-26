@@ -17,15 +17,33 @@ The [Lua/APR binding](http://peterodding.com/code/lua/apr/) aims to bring most o
 
 ## How to download, build & install the module
 
-The project's [git repository](http://github.com/xolox/lua-apr) is hosted on [GitHub](http://github.com). To get you started on Linux (really any UNIX) try the following shell commands:
+Please note that binary downloads are not yet available so you'll have to build the Lua/APR module yourself. Here are your options:
+
+### Build on UNIX using LuaRocks
+
+The easiest way to download, build & install the Lua/APR binding is to use [LuaRocks](http://luarocks.org/):
+
+    $ luarocks install http://github.com/xolox/lua-apr/raw/master/etc/lua-apr-0.6-1.rockspec
+
+If you have git installed you can also download and install the latest sources using the following command:
+
+    $ luarocks install http://github.com/xolox/lua-apr/raw/master/etc/lua-apr-scm-1.rockspec
+
+### Build on UNIX using makefile
+
+If you don't have LuaRocks installed the following shell commands should help you get started on UNIX:
 
     $ git clone git://github.com/xolox/lua-apr.git
+    $ # or if you don't have git installed:
+    $ # wget http://github.com/downloads/xolox/lua-apr/lua-apr-0.6-1.zip
     $ cd lua-apr
     $ make install_deps # installs build & runtime dependencies for Debian/Ubuntu
     $ make install # installs apr.lua and apr/core.so in /usr/local
     $ make test # runs the test suite (using Shake if available)
 
-A makefile for Windows is also included in the repository. It has been tested on Windows XP with NMAKE from the free [Microsoft Visual C++ Express](http://www.microsoft.com/express/Downloads/#2010-Visual-CPP) 2005/2008 tool chain and requires the [Microsoft Windows SDK](http://en.wikipedia.org/wiki/Microsoft_Windows_SDK#Obtaining_the_SDK). If you don't have git installed you can [download the latest sources](http://github.com/xolox/lua-apr/zipball/master) directly from GitHub as a ZIP file. Please note that the Windows makefile only builds the Lua/APR binding, you need to build APR yourself ([instructions](http://apr.apache.org/compiling_win32.html)).
+### Build on Windows using makefile
+
+A makefile for Microsoft Windows is included in the repository. It has been tested on Windows XP with NMAKE from the free [Microsoft Visual C++ Express](http://www.microsoft.com/express/Downloads/#2010-Visual-CPP) 2005/2008 tool chain and requires the [Microsoft Windows SDK](http://en.wikipedia.org/wiki/Microsoft_Windows_SDK#Obtaining_the_SDK). If you don't have git installed you can [download the latest sources](http://github.com/xolox/lua-apr/zipball/master) directly from GitHub as a ZIP file. Please note that the Windows makefile only builds the Lua/APR binding, you need to build APR yourself ([instructions](http://apr.apache.org/compiling_win32.html)).
 
 ## Status
 

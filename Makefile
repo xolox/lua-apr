@@ -1,12 +1,17 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: September 25, 2010
+# Last Change: September 26, 2010
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
-# This makefile has been tested on Ubuntu Linux 10.04
-# after running the `install_deps' target below.
+# This makefile has been tested on Ubuntu Linux 10.04 after installing the
+# external dependencies using the `install_deps' target (see below).
+
+# Based on http://www.luarocks.org/en/Recommended_practices_for_Makefiles
+LUA_DIR=/usr/local
+LUA_LIBDIR=$(LUA_DIR)/lib/lua/5.1
+LUA_SHAREDIR=$(LUA_DIR)/share/lua/5.1
 
 # Names of source / binary modules to install.
 SOURCE_MODULE = src/apr.lua
@@ -20,29 +25,27 @@ SOURCES = src/base64.c src/crypt.c src/env.c src/filepath.c src/fnmatch.c \
 # Names of compiled object files.
 OBJECTS = $(patsubst %.c,%.o,$(SOURCES))
 
-# Use `pkg-config' to get the required compile/link arguments.
-CFLAGS := $(shell pkg-config --cflags lua5.1) \
-          $(shell pkg-config --cflags apr-1) \
-          $(shell pkg-config --cflags apr-util-1)
-LFLAGS := $(shell pkg-config --libs lua5.1) \
-          $(shell pkg-config --libs apr-1) \
-          $(shell pkg-config --libs apr-util-1)
+# If you're building Lua/APR with LuaRocks it should locate the external
+# dependencies automatically, otherwise we fall back to `pkg-config'.
+CFLAGS = `pkg-config --cflags lua5.1` `pkg-config --cflags apr-1` `pkg-config --cflags apr-util-1`
+LFLAGS = `pkg-config --libs lua5.1` `pkg-config --libs apr-1` `pkg-config --libs apr-util-1`
 
-# The rules.
+# The build rules.
 
 $(BINARY_MODULE): $(OBJECTS)
-	$(CC) -shared -g -o $(BINARY_MODULE) $(OBJECTS) $(LFLAGS) -lpthread
-
-# NB: Without -lpthread, GDB errors out with "Cannot find new threads: generic error".
+	$(CC) -shared -o $(BINARY_MODULE) $(OBJECTS) $(LFLAGS)
 
 $(OBJECTS): %.o: %.c
 	$(CC) -Wall -g -c $(CFLAGS) -fPIC $< -o $@
 
 install: $(BINARY_MODULE)
-	@sudo mkdir -p /usr/local/share/lua/5.1
-	sudo cp $(SOURCE_MODULE) /usr/local/share/lua/5.1/apr.lua
-	@sudo mkdir -p /usr/local/lib/lua/5.1/apr
-	sudo cp $(BINARY_MODULE) /usr/local/lib/lua/5.1/apr/core.so
+	@mkdir -p $(LUA_SHAREDIR)
+	cp $(SOURCE_MODULE) $(LUA_SHAREDIR)/apr.lua
+	@mkdir -p $(LUA_LIBDIR)/apr
+	cp $(BINARY_MODULE) $(LUA_LIBDIR)/apr/core.so
+
+uninstall:
+	@rm -Rf $(LUA_LIBDIR)/apr/ $(LUA_SHAREDIR)/apr.lua
 
 test: install
 	@which shake >/dev/null && shake etc/tests.lua || lua etc/tests.lua
@@ -58,6 +61,6 @@ install_deps:
 clean:
 	@rm -f $(BINARY_MODULE) $(OBJECTS) docs.html
 
-.PHONY: clean install test docs install_deps
+.PHONY: install uninstall test docs install_deps clean
 
 # vim: ts=4 sw=4 noet

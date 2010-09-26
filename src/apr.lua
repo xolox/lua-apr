@@ -6,6 +6,7 @@
  Last Change: September 26, 2010
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
+ Version: 0.6
 
  This Lua script is executed on require("apr"), loads the binary module using
  require("apr.core"), defines several library functions implemented on top of
