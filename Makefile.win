@@ -1,42 +1,68 @@
 # This is the Windows makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: September 25, 2010
+# Last Change: September 27, 2010
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
-# This has been tested on Windows XP with NMAKE from the free Microsoft Visual
-# C++ Express 2005/2008 tool chain and requires the Windows Platform SDK.
+# This makefile has been tested on Windows XP with NMAKE from the free
+# Microsoft Visual C++ 2010 Express tool chain.
 
-# Directories where Lua and the APR and APR-util libraries are stored.
-APR = ..\lib\apr
-APU = ..\lib\apr-util
-LUA = ..\..\lua-5.1.2
+# The directories where "lua.h" and "lua51.lib" can be found (these defaults
+# are based on the directory structure used by Lua for Windows v5.1.4-40).
+LUA_DIR = C:\Program Files\Lua\5.1
+LUA_INCDIR = $(LUA_DIR)\include
+LUA_LIBDIR = $(LUA_DIR)\clibs
+LUA_LINKDIR = $(LUA_DIR)\lib
+LUA_SHAREDIR = $(LUA_DIR)\lua
 
-# Static link libraries.
-LIBRARIES = $(LUA)\lua51.lib \
-            $(APR)\release\libapr-1.lib \
-            $(APU)\release\libaprutil-1.lib
+# The directories where "apr.h" and "libapr-1.lib" can be found.
+APR_INCDIR = C:\lua-apr\apr\include
+APR_LIBDIR = C:\lua-apr\apr\release
 
-# Directories to search for headers.
-INCLUDE_DIRS = /I $(LUA)\src \
-               /I $(APR)\include \
-               /I $(APU)\include
+# The directories where "apu.h" and "libaprutil-1.lib" can be found.
+APU_INCDIR = C:\lua-apr\apr-util\include
+APU_LIBDIR = C:\lua-apr\apr-util\release
+
+# The directory where "libapriconv-1.lib" can be found.
+API_LIBDIR = C:\lua-apr\apr-iconv\release
+
+# Compiler and linker flags.
+CFLAGS = "/I$(LUA_INCDIR)" "/I$(APR_INCDIR)" "/I$(APU_INCDIR)" /D"_CRT_SECURE_NO_DEPRECATE"
+LFLAGS = "/LIBPATH:$(LUA_LINKDIR)" lua51.lib "/LIBPATH:$(APR_LIBDIR)" libapr-1.lib "/LIBPATH:$(APU_LIBDIR)" libaprutil-1.lib
 
 # Names of compiled object files.
-OBJECTS = base64.obj buffer.obj crypt.obj env.obj filepath.obj fnmatch.obj \
-          getopt.obj io_dir.obj io_file.obj io_pipe.obj lua_apr.obj \
-          permissions.obj proc.obj stat.obj str.obj time.obj uri.obj \
-          user.obj uuid.obj
+OBJECTS = src\base64.obj src\crypt.obj src\env.obj src\filepath.obj \
+          src\fnmatch.obj src\io_dir.obj src\lua_apr.obj src\permissions.obj \
+		  src\stat.obj src\str.obj src\time.obj src\uri.obj src\user.obj \
+		  src\uuid.obj src\io_file.obj
 
-core.dll: $(OBJECTS) $(LIBRARIES)
-	@link /nologo /dll /out:$@ /export:luaopen_apr_core $(OBJECTS) $(LIBRARIES)
-	@if exist $@.manifest mt -nologo -manifest $@.manifest -outputresource:$@;2
+# Build rules.
+
+core.dll: $(OBJECTS)
+	LINK /nologo /dll /out:$@ /export:luaopen_apr_core $(OBJECTS) $(LFLAGS)
+	IF EXIST $@.manifest mt -nologo -manifest $@.manifest -outputresource:$@;2
 
 .c.obj:
-	@cl /W3 /nologo /MD /D"WIN32" /D"LUA_BUILD_AS_DLL" /D"_CRT_SECURE_NO_DEPRECATE" $(INCLUDE_DIRS) /TC /c $<
+	CL /W3 /nologo /MD /D"WIN32" /D"LUA_BUILD_AS_DLL" $(CFLAGS) /TC /c $< /Fo$@
+
+install: core.dll
+	COPY src\apr.lua "$(LUA_SHAREDIR)"
+	IF NOT EXIST "$(LUA_LIBDIR)\apr" MD "$(LUA_LIBDIR)\apr"
+	COPY core.dll "$(LUA_LIBDIR)\apr"
+	COPY "$(APR_LIBDIR)\libapr-1.dll" "$(LUA_DIR)"
+	COPY "$(APU_LIBDIR)\libaprutil-1.dll" "$(LUA_DIR)"
+	COPY "$(API_LIBDIR)\libapriconv-1.dll" "$(LUA_DIR)"
+
+uninstall:
+	DEL "$(LUA_SHAREDIR)\apr.lua"
+	DEL "$(LUA_LIBDIR)\apr\core.dll"
+	RD "$(LUA_LIBDIR)\apr"
+	DEL "$(LUA_DIR)\libapr-1.dll"
+	DEL "$(LUA_DIR)\libaprutil-1.dll"
+	DEL "$(LUA_DIR)\libapriconv-1.dll"
 
 clean:
-	@del *.obj
+	DEL $(OBJECTS) core.dll core.lib core.exp
 
 # vim: ts=4 sw=4
