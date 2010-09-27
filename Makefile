@@ -60,20 +60,20 @@ install_deps:
 		lua5.1 liblua5.1-0 liblua5.1-0-dev libreadline-dev shake \
 		liblua5.1-markdown0
 
+ZIPNAME = lua-apr-0.6-3
+
 package:
-	@rm -f lua-apr.zip
-	@zip lua-apr.zip $(SOURCES) \
-		etc/docs.lua \
+	@rm -f $(ZIPNAME).zip
+	@mkdir -p $(ZIPNAME)/etc $(ZIPNAME)/src
+	@cp -a src/lua_apr.h $(SOURCES) src/apr.lua $(ZIPNAME)/src
+	@cp -a etc/docs.lua etc/tests.lua \
 		etc/lua-apr-0.6-1.rockspec \
-		etc/lua-apr-0.6-2.rockspec \
+		etc/lua-apr-0.6-3.rockspec \
 		etc/lua-apr-scm-1.rockspec \
-		etc/tests.lua \
-		Makefile \
-		Makefile.win \
-		NOTES.md \
-		README.md \
-		src/apr.lua \
-		src/lua_apr.h
+		$(ZIPNAME)/etc
+	@cp Makefile Makefile.win NOTES.md README.md $(ZIPNAME)
+	@zip $(ZIPNAME).zip -r $(ZIPNAME)
+	@rm -R $(ZIPNAME)
 
 clean:
 	@rm -f $(BINARY_MODULE) $(OBJECTS) docs.html

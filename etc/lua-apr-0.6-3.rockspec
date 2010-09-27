@@ -11,7 +11,7 @@
 
 package = 'Lua-APR'
 version = '0.6-2'
-source = { url = 'http://github.com/downloads/xolox/lua-apr/lua-apr-0.6-2.zip' }
+source = { url = 'http://github.com/downloads/xolox/lua-apr/lua-apr-0.6-3.zip' }
 description = {
   summary = 'Apache Portable Runtime binding for Lua',
   detailed = [[
