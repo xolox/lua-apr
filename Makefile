@@ -1,7 +1,7 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: September 26, 2010
+# Last Change: September 27, 2010
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -59,6 +59,20 @@ install_deps:
 	sudo apt-get install libapr1 libapr1-dev libaprutil1 libaprutil1-dev \
 		lua5.1 liblua5.1-0 liblua5.1-0-dev libreadline-dev shake \
 		liblua5.1-markdown0
+
+package:
+	@rm -f lua-apr.zip
+	@zip lua-apr.zip $(SOURCES) \
+		etc/docs.lua \
+		etc/lua-apr-0.6-1.rockspec \
+		etc/lua-apr-scm-1.rockspec \
+		etc/tests.lua \
+		Makefile \
+		Makefile.win \
+		NOTES.md \
+		README.md \
+		src/apr.lua \
+		src/lua_apr.h
 
 clean:
 	@rm -f $(BINARY_MODULE) $(OBJECTS) docs.html
