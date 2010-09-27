@@ -15,10 +15,10 @@ Building APR on Windows can be a pain in the ass. It is meant to be done with Mi
 
  2. Install the [Microsoft Platform SDK](http://en.wikipedia.org/wiki/Microsoft_Windows_SDK#Obtaining_the_SDK). The full SDK is over 1 GB but you only need the following:
 
-   * Microsoft Windows Core SDK
-    * Build environment (x86 32-bit)
-   * Microsoft Web Workshop (IE) SDK
-    * Build environment
+    * Microsoft Windows Core SDK
+      * Build environment (x86 32-bit)
+    * Microsoft Web Workshop (IE) SDK
+      * Build environment
 
  3. Download APR, APR-util and APR-iconv archives from <http://apr.apache.org/>. Unpack all archives to the same directory and rename the subdirectories to `apr`, `apr-util` and `apr-iconv`.
 

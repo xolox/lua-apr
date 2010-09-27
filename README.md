@@ -43,7 +43,7 @@ If you don't have LuaRocks installed the following shell commands should help yo
 
 ### Build on Windows using makefile
 
-A makefile for Microsoft Windows is included in the repository. It has been tested on Windows XP with NMAKE from the free [Microsoft Visual C++ Express](http://www.microsoft.com/express/Downloads/#2010-Visual-CPP) 2005/2008 tool chain. If you don't have git installed you can [download the latest sources](http://github.com/xolox/lua-apr/zipball/master) directly from GitHub as a ZIP file. Please note that the Windows makefile only builds the Lua/APR binding, you need to build APR yourself (see the [instructions](http://apr.apache.org/compiling_win32.html)).
+A makefile for Microsoft Windows is included in the repository. It has been tested on Windows XP with NMAKE from the free [Microsoft Visual C++ Express](http://www.microsoft.com/express/Downloads/#2010-Visual-CPP) 2010 tool chain. If you don't have git installed you can [download the latest sources](http://github.com/xolox/lua-apr/zipball/master) directly from GitHub as a ZIP file. Please note that the Windows makefile only builds the Lua/APR binding, you need to build APR yourself (see the [instructions](http://apr.apache.org/compiling_win32.html)).
 
 ## Status
 
@@ -56,6 +56,8 @@ The following functionality has not been implemented yet but is on the todo list
  * I want to add support for the [**I18N translation library**](http://apr.apache.org/docs/apr/trunk/group___a_p_r___x_l_a_t_e.html).
 
  * I've never used the APR [**network sockets**](http://apr.apache.org/docs/apr/trunk/group__apr__network__io.html) API but once I get to grips with it I'd like to support it in the binding. On the other hand it does seem one of the largest modules in APR.
+
+ * If I ever find the time it might be useful to bind the [**relational database API**](http://apr.apache.org/docs/apr-util/trunk/group___a_p_r___util___d_b_d.html) which provides access to common relational database servers/engines such as [MySQL](http://en.wikipedia.org/wiki/MySQL), [SQLite](http://en.wikipedia.org/wiki/SQLite) and [PostgreSQL](http://en.wikipedia.org/wiki/PostgreSQL).
 
 ## Contact
 
