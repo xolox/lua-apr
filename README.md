@@ -23,7 +23,7 @@ There are [Windows binaries](http://github.com/downloads/xolox/lua-apr/lua-apr-0
 
 The easiest way to download, build & install the Lua/APR binding is to use [LuaRocks](http://luarocks.org/):
 
-    $ luarocks install http://github.com/xolox/lua-apr/raw/master/etc/lua-apr-0.6-1.rockspec
+    $ luarocks install http://github.com/xolox/lua-apr/raw/master/etc/lua-apr-0.6-2.rockspec
 
 If you have git installed you can also download and install the latest sources using the following command:
 
@@ -35,8 +35,8 @@ If you don't have LuaRocks installed the following shell commands should help yo
 
     $ git clone git://github.com/xolox/lua-apr.git
     $ # If you don't have git installed use these two commands instead:
-    $ # wget http://github.com/downloads/xolox/lua-apr/lua-apr-0.6-1.zip
-    $ # unzip -d lua-apr lua-apr-0.6-1.zip
+    $ # wget http://github.com/downloads/xolox/lua-apr/lua-apr-0.6-2.zip
+    $ # unzip -d lua-apr lua-apr-0.6-2.zip
     $ cd lua-apr
     $ make install_deps # installs build & runtime dependencies for Debian/Ubuntu
     $ make install # installs apr.lua and apr/core.so in /usr/local

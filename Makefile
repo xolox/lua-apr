@@ -65,6 +65,7 @@ package:
 	@zip lua-apr.zip $(SOURCES) \
 		etc/docs.lua \
 		etc/lua-apr-0.6-1.rockspec \
+		etc/lua-apr-0.6-2.rockspec \
 		etc/lua-apr-scm-1.rockspec \
 		etc/tests.lua \
 		Makefile \
