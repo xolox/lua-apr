@@ -34,8 +34,9 @@ If you have git installed you can also download and install the latest sources u
 If you don't have LuaRocks installed the following shell commands should help you get started on UNIX:
 
     $ git clone git://github.com/xolox/lua-apr.git
-    $ # or if you don't have git installed:
+    $ # If you don't have git installed use these two commands instead:
     $ # wget http://github.com/downloads/xolox/lua-apr/lua-apr-0.6-1.zip
+    $ # unzip -d lua-apr lua-apr-0.6-1.zip
     $ cd lua-apr
     $ make install_deps # installs build & runtime dependencies for Debian/Ubuntu
     $ make install # installs apr.lua and apr/core.so in /usr/local
