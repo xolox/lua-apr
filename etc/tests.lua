@@ -3,7 +3,7 @@
  Test suite for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: September 26, 2010
+ Last Change: September 27, 2010
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -387,5 +387,9 @@ assert(pcall(function()
     set[uuid] = true
   end
 end))
+
+-- }}}
+
+io.stderr:write "Either all tests passed or you're running Shake :-)\n"
 
 -- vim: nowrap
