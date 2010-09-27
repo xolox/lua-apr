@@ -3,14 +3,14 @@
  This is the LuaRocks `rockspec' for version 0.6 of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: September 27, 2010
+ Last Change: September 28, 2010
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
 --]]
 
 package = 'Lua-APR'
-version = '0.6-2'
+version = '0.6-3'
 source = { url = 'http://github.com/downloads/xolox/lua-apr/lua-apr-0.6-3.zip' }
 description = {
   summary = 'Apache Portable Runtime binding for Lua',
