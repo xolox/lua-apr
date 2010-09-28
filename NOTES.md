@@ -20,6 +20,6 @@ Building APR on Windows can be a pain in the ass. It is meant to be done with Mi
     * Microsoft Web Workshop (IE) SDK
       * Build environment
 
- 3. Download APR, APR-util and APR-iconv archives from <http://apr.apache.org/>. Unpack all archives to the same directory and rename the subdirectories to `apr`, `apr-util` and `apr-iconv`.
+ 3. Download the APR, APR-util and APR-iconv archives (I used `apr-1.4.2-win32-src.zip`, `apr-util-1.3.9-win32-src.zip` and `apr-iconv-1.2.1-win32-src-r2.zip`) from [apr.apache.org](http://apr.apache.org/). Unpack all archives to the same directory and rename the subdirectories to `apr`, `apr-util` and `apr-iconv`.
 
  4. *The instructions about [building APR on Windows](http://apr.apache.org/compiling_win32.html) don't work for me so this is where things get sketchy:* Open a Visual Studio command prompt and navigate to the `apr-util` directory. Inside this directory execute `nmake -f Makefile.win buildall`. This doesn't work for me out of the box because of what's probably a bug in the APR-util makefile; I needed to replace `apr_app` with `aprapp` on lines 176 and 177 of `Makefile.win`. After this change `nmake` still exits with errors but nevertheless seems to build `libapr-1.dll` and `libaprutil-1.dll`...
