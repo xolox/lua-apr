@@ -289,7 +289,7 @@ int lua_apr_file_open(lua_State *L)
   file->path = apr_pstrdup(file->memory_pool, path);
 
   /* Initialize the buffer associated with the file. */
-  init_buffer(L, &file->buffer, file->handle,
+  init_buffer(L, &file->buffer, file->handle, flags | APR_FOPEN_BINARY,
       (lua_apr_buffer_rf) apr_file_read,
       (lua_apr_buffer_wf) apr_file_write);
 

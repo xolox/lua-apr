@@ -81,6 +81,7 @@ typedef struct lua_apr_buffer {
   char *input;
   size_t index, limit, size;
   void *object;
+  int binary_mode;
   lua_apr_buffer_rf read;
   lua_apr_buffer_wf write;
 } lua_apr_buffer;
@@ -121,7 +122,7 @@ int lua_apr_base64_encode(lua_State*);
 int lua_apr_base64_decode(lua_State*);
 
 /* buffer.c */
-void init_buffer(lua_State*, lua_apr_buffer*, void*, lua_apr_buffer_rf, lua_apr_buffer_wf);
+void init_buffer(lua_State*, lua_apr_buffer*, void*, int, lua_apr_buffer_rf, lua_apr_buffer_wf);
 int read_buffer(lua_State*, lua_apr_buffer*);
 int write_buffer(lua_State*, lua_apr_buffer*);
 void free_buffer(lua_State*, lua_apr_buffer*);

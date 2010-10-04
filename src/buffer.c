@@ -20,7 +20,7 @@
 #define AVAIL(B) (B->limit - B->index)
 #define SUCCESS_OR_EOF(S) (S == APR_SUCCESS || APR_STATUS_IS_EOF(S))
 
-void init_buffer(lua_State *L, lua_apr_buffer *B, void *object, lua_apr_buffer_rf read, lua_apr_buffer_wf write) /* {{{1 */
+void init_buffer(lua_State *L, lua_apr_buffer *B, void *object, int binary_mode, lua_apr_buffer_rf read, lua_apr_buffer_wf write) /* {{{1 */
 {
   B->input = malloc(LUA_APR_BUFSIZE);
   B->index = 0;
@@ -29,6 +29,7 @@ void init_buffer(lua_State *L, lua_apr_buffer *B, void *object, lua_apr_buffer_r
   B->object = object;
   B->read = read;
   B->write = write;
+  B->binary_mode = binary_mode;
 }
 
 void free_buffer(lua_State *L, lua_apr_buffer *B) /* {{{1 */
@@ -89,7 +90,7 @@ static apr_status_t read_line(lua_State *L, lua_apr_buffer *B) /* {{{1 */
       /* Found a line feed character! */
       length = match - CURSOR(B);
       /* Check for preceding carriage return (CR) character. */
-      skip_crlf = (length >= 1 && *(match - 1) == '\r');
+      skip_crlf = (!B->binary_mode && length >= 1 && *(match - 1) == '\r');
       lua_pushlstring(L, CURSOR(B), skip_crlf ? length - 1 : length);
       B->index += length + 1;
       break;
