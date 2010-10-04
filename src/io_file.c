@@ -1,7 +1,7 @@
 /* File I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: September 25, 2010
+ * Last Change: October 4, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -13,6 +13,8 @@
 #include <apr_lib.h>
 #include <stdlib.h>
 #include <stdio.h>
+
+static apr_status_t file_close_real(lua_State*, lua_apr_file*);
 
 /* apr.file_copy(source, target [, permissions]) -> status {{{1
  *
@@ -176,8 +178,8 @@ int lua_apr_file_attrs_set(lua_State *L)
  *
  *  - `name` is a string containing the name of the file in proper case
  *  - `path` is a string containing the absolute pathname of the file
- *  - `type` is one of the strings `directory`, `file`, `link`, `pipe`,
- *    `socket`, `block device`, `character device` or `unknown`
+ *  - `type` is one of the strings `'directory'`, `'file'`, `'link'`, `'pipe'`,
+ *    `'socket'`, `'block device'`, `'character device'` or `'unknown'`
  *  - `user` is a string containing the name of user that owns the file
  *  - `group` is a string containing the name of the group that owns the file
  *  - `size` is a number containing the size of the file in bytes
@@ -218,28 +220,24 @@ int lua_apr_stat(lua_State *L)
   }
 }
 
-#if 0
-
 /* apr.file_open(path [, mode ]) -> file {{{1
  *
- * Open a file for reading and/or writing. This function immitates Lua's
- * io.open() function, so the documentation for io.open() applies:
+ * <em>This function imitates Lua's `io.open()` function, so here is the
+ * documentation for that function:</em>
  *
  * This function opens a file, in the mode specified in the string @mode. It
  * returns a new file handle, or, in case of errors, nil plus an error
- * message.
+ * message. The @mode string can be any of the following:
  *
- * The @mode string can be any of the following:
+ *  - `'r'`: read mode (the default)
+ *  - `'w'`: write mode
+ *  - `'a'`: append mode
+ *  - `'r+'`: update mode, all previous data is preserved
+ *  - `'w+'`: update mode, all previous data is erased
+ *  - `'a+'`: append update mode, previous data is preserved, writing is only
+ *          allowed at the end of file
  *
- * 'r':   read mode (the default);
- * 'w':   write mode;
- * 'a':   append mode;
- * 'r+':  update mode, all previous data is preserved;
- * 'w+':  update mode, all previous data is erased;
- * 'a+':  append update mode, previous data is preserved, writing is only
- *        allowed at the end of file.
- *
- * The @mode string may also have a 'b' at the end, which is needed in some
+ * The @mode string may also have a `b` at the end, which is needed in some
  * systems to open the file in binary mode. This string is exactly what is used
  * in the standard C function fopen().
  */
@@ -279,23 +277,29 @@ int lua_apr_file_open(lua_State *L)
   if (!(flags & APR_FOPEN_WRITE))
     flags |= APR_FOPEN_READ;
 
-  /* Create and return the file object. */
+  /* Create file object and memory pool, open file. */
   file = new_object(L, &lua_apr_file_type);
-  init_buffer(L, &file->buffer, &file->handle, apr_file_read, apr_file_write);
   status = apr_pool_create(&file->memory_pool, NULL);
-  if (APR_SUCCESS != status)
+  if (APR_SUCCESS != status) /* raise on memory errors */
     raise_error_status(L, status);
   status = apr_file_open(&file->handle, path, flags, APR_FPROT_OS_DEFAULT, file->memory_pool);
-  if (status != APR_SUCCESS)
+
+  if (status != APR_SUCCESS) /* return nil, msg on other errors */
     return push_error_status(L, status);
   file->path = apr_pstrdup(file->memory_pool, path);
+
+  /* Initialize the buffer associated with the file. */
+  init_buffer(L, &file->buffer, file->handle,
+      (lua_apr_buffer_rf) apr_file_read,
+      (lua_apr_buffer_wf) apr_file_write);
+
   return 1;
 }
 
 /* file:stat([field, ...]) -> value, ... {{{1
  *
- * This method works like apr.stat() except that it uses a file handle instead
- * of a filepath to access the file.
+ * This method works like `apr.stat()` except that it uses a file handle
+ * instead of a filepath to access the file.
  */
 
 int file_stat(lua_State *L)
@@ -313,68 +317,89 @@ int file_stat(lua_State *L)
   return push_stat_results(L, &context, NULL);
 }
 
-/* file:read([format, ...]) -> mixed value, ... {{{1 */
+/* file:read([format, ...]) -> mixed value, ... {{{1
+ *
+ * _This function imitates Lua's [file:read()] [fread] function, so here is the
+ * documentation for that function:_
+ *
+ * Reads the file @file, according to the given formats, which specify what to
+ * read. For each format, the function returns a string (or a number) with the
+ * characters read, or nil if it cannot read data with the specified format.
+ * When called without formats, it uses a default format that reads the entire
+ * next line (see below).
+ *
+ * The available formats are:
+ *
+ *  - `'*n'`: reads a number; this is the only format that returns a number
+ *    instead of a string
+ *  - `'*a'`: reads the whole file, starting at the current position. On end of
+ *    file, it returns the empty string
+ *  - `'*l'`: reads the next line (skipping the end of line), returning nil on
+ *    end of file (this is the default format)
+ *  - `number`: reads a string with up to this number of characters, returning
+ *    nil on end of file. If number is zero, it reads nothing and returns an
+ *    empty string, or nil on end of file
+ *
+ * [fread]: http://www.lua.org/manual/5.1/manual.html#pdf-file:read
+ */
 
 int file_read(lua_State *L)
 {
   lua_apr_file *file = file_check(L, 1, 1);
-  return read_buffer(L, file->buffer);
+  return read_buffer(L, &file->buffer);
 }
 
-/* file:write(value [, ...]) -> status {{{1 */
+/* file:write(value [, ...]) -> status {{{1
+ *
+ * _This function imitates Lua's [file:write()] [fwrite] function, so here is
+ * the documentation for that function:_
+ *
+ * Writes the value of each of its arguments to the @file. The arguments must
+ * be strings or numbers. To write other values, use `tostring()` or
+ * `string.format()` before `file:write()`.
+ *
+ * [fwrite]: http://www.lua.org/manual/5.1/manual.html#pdf-file:write
+ */
 
 int file_write(lua_State *L)
 {
-  apr_status_t status = APR_SUCCESS;
-  lua_apr_file *file;
-  const char *data;
-  apr_size_t done;
-  size_t todo;
-  int i, x;
-
-
-
-  file = file_check(L, 1, 1);
-  for (i = 2, x = lua_gettop(L); i <= x; i++) {
-    data = luaL_checklstring(L, i, &todo);
-    status = apr_file_write_full(file->handle, data, (apr_size_t)todo, &done);
-    if (APR_SUCCESS != status)
-      break;
-  }
-  return push_status(L, status);
+  lua_apr_file *file = file_check(L, 1, 1);
+  return write_buffer(L, &file->buffer);
 }
 
 /* file:seek([whence [, offset]]) -> offset {{{1
  *
- * This method has the same interface as Lua's file:seek() method. Now follows
- * the documentation for file:seek(), copied verbatim, without permission...
- *
+ * _This function imitates Lua's [file:seek()] [fseek] function, so here is the
+ * documentation for that function:_
+ * 
  * Sets and gets the file position, measured from the beginning of the file, to
  * the position given by @offset plus a base specified by the string @whence,
  * as follows:
  *
- * 'set':  base is position 0 (beginning of the file);
- * 'cur':  base is current position;
- * 'end':  base is end of file.
+ *  - `'set'`:  base is position 0 (beginning of the file)
+ *  - `'cur'`:  base is current position
+ *  - `'end'`:  base is end of file
  *
- * In case of success, function seek returns the final file position, measured
+ * In case of success, function `seek` returns the final file position, measured
  * in bytes from the beginning of the file. If this function fails, it returns
  * nil, plus a string describing the error.
  *
- * The default value for @whence is 'cur', and for offset is 0. Therefore, the
- * call file:seek() returns the current file position, without changing it; the
- * call file:seek('set') sets the position to the beginning of the file (and
- * returns 0); and the call file:seek('end') sets the position to the end of
+ * The default value for @whence is `'cur'`, and for offset is 0. Therefore, the
+ * call `file:seek()` returns the current file position, without changing it; the
+ * call `file:seek('set')` sets the position to the beginning of the file (and
+ * returns 0); and the call `file:seek('end')` sets the position to the end of
  * the file, and returns its size.
+ *
+ * [fseek]: http://www.lua.org/manual/5.1/manual.html#pdf-file:seek
  */
 
 int file_seek(lua_State *L)
 {
-  const char *const modenames[] = { "set", "cur", "end", 0 };
+  const char *const modenames[] = { "set", "cur", "end", NULL };
   const apr_seek_where_t modes[] = { APR_SET, APR_CUR, APR_END };
 
   apr_status_t status;
-  apr_off_t sob, eob, offset;
+  apr_off_t start_of_buf, end_of_buf, offset;
   lua_apr_file *file;
   int mode;
 
@@ -382,30 +407,33 @@ int file_seek(lua_State *L)
   mode = modes[luaL_checkoption(L, 2, "cur", modenames)];
   offset = luaL_optlong(L, 3, 0);
 
-  /* get offsets for start/end of buffer */
-  status = apr_file_seek(file->handle, APR_CUR, (eob = 0, &eob));
+  /* Get offsets corresponding to start/end of buffered input. */
+  end_of_buf = 0;
+  status = apr_file_seek(file->handle, APR_CUR, &end_of_buf);
   if (status != APR_SUCCESS)
     return push_error_status(L, status);
-  sob = eob - file->stream.limit;
+  start_of_buf = end_of_buf - file->buffer.limit;
 
+  /* Adjust APR_CUR to index in buffered input. */
   if (mode == APR_CUR) {
-    /* save an extra seek */
     mode = APR_SET;
-    offset += sob + file->stream.index;
+    offset += start_of_buf + file->buffer.index;
   }
 
+  /* Perform the actual seek() requested from Lua. */
   status = apr_file_seek(file->handle, mode, &offset);
   if (status != APR_SUCCESS)
     return push_error_status(L, status);
 
-  /* update buffer */
-  if (offset >= sob && offset < eob) {
-    /* FIXME: is the cast bad? */
-    file->stream.index = (size_t) (offset - sob);
-  } else {
-    file->stream.limit = 0;
+  /* Adjust buffer index / invalidate buffered input? */
+  if (offset >= start_of_buf && offset <= end_of_buf)
+    file->buffer.index = (size_t) (offset - start_of_buf);
+  else {
+    file->buffer.index = 0;
+    file->buffer.limit = 0;
   }
 
+  /* FIXME Bound to lose precision when APR_FOPEN_LARGEFILE is in effect? */
   lua_pushnumber(L, (lua_Number) offset);
   return 1;
 }
@@ -432,12 +460,11 @@ int file_flush(lua_State *L)
  * otherwise a nil followed by an error message is returned. The @type must be
  * one of:
  *
- * 'shared':     Shared lock. More than one process or thread can hold a
- *               shared lock at any given time. Essentially, this is a
- *               "read lock", preventing writers from establishing an
- *               exclusive lock.
- * 'exclusive':  Exclusive lock. Only one process may hold an exclusive lock
- *               at any given time. This is analogous to a "write lock".
+ *  - `'shared'`: Shared lock. More than one process or thread can hold a
+ *    shared lock at any given time. Essentially, this is a "read lock",
+ *    preventing writers from establishing an exclusive lock
+ *  - `'exclusive'`: Exclusive lock. Only one process may hold an exclusive
+ *    lock at any given time. This is analogous to a "write lock"
  *
  * If @nonblocking is true the call will not block while acquiring the file
  * lock.
@@ -499,42 +526,26 @@ int file_close(lua_State *L)
   apr_status_t status;
 
   file = file_check(L, 1, 1);
-  status = file_close_real(file);
+  status = file_close_real(L, file);
 
   return push_status(L, status);
 }
 
-/* Helpers, file object metamethods and initializer {{{1 */
-
-apr_status_t file_read_real(void *obj, char *buf, apr_size_t *len) /* {{{1 */
-{
-  lua_apr_file *file = obj;
-
-  return apr_file_read(file->handle, buf, len);
-}
-
-apr_status_t file_write_real(void *obj, char *buf, apr_size_t *len) /* {{{1 */
-{
-  lua_apr_file *file = obj;
-
-  return apr_file_write(file->handle, buf, len);
-}
-
 lua_apr_file *file_check(lua_State *L, int i, int open) /* {{{1 */
 {
-  lua_apr_file *file = luaL_checkudata(L, i, lua_apr_file_type.typename);
-  if (open && !file->handle)
+  lua_apr_file *file = check_object(L, i, &lua_apr_file_type);
+  if (open && file->handle == NULL)
     luaL_error(L, "attempt to use a closed file");
   return file;
 }
 
-static apr_status_t file_close_real(lua_apr_file *file) /* {{{1 */
+apr_status_t file_close_real(lua_State *L, lua_apr_file *file) /* {{{1 */
 {
   apr_status_t status = APR_SUCCESS;
   if (file->handle) {
     status = apr_file_close(file->handle);
     apr_pool_destroy(file->memory_pool);
-    free_buffer(&file->buffer);
+    free_buffer(L, &file->buffer);
     file->handle = NULL;
   }
   return status;
@@ -552,10 +563,8 @@ int file_tostring(lua_State *L) /* {{{1 */
 
 int file_gc(lua_State *L) /* {{{1 */
 {
-  file_close_real(file_check(L, 1, 0));
+  file_close_real(L, file_check(L, 1, 0));
   return 0;
 }
-
-#endif
 
 /* vim: set ts=2 sw=2 et tw=79 fen fdm=marker : */

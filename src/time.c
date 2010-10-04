@@ -1,7 +1,7 @@
 /* Time routines module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: September 25, 2010
+ * Last Change: October 4, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -103,7 +103,7 @@ int time_push(lua_State *L, apr_time_t time)
  * supported so you can for example give 0.5 to sleep for half a second. This
  * function may sleep for longer than the specified time because of platform
  * limitations.
-*/
+ */
 
 int lua_apr_sleep(lua_State *L)
 {

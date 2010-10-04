@@ -3,7 +3,7 @@
  Test suite for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: September 27, 2010
+ Last Change: October 4, 2010
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -22,6 +22,7 @@ local _real_assert_ = _G.assert --> hack around `Shake'.
 
 -- TODO Cleanup and extend the tests for `filepath.c'.
 -- TODO Create tests for `io_file.c'.
+-- TODO Add tests for file:seek() (tricky to get right!)
 -- TODO apr.dir(), apr.glob(), apr.stat()!
 
 -- Base64 encoding module (base64.c) {{{1
@@ -233,6 +234,49 @@ end
 -- Remove temporary workspace directory
 assert(apr.filepath_set '..')
 assert(apr.dir_remove 'io_dir_tests')
+
+-- File I/O handling module (io_file.c) {{{1
+
+-- Create temporary file with test data.
+local tempname = os.tmpname()
+local testfile = assert(io.open(tempname, 'w'))
+assert(testfile:write [[
+ 1
+ 3.1
+ 100
+ 0xCAFEBABE
+ 0xDEADBEEF
+ 3.141592653589793115997963468544185161590576171875
+ this line is in fact not a number :-)
+
+ that was an empty line
+]])
+assert(testfile:close())
+
+local function testformat(format)
+  local apr_file = assert(apr.file_open(tempname, 'r'))
+  local lua_file = assert(io.open(tempname, 'r'))
+  repeat
+    local lua_value = lua_file:read(format)
+    local apr_value = apr_file:read(format)
+    assert(lua_value == apr_value)
+  until (format == '*a' and lua_value == '') or not lua_value
+  assert(lua_file:close())
+  assert(apr_file:close())
+end
+
+testformat '*n'
+testformat '*l'
+testformat '*a'
+testformat (1)
+testformat (2)
+testformat (3)
+testformat (6)
+testformat (10)
+testformat (20)
+testformat (50)
+
+assert(os.remove(tempname))
 
 -- String module (str.c) {{{1
 

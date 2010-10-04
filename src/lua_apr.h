@@ -22,7 +22,7 @@
 /* FIXME Pushing onto the stack might not work in this case? */
 #define error_message_memory "memory allocation error"
 
-#define LUA_APR_BUFSIZE (1024 * 32)
+#define LUA_APR_BUFSIZE 1024
 
 #define count(array) \
   (sizeof((array)) / sizeof((array)[0]))
@@ -74,6 +74,25 @@ typedef struct lua_apr_dir {
   const char *filepath;
 } lua_apr_dir;
 
+/* Structure for internal I/O buffers. */
+typedef apr_status_t (*lua_apr_buffer_rf)(void*, char*, apr_size_t*);
+typedef apr_status_t (*lua_apr_buffer_wf)(void*, const char*, apr_size_t*);
+typedef struct lua_apr_buffer {
+  char *input;
+  size_t index, limit, size;
+  void *object;
+  lua_apr_buffer_rf read;
+  lua_apr_buffer_wf write;
+} lua_apr_buffer;
+
+/* Structure for file objects. */
+typedef struct lua_apr_file {
+  lua_apr_buffer buffer;
+  apr_file_t *handle;
+  apr_pool_t *memory_pool;
+  const char *path;
+} lua_apr_file;
+
 /* Structure for Lua userdatum types. */
 typedef struct lua_apr_type {
   const char *typename;
@@ -84,6 +103,7 @@ typedef struct lua_apr_type {
 
 /* External type definitions. */
 extern lua_apr_type lua_apr_dir_type;
+extern lua_apr_type lua_apr_file_type;
 
 /* Prototypes. {{{1 */
 
@@ -99,6 +119,12 @@ void *new_object(lua_State*, lua_apr_type*);
 /* base64.c */
 int lua_apr_base64_encode(lua_State*);
 int lua_apr_base64_decode(lua_State*);
+
+/* buffer.c */
+void init_buffer(lua_State*, lua_apr_buffer*, void*, lua_apr_buffer_rf, lua_apr_buffer_wf);
+int read_buffer(lua_State*, lua_apr_buffer*);
+int write_buffer(lua_State*, lua_apr_buffer*);
+void free_buffer(lua_State*, lua_apr_buffer*);
 
 /* crypt.c */
 int lua_apr_md5(lua_State*);
@@ -149,13 +175,25 @@ int lua_apr_file_remove(lua_State*);
 int lua_apr_file_mtime_set(lua_State*);
 int lua_apr_file_attrs_set(lua_State*);
 int lua_apr_stat(lua_State*);
+int lua_apr_file_open(lua_State*);
+int file_stat(lua_State*);
+int file_read(lua_State*);
+int file_write(lua_State*);
+int file_seek(lua_State*);
+int file_flush(lua_State*);
+int file_lock(lua_State*);
+int file_unlock(lua_State*);
+int file_close(lua_State*);
+int file_gc(lua_State*);
+int file_tostring(lua_State*);
+lua_apr_file *file_check(lua_State*, int, int);
 
 /* permissions.c */
 int push_protection(lua_State*, apr_fileperms_t);
 apr_fileperms_t check_permissions(lua_State*, int, int);
 
 /* stat.c */
-void check_stat_request(lua_State*, lua_apr_stat_context*, lua_apr_stat_default_result);
+void check_stat_request(lua_State*, lua_apr_stat_context*, lua_apr_stat_result);
 int push_stat_results(lua_State*, lua_apr_stat_context*, const char*);
 
 /* str.c */

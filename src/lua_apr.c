@@ -72,6 +72,7 @@ int luaopen_apr_core(lua_State *L)
     { "file_mtime_set", lua_apr_file_mtime_set },
     { "file_attrs_set", lua_apr_file_attrs_set },
     { "stat", lua_apr_stat },
+    { "file_open", lua_apr_file_open },
 
     /* str.c -- string handling. */
     { "strnatcmp", lua_apr_strnatcmp },
@@ -134,6 +135,10 @@ int luaopen_apr_core(lua_State *L)
  *  - `'WIN32'`
  *  - `'NETWARE'`
  *  - `'OS2'`
+ *
+ * Please note that the labels returned by `apr.platform_get()` don't imply
+ * that these platforms are fully supported; the author of the Lua/APR binding
+ * doesn't have NETWARE and OS2 environments available for testing.
  */
 
 int lua_apr_platform_get(lua_State *L)
@@ -266,9 +271,7 @@ lua_apr_type lua_apr_dir_type = {
   dir_metamethods
 };
 
-#if 0
-
-/* TODO lua_apr_file_type {{{2 */
+/* lua_apr_file_type {{{2 */
 
 static luaL_Reg file_methods[] = {
   { "close", file_close },
@@ -297,6 +300,8 @@ lua_apr_type lua_apr_file_type = {
 
 /* TODO lua_apr_pipe_type {{{2 */
 
+#if 0
+
 static luaL_Reg pipe_methods[] = {
   { "close", file_close },
   { "flush", file_flush },
@@ -324,8 +329,8 @@ lua_apr_type lua_apr_pipe_type = {
   pipe_metamethods
 };
 
-/* TODO lua_apr_proc_type {{{2 */
-
 #endif
+
+/* TODO lua_apr_proc_type {{{2 */
 
 /* vim: set ts=2 sw=2 et tw=79 fen fdm=marker : */

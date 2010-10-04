@@ -18,9 +18,10 @@ SOURCE_MODULE = src/apr.lua
 BINARY_MODULE = core.so
 
 # Names of source code files to compile & link.
-SOURCES = src/base64.c src/crypt.c src/env.c src/filepath.c src/fnmatch.c \
-          src/io_dir.c src/lua_apr.c src/permissions.c src/stat.c src/str.c \
-          src/time.c src/uri.c src/user.c src/uuid.c src/io_file.c
+SOURCES = src/base64.c src/buffer.c src/crypt.c src/env.c src/filepath.c \
+		  src/fnmatch.c src/io_dir.c src/lua_apr.c src/permissions.c \
+		  src/stat.c src/str.c src/time.c src/uri.c src/user.c src/uuid.c \
+		  src/io_file.c
 
 # Names of compiled object files.
 OBJECTS = $(patsubst %.c,%.o,$(SOURCES))
@@ -53,7 +54,7 @@ test:
 	@which shake >/dev/null && shake etc/tests.lua || lua etc/tests.lua
 
 docs: etc/docs.lua src/apr.lua $(SOURCES)
-	@lua etc/docs.lua > docs.html
+	@lua etc/docs.lua docs.md docs.html
 
 install_deps:
 	sudo apt-get install libapr1 libapr1-dev libaprutil1 libaprutil1-dev \

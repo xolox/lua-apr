@@ -3,7 +3,7 @@
  Documentation generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: September 25, 2010
+ Last Change: October 4, 2010
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -141,7 +141,7 @@ local function preprocess(s)
     :gsub('([%s%p])nil([%s%p])', '%1<tt>*nil*</tt>%2')
     :gsub('`([%w_.]+)%(%)`', function(funcname)
       local target
-      if funcname:find '^apr%.[%w_]+$' then
+      if funcname:find '^apr%.[%w_]+$' or funcname:find '^[%w_]+:[%w_]+$' then
         target = '#' .. toanchor(funcname)
       else
         target = 'http://www.lua.org/manual/5.1/manual.html#pdf-' .. funcname
@@ -164,7 +164,7 @@ blocks:add('%s', table.concat(items, '\n'))
 local function dumpentries(functions)
   for _, entry in ipairs(functions) do
     local signature = entry.signature:gsub('%->', '→')
-    local funcname = signature:match '^[%w_.]+'
+    local funcname = signature:match '^[%w_.:]+'
     if funcname then
       local anchor = toanchor(funcname)
       blocks:add('### <a name="%s" href="#%s">`%s`</a>', anchor, anchor, signature)
@@ -195,20 +195,17 @@ if next(misc_module.functions) then
   dumpentries(misc_module.functions)
 end
 
-blocks:add [[
+-- Join the blocks of Markdown source and write them to the 1st file.
+local mkd_source = table.concat(blocks, '\n\n')
+local output = assert(io.open(arg[1], 'w'))
+assert(output:write(mkd_source))
+assert(output:close())
 
-## Rationale for creating Lua/APR
-
-The creators of Lua try to keep system dependent code to a minimum so that Lua
-stays small and easily embeddable. This is great except that it makes it
-difficult to use Lua to write complex programs that work on popular platforms
-like Windows, UNIX and Mac OS X. After I discovered Lua and found the libraries
-lacking (back in 2007) I decided to develop a Lua module that uses the [APR
-library] [apr_wiki] to expose more operating system facilities to Lua.
-
-]]
-
-io.write([[
+-- Generate and write the HTML output to the 2nd file. This isn't actually used
+-- on http://peterodding.com/code/lua/apr/docs/ but does enable immediate
+-- feedback when updating the documentation.
+local output = assert(io.open(arg[2], 'w'))
+assert(output:write([[
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
 "http://www.w3.org/TR/html4/strict.dtd">
 <html>
@@ -240,6 +237,7 @@ io.write([[
     #last_updated { margin-top: 4em; color: #DDD; }
   </style>
  </head>
- <body>]], require 'markdown' (table.concat(blocks, '\n\n')), [[
+ <body>]], require 'markdown' (mkd_source), [[
  </body>
-</html>]])
+</html>]]))
+assert(output:close())

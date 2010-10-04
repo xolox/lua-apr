@@ -2,18 +2,18 @@
 
 The [Lua/APR binding](http://peterodding.com/code/lua/apr/) aims to bring most of the functionality in the [Apache Portable Runtime](http://en.wikipedia.org/wiki/Apache_Portable_Runtime) library to the small and flexible programming language [Lua](http://en.wikipedia.org/wiki/Lua_%28programming_language%29). Thus far the following modules have been implemented (the following links take you straight to the relevant documentation):
 
- * [Base64 encoding](http://peterodding.com/code/lua/apr/docs.html#base64_encoding)
- * [Cryptography routines](http://peterodding.com/code/lua/apr/docs.html#cryptography_routines)
- * [Environment manipulation](http://peterodding.com/code/lua/apr/docs.html#environment_manipulation)
- * [File path manipulation](http://peterodding.com/code/lua/apr/docs.html#file_path_manipulation)
- * [Filename matching](http://peterodding.com/code/lua/apr/docs.html#filename_matching)
- * [Directory manipulation](http://peterodding.com/code/lua/apr/docs.html#directory_manipulation)
- * [File I/O handling](http://peterodding.com/code/lua/apr/docs.html#file_i_o_handling) *(see status below)*
- * [String routines](http://peterodding.com/code/lua/apr/docs.html#string_routines)
- * [Time routines](http://peterodding.com/code/lua/apr/docs.html#time_routines)
- * [Uniform resource identifier parsing](http://peterodding.com/code/lua/apr/docs.html#uniform_resource_identifier_parsing)
- * [User/group identification](http://peterodding.com/code/lua/apr/docs.html#user_group_identification)
- * [Universally unique identifiers](http://peterodding.com/code/lua/apr/docs.html#universally_unique_identifiers)
+ * [Base64 encoding](http://peterodding.com/code/lua/apr/docs/#base64_encoding)
+ * [Cryptography routines](http://peterodding.com/code/lua/apr/docs/#cryptography_routines)
+ * [Environment manipulation](http://peterodding.com/code/lua/apr/docs/#environment_manipulation)
+ * [File path manipulation](http://peterodding.com/code/lua/apr/docs/#file_path_manipulation)
+ * [Filename matching](http://peterodding.com/code/lua/apr/docs/#filename_matching)
+ * [Directory manipulation](http://peterodding.com/code/lua/apr/docs/#directory_manipulation)
+ * [File I/O handling](http://peterodding.com/code/lua/apr/docs/#file_i_o_handling) *(see status below)*
+ * [String routines](http://peterodding.com/code/lua/apr/docs/#string_routines)
+ * [Time routines](http://peterodding.com/code/lua/apr/docs/#time_routines)
+ * [Uniform resource identifier parsing](http://peterodding.com/code/lua/apr/docs/#uniform_resource_identifier_parsing)
+ * [User/group identification](http://peterodding.com/code/lua/apr/docs/#user_group_identification)
+ * [Universally unique identifiers](http://peterodding.com/code/lua/apr/docs/#universally_unique_identifiers)
 
 ## How to download, build & install the module
 
@@ -49,9 +49,14 @@ A makefile for Microsoft Windows is included in the repository. It has been test
 
 ## Status
 
-The following functionality has not been implemented yet but is on the todo list (highest to lowest priority):
+The following functions have just been implemented and need to be properly tested by adding more tests to [the test script](http://github.com/xolox/lua-apr/blob/master/etc/tests.lua):
 
- * At the moment the file I/O module contains everything except **actual input/output handling**... This requires me to reimplement Lua's file I/O on top of APR. While I'm at it I also want to make this code flexible enough to support pipes and sockets because I certainly don't want to implement it more than once.
+ * [apr.file_open()](http://peterodding.com/code/lua/apr/docs/#apr.file_open)
+ * [file:read()](http://peterodding.com/code/lua/apr/docs/#file:read)
+ * [file:write()](http://peterodding.com/code/lua/apr/docs/#file:write)
+ * [file:seek()](http://peterodding.com/code/lua/apr/docs/#file:seek)
+
+The following functionality has not been implemented yet but is on the todo list (highest to lowest priority):
 
  * I have a prototype of a [**process handling module**](http://apr.apache.org/docs/apr/trunk/group__apr__thread__proc.html) but it's kind of useless until the file I/O interface is finished and works for pipes.
 
