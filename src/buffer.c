@@ -79,6 +79,7 @@ static apr_status_t read_line(lua_State *L, lua_apr_buffer *B) /* {{{1 */
 {
   apr_status_t status = APR_SUCCESS;
   size_t offset = 0, length;
+  int skip_crlf;
   char *match;
 
   do {
@@ -88,9 +89,8 @@ static apr_status_t read_line(lua_State *L, lua_apr_buffer *B) /* {{{1 */
       /* Found a line feed character! */
       length = match - CURSOR(B);
       /* Check for preceding carriage return (CR) character. */
-      if (length >= 1 && *(match - 1) == '\r')
-        length--;
-      lua_pushlstring(L, CURSOR(B), length);
+      skip_crlf = (length >= 1 && *(match - 1) == '\r');
+      lua_pushlstring(L, CURSOR(B), skip_crlf ? length - 1 : length);
       B->index += length + 1;
       break;
     } else if (APR_STATUS_IS_EOF(status)) {
