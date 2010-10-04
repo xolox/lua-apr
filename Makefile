@@ -1,7 +1,7 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: September 27, 2010
+# Last Change: October 4, 2010
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -35,7 +35,7 @@ LFLAGS = `pkg-config --libs lua5.1` `pkg-config --libs apr-1` `pkg-config --libs
 $(BINARY_MODULE): $(OBJECTS)
 	$(CC) -shared -o $(BINARY_MODULE) $(OBJECTS) $(LFLAGS)
 
-$(OBJECTS): %.o: %.c
+$(OBJECTS): %.o: %.c src/lua_apr.h
 	$(CC) -Wall -g -c $(CFLAGS) -fPIC $< -o $@
 
 install: $(BINARY_MODULE)
@@ -49,7 +49,7 @@ uninstall:
 	@rm $(LUA_LIBDIR)/apr/core.so
 	@rmdir $(LUA_LIBDIR)/apr
 
-test: install
+test:
 	@which shake >/dev/null && shake etc/tests.lua || lua etc/tests.lua
 
 docs: etc/docs.lua src/apr.lua $(SOURCES)
