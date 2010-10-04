@@ -1,7 +1,7 @@
 /* Initialization and miscellaneous routines for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: September 25, 2010
+ * Last Change: October 4, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -202,8 +202,11 @@ int push_status(lua_State *L, apr_status_t status)
 void *new_object(lua_State *L, lua_apr_type *T)
 {
   void *object = lua_newuserdata(L, T->objsize);
-  get_metatable(L, T);
-  lua_setmetatable(L, -2);
+  if (object != NULL) {
+    memset(object, 0, T->objsize);
+    get_metatable(L, T);
+    lua_setmetatable(L, -2);
+  }
   return object;
 }
 
