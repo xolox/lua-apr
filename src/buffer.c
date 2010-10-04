@@ -161,6 +161,8 @@ static apr_status_t read_all(lua_State *L, lua_apr_buffer *B) /* {{{1 */
 {
   apr_status_t status;
 
+  /* FIXME Translate CR + LF -> LF on Win32! (APR doesn't do this for us...) */
+
   do {
     status = fill_buffer(B);
   } while (status == APR_SUCCESS);
