@@ -218,7 +218,7 @@ int read_buffer(lua_State *L, lua_apr_buffer *B) /* {{{1 */
 
 int write_buffer(lua_State *L, lua_apr_buffer *B) /* {{{1 */
 {
-  apr_status_t status;
+  apr_status_t status = APR_SUCCESS;
   const char *data;
   size_t length;
   apr_size_t len;
