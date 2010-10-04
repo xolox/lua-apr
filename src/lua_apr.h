@@ -1,7 +1,7 @@
 /* Header file for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: September 19, 2010
+ * Last Change: October 4, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -62,10 +62,10 @@ typedef struct lua_apr_stat_context {
   int firstarg, lastarg, count;
 } lua_apr_stat_context;
 
-typedef enum lua_apr_stat_default_result {
+typedef enum lua_apr_stat_result {
   STAT_DEFAULT_TABLE,
   STAT_DEFAULT_PATH
-} lua_apr_stat_default_result;
+} lua_apr_stat_result;
 
 /* Structure for directory objects. */
 typedef struct lua_apr_dir {
