@@ -1,7 +1,7 @@
 /* Header file for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 4, 2010
+ * Last Change: October 9, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -83,20 +83,20 @@ typedef struct lua_apr_dir {
 } lua_apr_dir;
 
 /* Structure for internal I/O buffers. */
-typedef apr_status_t (*lua_apr_buffer_rf)(void*, char*, apr_size_t*);
-typedef apr_status_t (*lua_apr_buffer_wf)(void*, const char*, apr_size_t*);
-typedef struct lua_apr_buffer {
+typedef apr_status_t (*lua_apr_buf_rf)(void*, char*, apr_size_t*);
+typedef apr_status_t (*lua_apr_buf_wf)(void*, const char*, apr_size_t*);
+typedef struct lua_apr_buf {
   char *input;
   size_t index, limit, size;
   void *object;
   int text_mode;
-  lua_apr_buffer_rf read;
-  lua_apr_buffer_wf write;
-} lua_apr_buffer;
+  lua_apr_buf_rf read;
+  lua_apr_buf_wf write;
+} lua_apr_buf;
 
 /* Structure for file objects. */
 typedef struct lua_apr_file {
-  lua_apr_buffer buffer;
+  lua_apr_buf buffer;
   apr_file_t *handle;
   apr_pool_t *memory_pool;
   const char *path;
@@ -130,10 +130,10 @@ int lua_apr_base64_encode(lua_State*);
 int lua_apr_base64_decode(lua_State*);
 
 /* buffer.c */
-void init_buffer(lua_State*, lua_apr_buffer*, void*, int, lua_apr_buffer_rf, lua_apr_buffer_wf);
-int read_buffer(lua_State*, lua_apr_buffer*);
-int write_buffer(lua_State*, lua_apr_buffer*);
-void free_buffer(lua_State*, lua_apr_buffer*);
+void init_buffer(lua_State*, lua_apr_buf*, void*, int, lua_apr_buf_rf, lua_apr_buf_wf);
+int read_buffer(lua_State*, lua_apr_buf*);
+int write_buffer(lua_State*, lua_apr_buf*);
+void free_buffer(lua_State*, lua_apr_buf*);
 
 /* crypt.c */
 int lua_apr_md5(lua_State*);

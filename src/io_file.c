@@ -1,7 +1,7 @@
 /* File I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 4, 2010
+ * Last Change: October 9, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -290,8 +290,8 @@ int lua_apr_file_open(lua_State *L)
 
   /* Initialize the buffer associated with the file. */
   init_buffer(L, &file->buffer, file->handle, !(flags & APR_FOPEN_BINARY),
-      (lua_apr_buffer_rf) apr_file_read,
-      (lua_apr_buffer_wf) apr_file_write);
+      (lua_apr_buf_rf) apr_file_read,
+      (lua_apr_buf_wf) apr_file_write);
 
   return 1;
 }

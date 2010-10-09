@@ -20,7 +20,7 @@
 #define AVAIL(B) (B->limit - B->index)
 #define SUCCESS_OR_EOF(S) (S == APR_SUCCESS || APR_STATUS_IS_EOF(S))
 
-void init_buffer(lua_State *L, lua_apr_buffer *B, void *object, int text_mode, lua_apr_buffer_rf read, lua_apr_buffer_wf write) /* {{{1 */
+void init_buffer(lua_State *L, lua_apr_buf *B, void *object, int text_mode, lua_apr_buf_rf read, lua_apr_buf_wf write) /* {{{1 */
 {
   B->input = malloc(LUA_APR_BUFSIZE);
   B->index = 0;
@@ -32,7 +32,7 @@ void init_buffer(lua_State *L, lua_apr_buffer *B, void *object, int text_mode, l
   B->text_mode = text_mode;
 }
 
-void free_buffer(lua_State *L, lua_apr_buffer *B) /* {{{1 */
+void free_buffer(lua_State *L, lua_apr_buf *B) /* {{{1 */
 {
   if (B->input != NULL) {
     free(B->input);
@@ -43,7 +43,7 @@ void free_buffer(lua_State *L, lua_apr_buffer *B) /* {{{1 */
   }
 }
 
-static int find_win32_eol(lua_apr_buffer *B, size_t offset, size_t *result) /* {{{1 */
+static int find_win32_eol(lua_apr_buf *B, size_t offset, size_t *result) /* {{{1 */
 {
   char *match;
   match = memchr(CURSOR(B) + offset, '\r', AVAIL(B) - offset);
@@ -57,7 +57,7 @@ static int find_win32_eol(lua_apr_buffer *B, size_t offset, size_t *result) /* {
   return 0;
 }
 
-static void binary_to_text(lua_apr_buffer *B) /* {{{1 */
+static void binary_to_text(lua_apr_buf *B) /* {{{1 */
 {
   size_t offset = 0, test;
 
@@ -71,7 +71,7 @@ static void binary_to_text(lua_apr_buffer *B) /* {{{1 */
   }
 }
 
-static apr_status_t fill_buffer(lua_apr_buffer *B) /* {{{1 */
+static apr_status_t fill_buffer(lua_apr_buf *B) /* {{{1 */
 {
   apr_status_t status;
   apr_size_t len;
@@ -104,7 +104,7 @@ static apr_status_t fill_buffer(lua_apr_buffer *B) /* {{{1 */
   return status;
 }
 
-static apr_status_t read_line(lua_State *L, lua_apr_buffer *B) /* {{{1 */
+static apr_status_t read_line(lua_State *L, lua_apr_buf *B) /* {{{1 */
 {
   apr_status_t status = APR_SUCCESS;
   size_t offset = 0, length;
@@ -140,7 +140,7 @@ static apr_status_t read_line(lua_State *L, lua_apr_buffer *B) /* {{{1 */
   return status;
 }
 
-static apr_status_t read_number(lua_State *L, lua_apr_buffer *B) /* {{{1 */
+static apr_status_t read_number(lua_State *L, lua_apr_buf *B) /* {{{1 */
 {
   apr_status_t status = APR_SUCCESS;
   size_t offset = 0;
@@ -168,7 +168,7 @@ static apr_status_t read_number(lua_State *L, lua_apr_buffer *B) /* {{{1 */
   return status;
 }
 
-static apr_status_t read_chars(lua_State *L, lua_apr_buffer *B, apr_size_t n) /* {{{1 */
+static apr_status_t read_chars(lua_State *L, lua_apr_buf *B, apr_size_t n) /* {{{1 */
 {
   apr_status_t status = APR_SUCCESS;
 
@@ -189,7 +189,7 @@ static apr_status_t read_chars(lua_State *L, lua_apr_buffer *B, apr_size_t n) /*
   return status;
 }
 
-static apr_status_t read_all(lua_State *L, lua_apr_buffer *B) /* {{{1 */
+static apr_status_t read_all(lua_State *L, lua_apr_buf *B) /* {{{1 */
 {
   apr_status_t status;
 
@@ -204,7 +204,7 @@ static apr_status_t read_all(lua_State *L, lua_apr_buffer *B) /* {{{1 */
   return status;
 }
 
-int read_buffer(lua_State *L, lua_apr_buffer *B) /* {{{1 */
+int read_buffer(lua_State *L, lua_apr_buf *B) /* {{{1 */
 {
   apr_status_t status = APR_SUCCESS;
   int n, nargs, nresults = 0;
@@ -250,7 +250,7 @@ int read_buffer(lua_State *L, lua_apr_buffer *B) /* {{{1 */
   return nresults;
 }
 
-int write_buffer(lua_State *L, lua_apr_buffer *B) /* {{{1 */
+int write_buffer(lua_State *L, lua_apr_buf *B) /* {{{1 */
 {
   apr_status_t status = APR_SUCCESS;
   const char *data;
