@@ -3,7 +3,7 @@
  Test suite for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: October 4, 2010
+ Last Change: October 9, 2010
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -253,12 +253,28 @@ assert(testfile:write [[
 ]])
 assert(testfile:close())
 
+local function formatvalue(v)
+  if type(v) == 'number' then
+    local s = string.format('%.99f', v)
+    return s:find '%.' and (s:gsub('0+$', '0')) or s
+  elseif type(v) == 'string' then
+    return string.format('%q', v)
+  else
+    return tostring(v)
+  end
+end
+
 local function testformat(format)
   local apr_file = assert(apr.file_open(tempname, 'r'))
   local lua_file = assert(io.open(tempname, 'r'))
   repeat
     local lua_value = lua_file:read(format)
     local apr_value = apr_file:read(format)
+    if lua_value ~= apr_value then
+      io.write("Wrong result for `", format, "' format!\n",
+               "Lua value: ", formatvalue(lua_value), "\n",
+               "APR value: ", formatvalue(apr_value), "\n")
+    end
     assert(lua_value == apr_value)
   until (format == '*a' and lua_value == '') or not lua_value
   assert(lua_file:close())

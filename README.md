@@ -49,7 +49,7 @@ A makefile for Microsoft Windows is included in the repository. It has been test
 
 ## Status
 
-The following functions have just been implemented and need to be properly tested by adding more tests to [the test script](http://github.com/xolox/lua-apr/blob/master/etc/tests.lua):
+The file I/O interface has recently been implemented but is missing a text mode implementation for Windows (being worked on) and needs more coverage in the [test script](http://github.com/xolox/lua-apr/blob/master/etc/tests.lua), specifically the following functions:
 
  * [apr.file_open()](http://peterodding.com/code/lua/apr/docs/#apr.file_open)
  * [file:read()](http://peterodding.com/code/lua/apr/docs/#file:read)

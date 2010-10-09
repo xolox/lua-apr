@@ -1,7 +1,7 @@
 /* Buffered I/O interface for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 4, 2010
+ * Last Change: October 9, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -20,7 +20,7 @@
 #define AVAIL(B) (B->limit - B->index)
 #define SUCCESS_OR_EOF(S) (S == APR_SUCCESS || APR_STATUS_IS_EOF(S))
 
-void init_buffer(lua_State *L, lua_apr_buffer *B, void *object, int binary_mode, lua_apr_buffer_rf read, lua_apr_buffer_wf write) /* {{{1 */
+void init_buffer(lua_State *L, lua_apr_buffer *B, void *object, int text_mode, lua_apr_buffer_rf read, lua_apr_buffer_wf write) /* {{{1 */
 {
   B->input = malloc(LUA_APR_BUFSIZE);
   B->index = 0;
@@ -29,7 +29,7 @@ void init_buffer(lua_State *L, lua_apr_buffer *B, void *object, int binary_mode,
   B->object = object;
   B->read = read;
   B->write = write;
-  B->binary_mode = binary_mode;
+  B->text_mode = text_mode;
 }
 
 void free_buffer(lua_State *L, lua_apr_buffer *B) /* {{{1 */
@@ -40,6 +40,34 @@ void free_buffer(lua_State *L, lua_apr_buffer *B) /* {{{1 */
     B->index = 0;
     B->limit = 0;
     B->size = 0;
+  }
+}
+
+static int find_win32_eol(lua_apr_buffer *B, size_t offset, size_t *result) /* {{{1 */
+{
+  char *match;
+  match = memchr(CURSOR(B) + offset, '\r', AVAIL(B) - offset);
+  if (match != NULL) {
+    size_t test = match - (CURSOR(B) + offset);
+    if (test < AVAIL(B) - offset && *(match + 1) == '\n') {
+      *result = test;
+      return 1;
+    }
+  }
+  return 0;
+}
+
+static void binary_to_text(lua_apr_buffer *B) /* {{{1 */
+{
+  size_t offset = 0, test;
+
+  while (find_win32_eol(B, offset, &test)) {
+    /* FIXME Very inefficient but should work? */
+    size_t i = B->index + offset + test;
+    char *p = &B->input[i];
+    memmove(p, p + 1, B->limit - i);
+    offset += test;
+    B->limit--;
   }
 }
 
@@ -90,7 +118,7 @@ static apr_status_t read_line(lua_State *L, lua_apr_buffer *B) /* {{{1 */
       /* Found a line feed character! */
       length = match - CURSOR(B);
       /* Check for preceding carriage return (CR) character. */
-      skip_crlf = (!B->binary_mode && length >= 1 && *(match - 1) == '\r');
+      skip_crlf = (B->text_mode && length >= 1 && *(match - 1) == '\r');
       lua_pushlstring(L, CURSOR(B), skip_crlf ? length - 1 : length);
       B->index += length + 1;
       break;
@@ -150,6 +178,9 @@ static apr_status_t read_chars(lua_State *L, lua_apr_buffer *B, apr_size_t n) /*
   if (AVAIL(B) > 0) {
     if (n > AVAIL(B))
       n = AVAIL(B);
+    /* FIXME Don't search buffer again on every call! */
+    if (n > 0 && B->text_mode)
+      binary_to_text(B);
     lua_pushlstring(L, CURSOR(B), n);
     B->index += n;
   } else
@@ -162,11 +193,11 @@ static apr_status_t read_all(lua_State *L, lua_apr_buffer *B) /* {{{1 */
 {
   apr_status_t status;
 
-  /* FIXME Translate CR + LF -> LF on Win32! (APR doesn't do this for us...) */
-
   do {
     status = fill_buffer(B);
   } while (status == APR_SUCCESS);
+  if (B->text_mode)
+    binary_to_text(B);
   lua_pushlstring(L, CURSOR(B), AVAIL(B));
   B->index = B->limit;
 

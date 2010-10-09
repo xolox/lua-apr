@@ -19,6 +19,14 @@
 
 /* Macro definitions. {{{1 */
 
+#define LUA_APR_DBG(MSG, ...) \
+  fprintf(stderr, MSG, __VA_ARGS__)
+
+/*
+#define LUA_APR_DBG(MSG, ...) \
+  fprintf(stderr, "%s:%i@%s(): " MSG, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
+*/
+
 /* FIXME Pushing onto the stack might not work in this case? */
 #define error_message_memory "memory allocation error"
 
@@ -81,7 +89,7 @@ typedef struct lua_apr_buffer {
   char *input;
   size_t index, limit, size;
   void *object;
-  int binary_mode;
+  int text_mode;
   lua_apr_buffer_rf read;
   lua_apr_buffer_wf write;
 } lua_apr_buffer;
