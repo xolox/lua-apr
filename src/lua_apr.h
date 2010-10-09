@@ -82,16 +82,20 @@ typedef struct lua_apr_dir {
   const char *filepath;
 } lua_apr_dir;
 
-/* Structure for internal I/O buffers. */
+/* Structures for internal I/O buffers. */
+
 typedef apr_status_t (*lua_apr_buf_rf)(void*, char*, apr_size_t*);
 typedef apr_status_t (*lua_apr_buf_wf)(void*, const char*, apr_size_t*);
+
 typedef struct lua_apr_buf {
-  char *input;
-  size_t index, limit, size;
-  void *object;
   int text_mode;
+  void *object;
   lua_apr_buf_rf read;
   lua_apr_buf_wf write;
+  struct {
+    size_t index, limit, size;
+    char *data;
+  } input, output;
 } lua_apr_buf;
 
 /* Structure for file objects. */

@@ -412,12 +412,12 @@ int file_seek(lua_State *L)
   status = apr_file_seek(file->handle, APR_CUR, &end_of_buf);
   if (status != APR_SUCCESS)
     return push_error_status(L, status);
-  start_of_buf = end_of_buf - file->buffer.limit;
+  start_of_buf = end_of_buf - file->buffer.input.limit;
 
   /* Adjust APR_CUR to index in buffered input. */
   if (mode == APR_CUR) {
     mode = APR_SET;
-    offset += start_of_buf + file->buffer.index;
+    offset += start_of_buf + file->buffer.input.index;
   }
 
   /* Perform the actual seek() requested from Lua. */
@@ -427,10 +427,10 @@ int file_seek(lua_State *L)
 
   /* Adjust buffer index / invalidate buffered input? */
   if (offset >= start_of_buf && offset <= end_of_buf)
-    file->buffer.index = (size_t) (offset - start_of_buf);
+    file->buffer.input.index = (size_t) (offset - start_of_buf);
   else {
-    file->buffer.index = 0;
-    file->buffer.limit = 0;
+    file->buffer.input.index = 0;
+    file->buffer.input.limit = 0;
   }
 
   /* FIXME Bound to lose precision when APR_FOPEN_LARGEFILE is in effect? */

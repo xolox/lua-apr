@@ -16,16 +16,17 @@
 
 #include "lua_apr.h"
 
-#define CURSOR(B) (&B->input[B->index])
-#define AVAIL(B) (B->limit - B->index)
+#define CURSOR(B) (&B->input.data[B->input.index])
+#define AVAIL(B) (B->input.limit - B->input.index)
 #define SUCCESS_OR_EOF(S) (S == APR_SUCCESS || APR_STATUS_IS_EOF(S))
 
 void init_buffer(lua_State *L, lua_apr_buf *B, void *object, int text_mode, lua_apr_buf_rf read, lua_apr_buf_wf write) /* {{{1 */
 {
-  B->input = malloc(LUA_APR_BUFSIZE);
-  B->index = 0;
-  B->limit = 0;
-  B->size = LUA_APR_BUFSIZE;
+  /* FIXME Don't initialize read buffer until first use! */
+  B->input.data = malloc(LUA_APR_BUFSIZE);
+  B->input.index = 0;
+  B->input.limit = 0;
+  B->input.size = LUA_APR_BUFSIZE;
   B->object = object;
   B->read = read;
   B->write = write;
@@ -34,12 +35,12 @@ void init_buffer(lua_State *L, lua_apr_buf *B, void *object, int text_mode, lua_
 
 void free_buffer(lua_State *L, lua_apr_buf *B) /* {{{1 */
 {
-  if (B->input != NULL) {
-    free(B->input);
-    B->input = NULL;
-    B->index = 0;
-    B->limit = 0;
-    B->size = 0;
+  if (B->input.data != NULL) {
+    free(B->input.data);
+    B->input.data = NULL;
+    B->input.index = 0;
+    B->input.limit = 0;
+    B->input.size = 0;
   }
 }
 
@@ -63,12 +64,33 @@ static void binary_to_text(lua_apr_buf *B) /* {{{1 */
 
   while (find_win32_eol(B, offset, &test)) {
     /* FIXME Very inefficient but should work? */
-    size_t i = B->index + offset + test;
-    char *p = &B->input[i];
-    memmove(p, p + 1, B->limit - i);
+    size_t i = B->input.index + offset + test;
+    char *p = &B->input.data[i];
+    memmove(p, p + 1, B->input.limit - i);
     offset += test;
-    B->limit--;
+    B->input.limit--;
   }
+}
+
+static apr_status_t grow_buffer(lua_apr_buf *B) /* {{{1 */
+{
+  apr_status_t status = APR_SUCCESS;
+
+  /* FIXME This can't currently be used to resize the write buffer :-( */
+
+  if (B->input.limit == B->input.size) {
+    size_t newsize = B->input.size / 2 * 3;
+    char *temp = realloc(B->input.data, newsize);
+    if (temp != NULL) {
+      B->input.data = temp;
+      B->input.size = newsize;
+    } else {
+      /* FIXME Should this raise an error?! */
+      status = APR_ENOMEM;
+    }
+  }
+
+  return status;
 }
 
 static apr_status_t fill_buffer(lua_apr_buf *B) /* {{{1 */
@@ -77,29 +99,20 @@ static apr_status_t fill_buffer(lua_apr_buf *B) /* {{{1 */
   apr_size_t len;
 
   /* Shift the buffer's contents down? */
-  if (B->index > 0 && AVAIL(B) > 0) {
-    memmove(B->input, CURSOR(B), AVAIL(B));
-    B->limit -= B->index;
-    B->index = 0;
+  if (B->input.index > 0 && AVAIL(B) > 0) {
+    memmove(B->input.data, CURSOR(B), AVAIL(B));
+    B->input.limit -= B->input.index;
+    B->input.index = 0;
   }
 
   /* Try to grow the buffer? */
-  if (B->limit == B->size) {
-    size_t newsize = B->size / 2 * 3;
-    char *temp = realloc(B->input, newsize);
-    if (temp != NULL) {
-      B->input = temp;
-      B->size = newsize;
-    } else {
-      /* FIXME Should this raise an error?! */
-    }
-  }
+  status = grow_buffer(B);
 
   /* Add more data to buffer. */
-  len = B->size - B->limit;
-  status = B->read(B->object, &B->input[B->limit], &len);
+  len = B->input.size - B->input.limit;
+  status = B->read(B->object, &B->input.data[B->input.limit], &len);
   if (status == APR_SUCCESS)
-    B->limit += len;
+    B->input.limit += len;
 
   return status;
 }
@@ -120,13 +133,13 @@ static apr_status_t read_line(lua_State *L, lua_apr_buf *B) /* {{{1 */
       /* Check for preceding carriage return (CR) character. */
       skip_crlf = (B->text_mode && length >= 1 && *(match - 1) == '\r');
       lua_pushlstring(L, CURSOR(B), skip_crlf ? length - 1 : length);
-      B->index += length + 1;
+      B->input.index += length + 1;
       break;
     } else if (APR_STATUS_IS_EOF(status)) {
       /* Got EOF while searching for end of line? */
       if (AVAIL(B) >= 1) {
         lua_pushlstring(L, CURSOR(B), AVAIL(B));
-        B->index += AVAIL(B);
+        B->input.index += AVAIL(B);
       } else
         lua_pushnil(L);
       break;
@@ -148,6 +161,14 @@ static apr_status_t read_number(lua_State *L, lua_apr_buf *B) /* {{{1 */
   char *endptr;
 
   do {
+    /* Always terminate the buffer with a NUL byte so that strspn() and
+     * lua_str2number() won't scan past the end of the input buffer. */
+    if (!(B->input.limit < B->input.size)) {
+      status = grow_buffer(B);
+      if (!(B->input.limit < B->input.size))
+        break;
+    }
+    B->input.data[B->input.limit+1] = '\0';
     /* Skip leading whitespace in buffered input. */
     offset += strspn(CURSOR(B) + offset, " \n\t\r\f\v");
     /* Make sure enough input remains to read a full number [or we got EOF]. */
@@ -156,7 +177,7 @@ static apr_status_t read_number(lua_State *L, lua_apr_buf *B) /* {{{1 */
       value = lua_str2number(CURSOR(B) + offset, &endptr);
       if (endptr > CURSOR(B) + offset) {
         lua_pushnumber(L, value);
-        B->index += endptr - CURSOR(B) + 1;
+        B->input.index += endptr - CURSOR(B) + 1;
       } else
         lua_pushnil(L);
       break;
@@ -182,7 +203,7 @@ static apr_status_t read_chars(lua_State *L, lua_apr_buf *B, apr_size_t n) /* {{
     if (n > 0 && B->text_mode)
       binary_to_text(B);
     lua_pushlstring(L, CURSOR(B), n);
-    B->index += n;
+    B->input.index += n;
   } else
     lua_pushnil(L);
 
@@ -199,7 +220,7 @@ static apr_status_t read_all(lua_State *L, lua_apr_buf *B) /* {{{1 */
   if (B->text_mode)
     binary_to_text(B);
   lua_pushlstring(L, CURSOR(B), AVAIL(B));
-  B->index = B->limit;
+  B->input.index = B->input.limit;
 
   return status;
 }
@@ -257,6 +278,8 @@ int write_buffer(lua_State *L, lua_apr_buf *B) /* {{{1 */
   size_t length;
   apr_size_t len;
   int i, n = lua_gettop(L);
+
+  /* TODO Buffered writing + text mode filter! */
 
   for (i = 2; i <= n && status == APR_SUCCESS; i++) {
     data = luaL_checklstring(L, i, &length);
