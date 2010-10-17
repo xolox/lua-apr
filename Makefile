@@ -78,6 +78,7 @@ package:
 		etc/lua-apr-0.6-1.rockspec \
 		etc/lua-apr-0.6-3.rockspec \
 		etc/lua-apr-scm-1.rockspec \
+		etc/lua-apr-0.7-2.rockspec \
 		$(ZIPNAME)/etc
 	@cp Makefile Makefile.win NOTES.md README.md $(ZIPNAME)
 	@zip $(ZIPNAME).zip -r $(ZIPNAME)
