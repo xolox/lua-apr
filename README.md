@@ -53,13 +53,6 @@ The makefile creates a debug build by default. Use `NMAKE /f Makefile.win RELEAS
 
 ## Status
 
-The file I/O interface has recently been implemented but is missing a text mode implementation for Windows (being worked on) and needs more coverage in the [test script](http://github.com/xolox/lua-apr/blob/master/etc/tests.lua), specifically the following functions:
-
- * [apr.file_open()](http://peterodding.com/code/lua/apr/docs/#apr.file_open)
- * [file:read()](http://peterodding.com/code/lua/apr/docs/#file:read)
- * [file:write()](http://peterodding.com/code/lua/apr/docs/#file:write)
- * [file:seek()](http://peterodding.com/code/lua/apr/docs/#file:seek)
-
 The following functionality has not been implemented yet but is on the todo list (highest to lowest priority):
 
  * I have a prototype of a [**process handling module**](http://apr.apache.org/docs/apr/trunk/group__apr__thread__proc.html) but it's kind of useless until the file I/O interface is finished and works for pipes.
