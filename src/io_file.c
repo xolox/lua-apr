@@ -1,7 +1,7 @@
 /* File I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 9, 2010
+ * Last Change: October 16, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -289,9 +289,11 @@ int lua_apr_file_open(lua_State *L)
   file->path = apr_pstrdup(file->memory_pool, path);
 
   /* Initialize the buffer associated with the file. */
-  init_buffer(L, &file->buffer, file->handle, !(flags & APR_FOPEN_BINARY),
+  init_buffers(L, &file->input, &file->output, file->handle,
+      !(flags & APR_FOPEN_BINARY),
       (lua_apr_buf_rf) apr_file_read,
-      (lua_apr_buf_wf) apr_file_write);
+      (lua_apr_buf_wf) apr_file_write,
+      (lua_apr_buf_ff) apr_file_flush);
 
   return 1;
 }
@@ -346,7 +348,7 @@ int file_stat(lua_State *L)
 int file_read(lua_State *L)
 {
   lua_apr_file *file = file_check(L, 1, 1);
-  return read_buffer(L, &file->buffer);
+  return read_buffer(L, &file->input);
 }
 
 /* file:write(value [, ...]) -> status {{{1
@@ -364,7 +366,7 @@ int file_read(lua_State *L)
 int file_write(lua_State *L)
 {
   lua_apr_file *file = file_check(L, 1, 1);
-  return write_buffer(L, &file->buffer);
+  return write_buffer(L, &file->output);
 }
 
 /* file:seek([whence [, offset]]) -> offset {{{1
@@ -407,17 +409,24 @@ int file_seek(lua_State *L)
   mode = modes[luaL_checkoption(L, 2, "cur", modenames)];
   offset = luaL_optlong(L, 3, 0);
 
+  if (mode != APR_CUR || offset != 0) {
+    /* Flush write buffer before changing the offset. */
+    status = flush_buffer(L, &file->output, 1);
+    if (status != APR_SUCCESS)
+      return push_error_status(L, status);
+  }
+
   /* Get offsets corresponding to start/end of buffered input. */
   end_of_buf = 0;
   status = apr_file_seek(file->handle, APR_CUR, &end_of_buf);
   if (status != APR_SUCCESS)
     return push_error_status(L, status);
-  start_of_buf = end_of_buf - file->buffer.input.limit;
+  start_of_buf = end_of_buf - file->input.buffer.limit;
 
   /* Adjust APR_CUR to index in buffered input. */
   if (mode == APR_CUR) {
     mode = APR_SET;
-    offset += start_of_buf + file->buffer.input.index;
+    offset += start_of_buf + file->input.buffer.index;
   }
 
   /* Perform the actual seek() requested from Lua. */
@@ -427,10 +436,10 @@ int file_seek(lua_State *L)
 
   /* Adjust buffer index / invalidate buffered input? */
   if (offset >= start_of_buf && offset <= end_of_buf)
-    file->buffer.input.index = (size_t) (offset - start_of_buf);
+    file->input.buffer.index = (size_t) (offset - start_of_buf);
   else {
-    file->buffer.input.index = 0;
-    file->buffer.input.limit = 0;
+    file->input.buffer.index = 0;
+    file->input.buffer.limit = 0;
   }
 
   /* FIXME Bound to lose precision when APR_FOPEN_LARGEFILE is in effect? */
@@ -446,11 +455,8 @@ int file_seek(lua_State *L)
 
 int file_flush(lua_State *L)
 {
-  apr_status_t status;
-  lua_apr_file *file;
-
-  file = file_check(L, 1, 1);
-  status = apr_file_flush(file->handle);
+  lua_apr_file *file = file_check(L, 1, 1);
+  apr_status_t status = flush_buffer(L, &file->output, 0);
   return push_status(L, status);
 }
 
@@ -542,10 +548,15 @@ lua_apr_file *file_check(lua_State *L, int i, int open) /* {{{1 */
 apr_status_t file_close_real(lua_State *L, lua_apr_file *file) /* {{{1 */
 {
   apr_status_t status = APR_SUCCESS;
-  if (file->handle) {
-    status = apr_file_close(file->handle);
+  if (file->handle != NULL) {
+    status = flush_buffer(L, &file->output, 1);
+    if (status == APR_SUCCESS)
+      status = apr_file_close(file->handle);
+    else
+      apr_file_close(file->handle);
     apr_pool_destroy(file->memory_pool);
-    free_buffer(L, &file->buffer);
+    free_buffer(L, &file->input.buffer);
+    free_buffer(L, &file->output.buffer);
     file->handle = NULL;
   }
   return status;

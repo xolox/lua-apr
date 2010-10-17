@@ -71,10 +71,6 @@
 #define push_error_message(L, message) \
   (lua_pushnil((L)), lua_pushstring((L), (message)), 2)
 
-#define push_error_status(L, status) \
-  (lua_pushnil((L)), status_to_message((L), (status)), \
-   lua_pushinteger((L), (status)), 3)
-
 #define push_error_memory(L) \
   push_error_message((L), (error_message_memory))
 
@@ -102,23 +98,41 @@ typedef struct lua_apr_dir {
 
 /* Structures for internal I/O buffers. */
 
+#ifdef WIN32
+/* NB: Omitting __stdcall here causes hard to debug stack corruption! */
+typedef apr_status_t (__stdcall *lua_apr_buf_rf)(void*, char*, apr_size_t*);
+typedef apr_status_t (__stdcall *lua_apr_buf_wf)(void*, const char*, apr_size_t*);
+typedef apr_status_t (__stdcall *lua_apr_buf_ff)(void*);
+#else
 typedef apr_status_t (*lua_apr_buf_rf)(void*, char*, apr_size_t*);
 typedef apr_status_t (*lua_apr_buf_wf)(void*, const char*, apr_size_t*);
+typedef apr_status_t (*lua_apr_buf_ff)(void*);
+#endif
 
-typedef struct lua_apr_buf {
+typedef struct lua_apr_buffer {
+  size_t index, limit, size;
+  char *data;
+} lua_apr_buffer;
+
+typedef struct lua_apr_readbuf {
   int text_mode;
   void *object;
   lua_apr_buf_rf read;
+  lua_apr_buffer buffer;
+} lua_apr_readbuf;
+
+typedef struct lua_apr_writebuf {
+  int text_mode;
+  void *object;
   lua_apr_buf_wf write;
-  struct {
-    size_t index, limit, size;
-    char *data;
-  } input, output;
-} lua_apr_buf;
+  lua_apr_buf_ff flush;
+  lua_apr_buffer buffer;
+} lua_apr_writebuf;
 
 /* Structure for file objects. */
 typedef struct lua_apr_file {
-  lua_apr_buf buffer;
+  lua_apr_readbuf input;
+  lua_apr_writebuf output;
   apr_file_t *handle;
   apr_pool_t *memory_pool;
   const char *path;
@@ -139,23 +153,26 @@ extern lua_apr_type lua_apr_file_type;
 /* Prototypes. {{{1 */
 
 /* lua_apr.c */
-apr_pool_t *to_pool(lua_State*);
-int get_metatable(lua_State*, lua_apr_type*);
 int lua_apr_platform_get(lua_State*);
-int push_status(lua_State*, apr_status_t);
+apr_pool_t *to_pool(lua_State*);
 int status_to_message(lua_State*, apr_status_t);
-void *check_object(lua_State*, int, lua_apr_type*);
+int push_status(lua_State*, apr_status_t);
+int push_error_status(lua_State*, apr_status_t);
 void *new_object(lua_State*, lua_apr_type*);
+void *check_object(lua_State*, int, lua_apr_type*);
+int get_metatable(lua_State*, lua_apr_type*);
 
 /* base64.c */
 int lua_apr_base64_encode(lua_State*);
 int lua_apr_base64_decode(lua_State*);
 
 /* buffer.c */
-void init_buffer(lua_State*, lua_apr_buf*, void*, int, lua_apr_buf_rf, lua_apr_buf_wf);
-int read_buffer(lua_State*, lua_apr_buf*);
-int write_buffer(lua_State*, lua_apr_buf*);
-void free_buffer(lua_State*, lua_apr_buf*);
+void init_buffers(lua_State*, lua_apr_readbuf*, lua_apr_writebuf*, void*, int,
+                  lua_apr_buf_rf, lua_apr_buf_wf, lua_apr_buf_ff);
+int read_buffer(lua_State*, lua_apr_readbuf*);
+int write_buffer(lua_State*, lua_apr_writebuf*);
+apr_status_t flush_buffer(lua_State*, lua_apr_writebuf*, int);
+void free_buffer(lua_State*, lua_apr_buffer*);
 
 /* crypt.c */
 int lua_apr_md5(lua_State*);

@@ -1,7 +1,7 @@
 /* Initialization and miscellaneous routines for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 4, 2010
+ * Last Change: October 16, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -200,6 +200,16 @@ int push_status(lua_State *L, apr_status_t status)
   } else {
     return push_error_status(L, status);
   }
+}
+
+/* push_error_status() converts APR status codes to (nil, message, code). {{{1 */
+
+int push_error_status(lua_State *L, apr_status_t status)
+{
+  lua_pushnil(L);
+  status_to_message(L, status);
+  lua_pushinteger(L, status);
+  return 3;
 }
 
 /* new_object() allocates userdata of the given type. {{{1 */

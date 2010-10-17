@@ -3,7 +3,7 @@
  Test suite for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: October 9, 2010
+ Last Change: October 17, 2010
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -25,7 +25,31 @@ local _real_assert_ = _G.assert --> hack around `Shake'.
 -- TODO Add tests for file:seek() (tricky to get right!)
 -- TODO apr.dir(), apr.glob(), apr.stat()!
 
+-- Test infrastructure {{{1
+
+local function message(s, ...)
+  io.stderr:write('\r', s:format(...))
+  io.stderr:flush()
+end
+
+local function warning(s, ...)
+  io.stderr:write("\nWarning: ", s:format(...))
+  io.stderr:flush()
+end
+
+do
+  local tmpnum = 1
+  local tmpdir = _real_assert_(apr.temp_dir_get())
+  function os.tmpname()
+    local name = 'lua-apr-tempfile-' .. tmpnum
+    local file = apr.filepath_merge(tmpdir, name)
+    tmpnum = tmpnum + 1
+    return file
+  end
+end
+
 -- Base64 encoding module (base64.c) {{{1
+message "Testing base64 encoding ..\n"
 
 -- Sample data from http://en.wikipedia.org/wiki/Base64#Examples
 local plain = 'Man is distinguished, not only by his reason, but by this singular passion from other animals, which is a lust of the mind, that by a perseverance of delight in the continued and indefatigable generation of knowledge, exceeds the short vehemence of any carnal pleasure.'
@@ -38,6 +62,7 @@ assert(apr.base64_encode(plain) == coded)
 assert(apr.base64_decode(coded) == plain)
 
 -- Cryptography module (crypt.c) {{{1
+message "Testing cryptography module ..\n"
 
 -- Sample data from http://en.wikipedia.org/wiki/MD5#MD5_hashes
 -- and http://en.wikipedia.org/wiki/SHA1#Example_hashes
@@ -57,6 +82,7 @@ assert(apr.sha1 'The quick brown fox jumps over the lazy dog' == '2fd4e1c67a2d28
 assert(apr.sha1 'The quick brown fox jumps over the lazy cog' == 'de9f2c7fd25e1b3afad3e85a0bd17d9b100db4b3')
 
 -- Environment manipulation module (env.c) {{{1
+message "Testing environment manipulation ..\n"
 
 -- Based on http://svn.apache.org/viewvc/apr/apr/trunk/test/testenv.c?view=markup
 
@@ -100,6 +126,7 @@ assert(apr.env_get(TEST_ENVVAR2_NAME) == TEST_ENVVAR_VALUE)
 assert(apr.env_delete(TEST_ENVVAR2_NAME))
 
 -- File path manipulation module (filepath.c) {{{1
+message "Testing file path manipulation ..\n"
 
 -- Based on http://svn.apache.org/viewvc/apr/apr/trunk/test/testpath.c?view=markup.
 
@@ -158,6 +185,7 @@ for i = 1, #parts_in do
 end
 
 -- Filename matching module (fnmatch.c) {{{1
+message "Testing filename matching ..\n"
 
 -- Check that the ?, *, and [] wild cards are supported.
 assert(apr.fnmatch('lua_apr.?', 'lua_apr.c'))
@@ -181,6 +209,7 @@ assert(apr.fnmatch_test('[lL][uU][aA]'))
 assert(not apr.fnmatch_test('+-^#@!%'))
 
 -- Directory manipulation module (io_dir.c) {{{1
+message "Testing directory manipulation ..\n"
 
 local function writable(directory)
   local entry = apr.filepath_merge(directory, 'io_dir_writable_check')
@@ -236,11 +265,9 @@ assert(apr.filepath_set '..')
 assert(apr.dir_remove 'io_dir_tests')
 
 -- File I/O handling module (io_file.c) {{{1
+message "Testing file I/O module ..\n"
 
--- Create temporary file with test data.
-local tempname = os.tmpname()
-local testfile = assert(io.open(tempname, 'w'))
-assert(testfile:write [[
+local testdata_single = [[
  1
  3.1
  100
@@ -250,51 +277,137 @@ assert(testfile:write [[
  this line is in fact not a number :-)
 
  that was an empty line
-]])
-assert(testfile:close())
+]]
 
-local function formatvalue(v)
-  if type(v) == 'number' then
-    local s = string.format('%.99f', v)
-    return s:find '%.' and (s:gsub('0+$', '0')) or s
-  elseif type(v) == 'string' then
-    return string.format('%q', v)
-  else
-    return tostring(v)
+local maxmultiplier = 20
+for testsize = 1, maxmultiplier do
+
+  local testdata = testdata_single:rep(testsize)
+  message("Testing file I/O on a file of %i bytes (step %i/%i)..\n", #testdata, testsize, maxmultiplier)
+  local testlines = {}
+  for l in testdata:gmatch '[^\r\n]*' do
+    table.insert(testlines, l)
   end
-end
 
-local function testformat(format)
-  local apr_file = assert(apr.file_open(tempname, 'r'))
-  local lua_file = assert(io.open(tempname, 'r'))
-  repeat
-    local lua_value = lua_file:read(format)
-    local apr_value = apr_file:read(format)
-    if lua_value ~= apr_value then
-      io.write("Wrong result for `", format, "' format!\n",
-               "Lua value: ", formatvalue(lua_value), "\n",
-               "APR value: ", formatvalue(apr_value), "\n")
+  -- Create temporary file with test data.
+  local tempname = assert(os.tmpname())
+  local testfile = assert(io.open(tempname, 'w'))
+  assert(testfile:write(testdata))
+  assert(testfile:close())
+
+  -- Read back the temporary file's contents using various formats. {{{2
+  local escapes = { ['\r'] = '\\r', ['\n'] = '\\n', ['"'] = '\\"', ['\0'] = '\\0' }
+  local function formatvalue(v)
+    if type(v) == 'number' then
+      local s = string.format('%.99f', v)
+      return s:find '%.' and (s:gsub('0+$', '0')) or s
+    elseif type(v) == 'string' then
+      return '"' .. v:gsub('[\r\n"%z]', escapes) .. '"'
+      -- XXX return ('%q'):format(v)
+    else
+      return tostring(v)
     end
-    assert(lua_value == apr_value)
-  until (format == '*a' and lua_value == '') or not lua_value
-  assert(lua_file:close())
-  assert(apr_file:close())
+  end
+
+  local function testformat(format)
+    message("Testing file:read(%s) ..", format)
+    local apr_file = assert(apr.file_open(tempname, 'r'))
+    local lua_file = assert(io.open(tempname, 'r'))
+    repeat
+      local lua_value = lua_file:read(format)
+      local apr_value = apr_file:read(format)
+      if lua_value ~= apr_value then
+        warning("Wrong result for file:read(%q)!\nLua value: %s\nAPR value: %s\n",
+            format, formatvalue(lua_value), formatvalue(apr_value))
+        warning("Lua position: %i, APR position: %i", lua_file:seek 'cur', apr_file:seek 'cur')
+        warning("Remaining data in Lua file: %s", formatvalue(lua_file:read '*a' :sub(1, 50)))
+        warning("Remaining data in APR file: %s", formatvalue(apr_file:read '*a' :sub(1, 50)))
+        os.exit(1)
+      end
+      assert(lua_value == apr_value)
+    until (format == '*a' and lua_value == '') or not lua_value
+    assert(lua_file:close())
+    assert(apr_file:close())
+  end
+
+  testformat '*n'
+  testformat '*l'
+  testformat '*a'
+  testformat (1)
+  testformat (2)
+  testformat (3)
+  testformat (4)
+  testformat (5)
+  testformat (10)
+  testformat (20)
+  testformat (50)
+  testformat (100)
+
+  assert(os.remove(tempname))
+
+  -- Perform write tests {{{2
+
+  local lua_file = assert(os.tmpname())
+  local apr_file = assert(os.tmpname())
+
+  local function write_all(lua_handle, apr_handle)
+    assert(lua_handle:write(testdata))
+    assert(apr_handle:write(testdata))
+  end
+
+  local function write_blocks(lua_handle, apr_handle)
+    local i = 1
+    local bs = 1
+    repeat
+      assert(lua_handle:write(testdata:sub(i, i + bs)))
+      assert(apr_handle:write(testdata:sub(i, i + bs)))
+      i = i + bs + 1
+      bs = bs * 2
+    until i > #testdata
+  end
+
+  local function write_lines(lua_handle, apr_handle)
+    for _, line in ipairs(testlines) do
+      assert(lua_handle:write(line, '\n'))
+      assert(apr_handle:write(line, '\n'))
+    end
+  end
+
+  for i, mode in ipairs { 'w', 'wb' } do
+    for j, writemethod in ipairs { write_all, write_blocks, write_lines } do
+      local lua_handle = assert(io.open(lua_file, mode)) -- TODO test b mode
+      local apr_handle = assert(apr.file_open(apr_file, mode))
+      message("Testing file:write() mode %i, method %i ..", i, j)
+      writemethod(lua_handle, apr_handle)
+      assert(lua_handle:close())
+      assert(apr_handle:close())
+      for _, format in ipairs { '*l', '*a' } do
+        lua_handle = assert(io.open(lua_file, 'r'))
+        apr_handle = assert(apr.file_open(apr_file, 'r'))
+        while true do
+          local lua_value = lua_handle:read(format)
+          local apr_value = apr_handle:read(format)
+          if lua_value ~= apr_value then
+            warning("Buggy output from file:write()?!\nLua value: %s\nAPR value: %s\n",
+                formatvalue(lua_value), formatvalue(apr_value))
+          end
+          assert(lua_value == apr_value)
+          if not lua_value or (format == '*a' and lua_value == '') then break end
+        end
+        assert(lua_handle:close())
+        assert(apr_handle:close())
+      end
+    end
+  end
+
+  assert(os.remove(lua_file))
+  assert(os.remove(apr_file))
+
 end
 
-testformat '*n'
-testformat '*l'
-testformat '*a'
-testformat (1)
-testformat (2)
-testformat (3)
-testformat (6)
-testformat (10)
-testformat (20)
-testformat (50)
-
-assert(os.remove(tempname))
 
 -- String module (str.c) {{{1
+message "Testing string module ..\n"
 
 filenames = { 'rfc2086.txt', 'rfc1.txt', 'rfc822.txt' }
 table.sort(filenames, apr.strnatcmp)
@@ -325,6 +438,7 @@ assert(cmdline[4] == 'argument 3')
 assert(cmdline[5] == 'argument 4')
 
 -- Time routines (time.c) {{{1
+message "Testing time routines ..\n"
 
 -- TODO Clean up and add some inline documentation because this is a mess!
 -- Based on http://svn.apache.org/viewvc/apr/apr/trunk/test/testtime.c?view=markup.
@@ -368,6 +482,7 @@ do
 end
 
 -- URI parsing module (uri.c) {{{1
+message "Testing URI parsing ..\n"
 
 local hostinfo = 'scheme://user:pass@host:80'
 local pathinfo = '/path/file?query-param=value#fragment'
@@ -410,6 +525,7 @@ assert(apr.uri_decode(uri_encoded):lower() == plain_chars:lower())
 -- TODO Check uri_encode() / uri_decode()
 
 -- User/group identification module (user.c) {{{1
+message "Testing user/group identification ..\n"
 
 -- First check whether apr.user_get() works or returns an error.
 assert(apr.user_get())
@@ -436,6 +552,7 @@ if env_home then
 end
 
 -- Universally unique identifiers (uuid.c) {{{1
+message "Testing universally unique identifiers ..\n"
 
 -- Check that apr.uuid_get() returns at least 500 KB of unique strings.
 local set = {}
@@ -449,7 +566,5 @@ assert(pcall(function()
 end))
 
 -- }}}
-
-io.stderr:write "Either all tests passed or you're running Shake :-)\n"
 
 -- vim: nowrap
