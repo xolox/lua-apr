@@ -103,10 +103,12 @@ typedef struct lua_apr_dir {
 typedef apr_status_t (__stdcall *lua_apr_buf_rf)(void*, char*, apr_size_t*);
 typedef apr_status_t (__stdcall *lua_apr_buf_wf)(void*, const char*, apr_size_t*);
 typedef apr_status_t (__stdcall *lua_apr_buf_ff)(void*);
+typedef apr_status_t (__stdcall *lua_apr_pipe_f)(apr_file_t**, apr_pool_t*);
 #else
 typedef apr_status_t (*lua_apr_buf_rf)(void*, char*, apr_size_t*);
 typedef apr_status_t (*lua_apr_buf_wf)(void*, const char*, apr_size_t*);
 typedef apr_status_t (*lua_apr_buf_ff)(void*);
+typedef apr_status_t (*lua_apr_pipe_f)(apr_file_t**, apr_pool_t*);
 #endif
 
 typedef struct lua_apr_buffer {
@@ -129,12 +131,18 @@ typedef struct lua_apr_writebuf {
   lua_apr_buffer buffer;
 } lua_apr_writebuf;
 
+/* Reference counted APR memory pool. */
+typedef struct lua_apr_pool {
+  apr_pool_t *ptr;
+  int refs;
+} lua_apr_pool;
+
 /* Structure for file objects. */
 typedef struct lua_apr_file {
   lua_apr_readbuf input;
   lua_apr_writebuf output;
   apr_file_t *handle;
-  apr_pool_t *memory_pool;
+  lua_apr_pool *pool;
   const char *path;
 } lua_apr_file;
 
@@ -231,14 +239,29 @@ int file_seek(lua_State*);
 int file_flush(lua_State*);
 int file_lock(lua_State*);
 int file_unlock(lua_State*);
+int pipe_timeout_get(lua_State*);
+int pipe_timeout_set(lua_State*);
 int file_close(lua_State*);
 int file_gc(lua_State*);
 int file_tostring(lua_State*);
+lua_apr_file *file_alloc(lua_State*, const char*, lua_apr_pool*);
 lua_apr_file *file_check(lua_State*, int, int);
+
+/* io_pipe.c */
+int lua_apr_pipe_open_stdin(lua_State*);
+int lua_apr_pipe_open_stdout(lua_State*);
+int lua_apr_pipe_open_stderr(lua_State*);
+int lua_apr_namedpipe_create(lua_State*);
+int lua_apr_pipe_create(lua_State*);
 
 /* permissions.c */
 int push_protection(lua_State*, apr_fileperms_t);
 apr_fileperms_t check_permissions(lua_State*, int, int);
+
+/* refpool.c */
+lua_apr_pool *refpool_alloc(lua_State*);
+apr_pool_t* refpool_incref(lua_apr_pool*);
+void refpool_decref(lua_apr_pool*);
 
 /* stat.c */
 void check_stat_request(lua_State*, lua_apr_stat_context*, lua_apr_stat_result);

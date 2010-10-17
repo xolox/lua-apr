@@ -19,9 +19,9 @@ BINARY_MODULE = core.so
 
 # Names of source code files to compile & link.
 SOURCES = src/base64.c src/buffer.c src/crypt.c src/env.c src/filepath.c \
-		  src/fnmatch.c src/io_dir.c src/lua_apr.c src/permissions.c \
-		  src/stat.c src/str.c src/time.c src/uri.c src/user.c src/uuid.c \
-		  src/io_file.c
+		  src/fnmatch.c src/io_dir.c src/io_file.c src/io_pipe.c \
+		  src/lua_apr.c src/permissions.c src/refpool.c src/stat.c src/str.c \
+		  src/time.c src/uri.c src/user.c src/uuid.c
 
 # Names of compiled object files.
 OBJECTS = $(patsubst %.c,%.o,$(SOURCES))

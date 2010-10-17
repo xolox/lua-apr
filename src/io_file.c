@@ -1,7 +1,7 @@
 /* File I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 16, 2010
+ * Last Change: October 17, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -14,8 +14,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-static apr_status_t file_close_real(lua_State*, lua_apr_file*);
-
+static int push_file_status(lua_State*, lua_apr_file*, apr_status_t);
+static int push_file_error(lua_State*, lua_apr_file*, apr_status_t);
+static apr_status_t file_close_impl(lua_State*, lua_apr_file*);
+  
 /* apr.file_copy(source, target [, permissions]) -> status {{{1
  *
  * Copy the file @source to @target. On success true is returned, otherwise a
@@ -277,16 +279,11 @@ int lua_apr_file_open(lua_State *L)
   if (!(flags & APR_FOPEN_WRITE))
     flags |= APR_FOPEN_READ;
 
-  /* Create file object and memory pool, open file. */
-  file = new_object(L, &lua_apr_file_type);
-  status = apr_pool_create(&file->memory_pool, NULL);
-  if (APR_SUCCESS != status) /* raise on memory errors */
-    raise_error_status(L, status);
-  status = apr_file_open(&file->handle, path, flags, APR_FPROT_OS_DEFAULT, file->memory_pool);
-
-  if (status != APR_SUCCESS) /* return nil, msg on other errors */
-    return push_error_status(L, status);
-  file->path = apr_pstrdup(file->memory_pool, path);
+  /* Create the file object and open the file. */
+  file = file_alloc(L, path, NULL);
+  status = apr_file_open(&file->handle, path, flags, APR_FPROT_OS_DEFAULT, file->pool->ptr);
+  if (status != APR_SUCCESS)
+    return push_file_error(L, file, status);
 
   /* Initialize the buffer associated with the file. */
   init_buffers(L, &file->input, &file->output, file->handle,
@@ -313,8 +310,8 @@ int file_stat(lua_State *L)
   file = file_check(L, 1, 1);
   check_stat_request(L, &context, STAT_DEFAULT_TABLE);
   status = apr_file_info_get(&context.info, context.wanted, file->handle);
-  if (status && !APR_STATUS_IS_INCOMPLETE(status))
-    return push_error_status(L, status);
+  if (status != APR_SUCCESS && !APR_STATUS_IS_INCOMPLETE(status))
+    return push_file_error(L, file, status);
 
   return push_stat_results(L, &context, NULL);
 }
@@ -413,14 +410,14 @@ int file_seek(lua_State *L)
     /* Flush write buffer before changing the offset. */
     status = flush_buffer(L, &file->output, 1);
     if (status != APR_SUCCESS)
-      return push_error_status(L, status);
+      return push_file_error(L, file, status);
   }
 
   /* Get offsets corresponding to start/end of buffered input. */
   end_of_buf = 0;
   status = apr_file_seek(file->handle, APR_CUR, &end_of_buf);
   if (status != APR_SUCCESS)
-    return push_error_status(L, status);
+    return push_file_error(L, file, status);
   start_of_buf = end_of_buf - file->input.buffer.limit;
 
   /* Adjust APR_CUR to index in buffered input. */
@@ -432,7 +429,7 @@ int file_seek(lua_State *L)
   /* Perform the actual seek() requested from Lua. */
   status = apr_file_seek(file->handle, mode, &offset);
   if (status != APR_SUCCESS)
-    return push_error_status(L, status);
+    return push_file_error(L, file, status);
 
   /* Adjust buffer index / invalidate buffered input? */
   if (offset >= start_of_buf && offset <= end_of_buf)
@@ -457,7 +454,7 @@ int file_flush(lua_State *L)
 {
   lua_apr_file *file = file_check(L, 1, 1);
   apr_status_t status = flush_buffer(L, &file->output, 0);
-  return push_status(L, status);
+  return push_file_status(L, file, status);
 }
 
 /* file:lock(type [, nonblocking ]) -> status {{{1
@@ -500,7 +497,7 @@ int file_lock(lua_State *L)
   }
   status = apr_file_lock(file->handle, type);
 
-  return push_status(L, status);
+  return push_file_status(L, file, status);
 }
 
 /* file:unlock() -> status {{{1
@@ -517,7 +514,57 @@ int file_unlock(lua_State *L)
   file = file_check(L, 1, 1);
   status = apr_file_unlock(file->handle);
 
-  return push_status(L, status);
+  return push_file_status(L, file, status);
+}
+
+/* pipe:timeout_get() -> timeout {{{1
+ *
+ * Get the timeout value or blocking state of @pipe. On success the timeout
+ * value is returned, otherwise a nil followed by an error message is returned.
+ *
+ * The @timeout true means wait forever, false means don't wait at all and a
+ * number is the microseconds to wait. 
+ */
+
+int pipe_timeout_get(lua_State *L)
+{
+  lua_apr_file *pipe;
+  apr_status_t status;
+  apr_interval_time_t timeout;
+
+  pipe = file_check(L, 1, 1);
+  status = apr_file_pipe_timeout_get(pipe->handle, &timeout);
+  if (status != APR_SUCCESS)
+    return push_file_error(L, pipe, status);
+  else if (timeout <= 0)
+    lua_pushboolean(L, timeout != 0);
+  else
+    lua_pushinteger(L, (lua_Integer) timeout);
+  return 1;
+}
+
+/* pipe:timeout_set(timeout) -> status {{{1
+ *
+ * Set the timeout value or blocking state of @pipe. On success true is
+ * returned, otherwise a nil followed by an error message is returned.
+ *
+ * The @timeout true means wait forever, false means don't wait at all and a
+ * number is the microseconds to wait.
+ */
+
+int pipe_timeout_set(lua_State *L)
+{
+  lua_apr_file *pipe;
+  apr_status_t status;
+  apr_interval_time_t timeout;
+
+  pipe = file_check(L, 1, 1);
+  if (lua_isnumber(L, 2))
+    timeout = luaL_checkinteger(L, 2);
+  else
+    timeout = lua_toboolean(L, 2) ? -1 : 0;
+  status = apr_file_pipe_timeout_set(pipe->handle, timeout);
+  return push_file_status(L, pipe, status);
 }
 
 /* file:close() -> status {{{1
@@ -532,9 +579,26 @@ int file_close(lua_State *L)
   apr_status_t status;
 
   file = file_check(L, 1, 1);
-  status = file_close_real(L, file);
+  status = file_close_impl(L, file);
 
-  return push_status(L, status);
+  return push_file_status(L, file, status);
+}
+
+lua_apr_file *file_alloc(lua_State *L, const char *path, lua_apr_pool *refpool) /* {{{1 */
+{
+  lua_apr_file *file;
+
+  file = new_object(L, &lua_apr_file_type);
+  if (refpool == NULL)
+    refpool = refpool_alloc(L);
+  else
+    refpool_incref(refpool);
+  file->pool = refpool;
+  if (path != NULL)
+    path = apr_pstrdup(file->pool->ptr, path);
+  file->path = path;
+
+  return file;
 }
 
 lua_apr_file *file_check(lua_State *L, int i, int open) /* {{{1 */
@@ -545,7 +609,7 @@ lua_apr_file *file_check(lua_State *L, int i, int open) /* {{{1 */
   return file;
 }
 
-apr_status_t file_close_real(lua_State *L, lua_apr_file *file) /* {{{1 */
+apr_status_t file_close_impl(lua_State *L, lua_apr_file *file) /* {{{1 */
 {
   apr_status_t status = APR_SUCCESS;
   if (file->handle != NULL) {
@@ -554,7 +618,7 @@ apr_status_t file_close_real(lua_State *L, lua_apr_file *file) /* {{{1 */
       status = apr_file_close(file->handle);
     else
       apr_file_close(file->handle);
-    apr_pool_destroy(file->memory_pool);
+    refpool_decref(file->pool);
     free_buffer(L, &file->input.buffer);
     free_buffer(L, &file->output.buffer);
     file->handle = NULL;
@@ -565,16 +629,39 @@ apr_status_t file_close_real(lua_State *L, lua_apr_file *file) /* {{{1 */
 int file_tostring(lua_State *L) /* {{{1 */
 {
   lua_apr_file *file = file_check(L, 1, 0);
-  if (file->handle)
+  if (file->handle != NULL)
     lua_pushfstring(L, "%s (%p)", lua_apr_file_type.typename, file);
   else
     lua_pushfstring(L, "%s (closed)", lua_apr_file_type.typename);
   return 1;
 }
 
+int push_file_status(lua_State *L, lua_apr_file *file, apr_status_t status) /* {{{1 */
+{
+  if (status == APR_SUCCESS) {
+    lua_pushboolean(L, 1);
+    return 1;
+  } else {
+    return push_file_error(L, file, status);
+  }
+}
+
+int push_file_error(lua_State *L, lua_apr_file *file, apr_status_t status) /* {{{1 */
+{
+  char message[512];
+  apr_strerror(status, message, count(message));
+  lua_pushnil(L);
+  if (file->path != NULL)
+    lua_pushfstring(L, "%s: %s", file->path, message);
+  else
+    lua_pushstring(L, message);
+  lua_pushinteger(L, status);
+  return 1;
+}
+
 int file_gc(lua_State *L) /* {{{1 */
 {
-  file_close_real(L, file_check(L, 1, 0));
+  file_close_impl(L, file_check(L, 1, 0));
   return 0;
 }
 

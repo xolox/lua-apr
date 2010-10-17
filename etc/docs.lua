@@ -3,7 +3,7 @@
  Documentation generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: October 4, 2010
+ Last Change: October 17, 2010
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -12,8 +12,8 @@
 ]]
 
 local SOURCES = [[ base64.c crypt.c env.c filepath.c fnmatch.c io_dir.c
-  io_file.c lua_apr.c permissions.c stat.c str.c time.c uri.c user.c
-  uuid.c apr.lua ]]
+  io_file.c io_pipe.c lua_apr.c permissions.c stat.c str.c time.c uri.c
+  user.c uuid.c apr.lua ]]
 
 local modules = {}
 local misc_module = {functions={}}
