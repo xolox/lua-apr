@@ -39,13 +39,17 @@ If you don't have LuaRocks installed the following shell commands should help yo
     $ # unzip lua-apr-0.6-3.zip
     $ # mv lua-apr-0.6-3 lua-apr
     $ cd lua-apr
-    $ make install_deps # installs build & runtime dependencies for Debian/Ubuntu
-    $ make install # installs apr.lua and apr/core.so in /usr/local
+    $ sudo make install_deps # installs build & runtime dependencies for Debian/Ubuntu
+    $ sudo make install # installs apr.lua and apr/core.so in /usr/local
     $ make test # runs the test suite (using Shake if available)
+
+The makefile creates a debug build by default. Use `sudo make install RELEASE=1` to create a release build instead. Just be sure to run `make clean` when switching between debug/release mode to avoid linking incompatible object files.
 
 ### Build on Windows using makefile
 
-A makefile for Microsoft Windows is included in the repository. It has been tested on Windows XP with NMAKE from the free [Microsoft Visual C++ Express](http://www.microsoft.com/express/Downloads/#2010-Visual-CPP) 2010 tool chain. If you don't have git installed you can [download the latest sources](http://github.com/xolox/lua-apr/zipball/master) directly from GitHub as a ZIP file. Please note that the Windows makefile only builds the Lua/APR binding, you need to build APR yourself (see the [instructions](http://apr.apache.org/compiling_win32.html)).
+A makefile for Microsoft Windows is included in the repository. It has been tested on Windows XP with `NMAKE` from the free [Microsoft Visual C++ Express](http://www.microsoft.com/express/Downloads/#2010-Visual-CPP) 2010 tool chain. If you don't have git installed you can [download the latest sources](http://github.com/xolox/lua-apr/zipball/master) directly from GitHub as a ZIP file. Please note that the Windows makefile only builds the Lua/APR binding, you need to build APR yourself (see the [instructions](http://apr.apache.org/compiling_win32.html)).
+
+The makefile creates a debug build by default. Use `NMAKE /f Makefile.win RELEASE=1` to create a release build instead. Just be sure to run `NMAKE /f Makefile.win clean` when switching between debug/release mode to avoid linking incompatible object files.
 
 ## Status
 

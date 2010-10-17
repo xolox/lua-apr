@@ -1,7 +1,7 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: October 4, 2010
+# Last Change: October 17, 2010
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -31,13 +31,20 @@ OBJECTS = $(patsubst %.c,%.o,$(SOURCES))
 CFLAGS = `pkg-config --cflags lua5.1` `pkg-config --cflags apr-1` `pkg-config --cflags apr-util-1`
 LFLAGS = `pkg-config --libs lua5.1` `pkg-config --libs apr-1` `pkg-config --libs apr-util-1`
 
+# Create debug builds by default but enable release
+# builds using the command line "make RELEASE=1".
+ifndef RELEASE
+CFLAGS := $(CFLAGS) -g -DDEBUG
+LFLAGS := $(LFLAGS) -g
+endif
+
 # The build rules.
 
 $(BINARY_MODULE): $(OBJECTS)
 	$(CC) -shared -o $(BINARY_MODULE) $(OBJECTS) $(LFLAGS)
 
 $(OBJECTS): %.o: %.c src/lua_apr.h
-	$(CC) -Wall -g -c $(CFLAGS) -fPIC $< -o $@
+	$(CC) -Wall -c $(CFLAGS) -fPIC $< -o $@
 
 install: $(BINARY_MODULE)
 	@mkdir -p $(LUA_SHAREDIR)
@@ -57,7 +64,7 @@ docs: etc/docs.lua src/apr.lua $(SOURCES)
 	@lua etc/docs.lua docs.md docs.html
 
 install_deps:
-	sudo apt-get install libapr1 libapr1-dev libaprutil1 libaprutil1-dev \
+	apt-get install libapr1 libapr1-dev libaprutil1 libaprutil1-dev \
 		lua5.1 liblua5.1-0 liblua5.1-0-dev libreadline-dev shake \
 		liblua5.1-markdown0
 

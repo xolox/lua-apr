@@ -1,7 +1,7 @@
 # This is the Windows makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: October 4, 2010
+# Last Change: October 16, 2010
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -31,6 +31,13 @@ API_LIBDIR = C:\lua-apr\apr-iconv\release
 CFLAGS = "/I$(LUA_INCDIR)" "/I$(APR_INCDIR)" "/I$(APU_INCDIR)" /D"_CRT_SECURE_NO_DEPRECATE"
 LFLAGS = "/LIBPATH:$(LUA_LINKDIR)" lua51.lib "/LIBPATH:$(APR_LIBDIR)" libapr-1.lib "/LIBPATH:$(APU_LIBDIR)" libaprutil-1.lib
 
+# Create debug builds by default but enable release builds
+# using the command line "NMAKE /f Makefile.win RELEASE=1".
+!IFNDEF RELEASE
+CFLAGS = $(CFLAGS) /Zi /Fd"core.pdb" /DDEBUG
+LFLAGS = $(LFLAGS) /debug
+!ENDIF
+
 # Names of compiled object files.
 OBJECTS = src\base64.obj src\buffer.obj src\crypt.obj src\env.obj \
 		  src\filepath.obj src\fnmatch.obj src\io_dir.obj src\lua_apr.obj \
@@ -41,7 +48,7 @@ OBJECTS = src\base64.obj src\buffer.obj src\crypt.obj src\env.obj \
 
 core.dll: $(OBJECTS)
 	LINK /nologo /dll /out:$@ /export:luaopen_apr_core $(OBJECTS) $(LFLAGS)
-	IF EXIST $@.manifest mt -nologo -manifest $@.manifest -outputresource:$@;2
+	IF EXIST $@.manifest MT -nologo -manifest $@.manifest -outputresource:$@;2
 
 .c.obj:
 	CL /W3 /nologo /MD /D"WIN32" /D"LUA_BUILD_AS_DLL" $(CFLAGS) /TC /c $< /Fo$@
@@ -63,9 +70,12 @@ uninstall:
 	DEL "$(LUA_DIR)\libapriconv-1.dll"
 
 test: install
-	lua etc\tests.lua
+	LUA etc\tests.lua
+
+debug:
+	NTSD -g lua etc\tests.lua
 
 clean:
-	DEL $(OBJECTS) core.dll core.lib core.exp
+	DEL $(OBJECTS) core.dll core.lib core.exp core.pdb core.ilk 2>NUL
 
 # vim: ts=4 sw=4

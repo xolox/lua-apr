@@ -1,7 +1,7 @@
 /* Header file for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 9, 2010
+ * Last Change: October 17, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -19,15 +19,33 @@
 
 /* Macro definitions. {{{1 */
 
-#define LUA_APR_DBG(MSG, ...) \
-  fprintf(stderr, MSG, __VA_ARGS__)
+#include <stdio.h>
 
-/*
-#define LUA_APR_DBG(MSG, ...) \
-  fprintf(stderr, "%s:%i@%s(): " MSG, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
-*/
+/* Capture debug mode in a compile time conditional. */
+#ifdef DEBUG
+#define DEBUG_TEST 1
+#else
+#define DEBUG_TEST 0
+#endif
 
-/* FIXME Pushing onto the stack might not work in this case? */
+/* Enable printing messages to stderr in debug mode, but always compile
+ * the code so that it's syntax checked even when debug mode is off. */
+#define LUA_APR_DBG(MSG, ...) \
+  do { \
+    if (DEBUG_TEST) { \
+      fprintf(stderr, " *** " MSG, __VA_ARGS__); \
+      fflush(stderr); \
+    } \
+  } while (0)
+
+/* Since I don't use the MSVC++ IDE I can't set breakpoints without this :-) */
+#define LUA_APR_BRK() \
+  do { \
+    if (DEBUG_TEST) \
+      *((int*)0) = 1; \
+  } while (0)
+
+/* FIXME Pushing onto the stack might not work in this scenario? */
 #define error_message_memory "memory allocation error"
 
 #define LUA_APR_BUFSIZE 1024
