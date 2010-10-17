@@ -1,7 +1,7 @@
 /* File I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 17, 2010
+ * Last Change: October 18, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -284,14 +284,7 @@ int lua_apr_file_open(lua_State *L)
   status = apr_file_open(&file->handle, path, flags, APR_FPROT_OS_DEFAULT, file->pool->ptr);
   if (status != APR_SUCCESS)
     return push_file_error(L, file, status);
-
-  /* Initialize the buffer associated with the file. */
-  init_buffers(L, &file->input, &file->output, file->handle,
-      !(flags & APR_FOPEN_BINARY),
-      (lua_apr_buf_rf) apr_file_read,
-      (lua_apr_buf_wf) apr_file_write,
-      (lua_apr_buf_ff) apr_file_flush);
-
+  init_file_buffers(L, file, !(flags & APR_FOPEN_BINARY));
   return 1;
 }
 
@@ -599,6 +592,14 @@ lua_apr_file *file_alloc(lua_State *L, const char *path, lua_apr_pool *refpool) 
   file->path = path;
 
   return file;
+}
+
+void init_file_buffers(lua_State *L, lua_apr_file *file, int text_mode) /* {{{1 */
+{
+  init_buffers(L, &file->input, &file->output, file->handle, text_mode,
+      (lua_apr_buf_rf) apr_file_read,
+      (lua_apr_buf_wf) apr_file_write,
+      (lua_apr_buf_ff) apr_file_flush);
 }
 
 lua_apr_file *file_check(lua_State *L, int i, int open) /* {{{1 */

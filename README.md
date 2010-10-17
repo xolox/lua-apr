@@ -8,7 +8,9 @@ The [Lua/APR binding](http://peterodding.com/code/lua/apr/) aims to bring most o
  * [File path manipulation](http://peterodding.com/code/lua/apr/docs/#file_path_manipulation)
  * [Filename matching](http://peterodding.com/code/lua/apr/docs/#filename_matching)
  * [Directory manipulation](http://peterodding.com/code/lua/apr/docs/#directory_manipulation)
- * [File I/O handling](http://peterodding.com/code/lua/apr/docs/#file_i_o_handling) *(see status below)*
+ * [File I/O handling](http://peterodding.com/code/lua/apr/docs/#file_i_o_handling)
+ * [Pipe I/O handling](http://peterodding.com/code/lua/apr/docs/#pipe_i_o_handling)
+ * [Process handling](http://peterodding.com/code/lua/apr/docs/#process_handling)
  * [String routines](http://peterodding.com/code/lua/apr/docs/#string_routines)
  * [Time routines](http://peterodding.com/code/lua/apr/docs/#time_routines)
  * [Uniform resource identifier parsing](http://peterodding.com/code/lua/apr/docs/#uniform_resource_identifier_parsing)
@@ -55,9 +57,7 @@ The makefile creates a debug build by default. Use `NMAKE /f Makefile.win RELEAS
 
 ## Status
 
-The following functionality has not been implemented yet but is on the todo list (highest to lowest priority):
-
- * I have a prototype of a [**process handling module**](http://apr.apache.org/docs/apr/trunk/group__apr__thread__proc.html) but it's kind of useless until the file I/O interface is finished and works for pipes.
+The [process handling module](http://peterodding.com/code/lua/apr/docs/#process_handling) has just been released but hasn't seen a lot of use and there aren't any tests yet (working on it though). The following functionality has not been implemented yet but is on the todo list (highest to lowest priority):
 
  * I want to add support for the [**I18N translation library**](http://apr.apache.org/docs/apr/trunk/group___a_p_r___x_l_a_t_e.html).
 

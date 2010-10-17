@@ -1,7 +1,7 @@
 /* Initialization and miscellaneous routines for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 17, 2010
+ * Last Change: October 18, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -80,6 +80,9 @@ int luaopen_apr_core(lua_State *L)
     { "pipe_open_stderr", lua_apr_pipe_open_stderr },
     { "namedpipe_create", lua_apr_namedpipe_create },
     { "pipe_create", lua_apr_pipe_create },
+
+    /* proc -- process handling. */
+    { "proc_create", lua_apr_proc_create },
 
     /* str.c -- string handling. */
     { "strnatcmp", lua_apr_strnatcmp },
@@ -317,6 +320,39 @@ lua_apr_type lua_apr_file_type = {
   file_metamethods
 };
 
-/* TODO lua_apr_proc_type {{{2 */
+/* lua_apr_proc_type {{{2 */
+
+static luaL_Reg proc_methods[] = {
+  { "cmdtype_set",   proc_cmdtype_set   },
+  { "addrspace_set", proc_addrspace_set },
+  { "detach_set" ,   proc_detach_set    },
+  { "user_set",      proc_user_set      },
+  { "env_set",       proc_env_set       },
+  { "dir_set",       proc_dir_set       },
+  { "io_set",        proc_io_set        },
+  { "in_get",        proc_in_get        },
+  { "out_get",       proc_out_get       },
+  { "err_get",       proc_err_get       },
+/*{ "in_set",        proc_in_set        },
+  { "out_set",       proc_out_set       },
+  { "err_set",       proc_err_set       },*/
+  { "exec",          proc_exec          },
+  { "wait",          proc_wait          },
+  { "kill",          proc_kill          },
+  { NULL,            NULL               },
+};
+
+static luaL_Reg proc_metamethods[] = {
+  { "__gc", proc_gc },
+  { "__tostring", proc_tostring },
+  { NULL, NULL }
+};
+
+lua_apr_type lua_apr_proc_type = {
+  "lua_apr_proc*",
+  sizeof(lua_apr_proc),
+  proc_methods,
+  proc_metamethods
+};
 
 /* vim: set ts=2 sw=2 et tw=79 fen fdm=marker : */

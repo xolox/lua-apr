@@ -103,8 +103,8 @@ int lua_apr_pipe_create(lua_State *L)
   status = apr_file_pipe_create(&input->handle, &output->handle, refpool->ptr);
   if (status != APR_SUCCESS)
     return push_error_status(L, status);
-  input->input.object = input->handle;
-  output->output.object = output->handle;
+  init_file_buffers(L, input, 1);
+  init_file_buffers(L, output, 1);
   return 2;
 }
 
@@ -119,12 +119,7 @@ int pipe_open(lua_State *L, lua_apr_pipe_f open_std_pipe)
   status = open_std_pipe(&pipe->handle, pipe->pool->ptr);
   if (status != APR_SUCCESS)
     return push_error_status(L, status);
-  /* Initialize the buffer associated with the pipe. */
-  init_buffers(L, &pipe->input, &pipe->output, pipe->handle, 1,
-      (lua_apr_buf_rf) apr_file_read,
-      (lua_apr_buf_wf) apr_file_write,
-      (lua_apr_buf_ff) apr_file_flush);
-
+  init_file_buffers(L, pipe, 1);
   return 1;
 }
 

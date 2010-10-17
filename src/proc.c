@@ -1,0 +1,516 @@
+/* Process handling module for the Lua/APR binding.
+ *
+ * Author: Peter Odding <peter@peterodding.com>
+ * Last Change: October 18, 2010
+ * Homepage: http://peterodding.com/code/lua/apr/
+ * License: MIT
+ */
+
+#include "lua_apr.h"
+#include <apr_thread_proc.h>
+#include <apr_strings.h>
+#include <apr_lib.h>
+
+/* apr.proc_create(program) -> process {{{1
+ *
+ * Create a child process that will execute the given @program when started.
+ * Once you've called this function you still need to execute the process using
+ * the `process:exec()` function. Here's a simple example that emulates Lua's
+ * `os.execute()` function:
+ *
+ *     function execute(command)
+ *       local arguments = apr.tokenize_to_argv(command)
+ *       local progname = table.remove(arguments, 1)
+ *       local process = apr.proc_create(progname)
+ *       process:cmdtype_set('shellcmd/env')
+ *       process:exec(unpack(arguments))
+ *       local done, code, why = process:wait(true)
+ *       return code
+ *     end
+ *
+ *     execute 'echo This can be any process...'
+ */
+
+int lua_apr_proc_create(lua_State *L)
+{
+  lua_apr_proc *process;
+  const char *program;
+
+  program = luaL_checkstring(L, 1);
+  process = proc_alloc(L, program);
+
+  return 1;
+}
+
+/* process:addrspace_set(separate) -> status {{{1
+ *
+ * If @separate evaluates to true the child process will start in its own
+ * address space, otherwise the child process executes in the current address
+ * space from its parent. On success true is returned, otherwise a nil followed
+ * by an error message is returned. The default is no on NetWare and yes on
+ * other platforms.
+ */
+
+int proc_addrspace_set(lua_State *L)
+{
+  apr_int32_t separate;
+  apr_status_t status;
+  lua_apr_proc *process;
+
+  process = proc_check(L, 1);
+  separate = lua_toboolean(L, 2);
+  status = apr_procattr_addrspace_set(process->attr, separate);
+
+  return push_status(L, status);
+}
+
+/* process:user_set(username, password) -> status {{{1
+ *
+ * Set the user under which the child process will run. On success true is
+ * returned, otherwise a nil followed by an error message is returned.
+ */
+
+int proc_user_set(lua_State *L)
+{
+  const char *username, *password;
+  apr_status_t status;
+  lua_apr_proc *process;
+
+  process = proc_check(L, 1);
+  username = luaL_checkstring(L, 2);
+  password = luaL_checkstring(L, 3);
+  status = apr_procattr_user_set(process->attr, username, password);
+
+  return push_status(L, status);
+}
+
+/* process:group_set(groupname) -> status {{{1
+ *
+ * Set the group under which the child process will run. On success true is
+ * returned, otherwise a nil followed by an error message is returned. 
+ */
+
+int proc_group_set(lua_State *L)
+{
+  apr_status_t status;
+  const char *groupname;
+  lua_apr_proc *process;
+
+  process = proc_check(L, 1);
+  groupname = luaL_checkstring(L, 2);
+  status = apr_procattr_group_set(process->attr, groupname);
+
+  return push_status(L, status);
+}
+
+/* process:cmdtype_set(type) -> status {{{1
+ *
+ * Set what type of command the child process will execute. On success true is
+ * returned, otherwise a nil followed by an error message is returned. The
+ * argument @type must be one of:
+ *
+ *  - `'shellcmd'`: Use the shell to invoke the program
+ *  - `'shellcmd/env'`: Use the shell to invoke the program, replicating our environment
+ *  - `'program'`: Invoke the program directly, without copying the environment
+ *  - `'program/env'`: Invoke the program directly, replicating our environment
+ *  - `'program/env/path'`: Find program in `$PATH`, replicating our environment
+ */
+
+int proc_cmdtype_set(lua_State *L)
+{
+  const char *options[] = {
+    "shellcmd", "shellcmd/env",
+    "program", "program/env", "program/env/path",
+    NULL
+  };
+
+  const apr_cmdtype_e types[] = {
+    APR_SHELLCMD, APR_SHELLCMD_ENV,
+    APR_PROGRAM, APR_PROGRAM_ENV, APR_PROGRAM_PATH
+  };
+
+  lua_apr_proc *process;
+  apr_cmdtype_e type;
+  apr_status_t status;
+
+  process = proc_check(L, 1);
+  type = types[luaL_checkoption(L, 2, NULL, options)];
+  status = apr_procattr_cmdtype_set(process->attr, type);
+
+  return push_status(L, status);
+}
+
+/* process:env_set(environment) -> status {{{1
+ *
+ * Set the environment variables of the child process to the key/value pairs in
+ * the table @environment. On success true is returned, otherwise a nil
+ * followed by an error message is returned.
+ */
+
+int proc_env_set(lua_State *L)
+{
+  const char *format, *message, *name, *value;
+  size_t i, count;
+  char **env;
+  lua_apr_proc *process;
+
+  /* validate input, calculate size of environment array */
+  process = proc_check(L, 1);
+  luaL_checktype(L, 2, LUA_TTABLE);
+  for (count = 0, lua_pushnil(L); lua_next(L, 2); lua_pop(L, 1), count++) {
+    if (lua_type(L, -2) != LUA_TSTRING) {
+      format = "expected string key, got %s";
+      message = lua_pushfstring(L, format, luaL_typename(L, -2));
+      luaL_argerror(L, 2, message);
+    }
+    if (!lua_isstring(L, -1)) {
+      format = "expected string value for key " LUA_QS ", got %s";
+      message = lua_pushfstring(L, format, lua_tostring(L, -2), luaL_typename(L, -1));
+      luaL_argerror(L, 2, message);
+    }
+  }
+
+  /* convert Lua table to array of environment variables */
+  env = apr_palloc(process->memory_pool, sizeof env[0] * (count+1));
+  if (!env) return push_error_memory(L);
+  for (i = 0, lua_pushnil(L); lua_next(L, 2); lua_pop(L, 1), i++) {
+    name = lua_tostring(L, -2);
+    value = lua_tostring(L, -1);
+    env[i] = apr_pstrcat(process->memory_pool, name, "=", value, NULL);
+    if (!env[i]) return push_error_memory(L);
+  }
+  env[i] = NULL;
+  process->env = (const char**)env;
+
+  lua_pushboolean(L, 1);
+  return 1;
+}
+
+/* process:dir_set(path) -> status {{{1
+ *
+ * Set which directory the child process should start executing in. On success
+ * true is returned, otherwise a nil followed by an error message is returned.
+ *
+ * By default, this is the same directory as the parent process currently
+ * resides in when the `process:exec()` call is made.
+ */
+
+int proc_dir_set(lua_State *L)
+{
+  apr_status_t status;
+  const char *path;
+  lua_apr_proc *process;
+
+  process = proc_check(L, 1);
+  path = luaL_checkstring(L, 2);
+  status = apr_procattr_dir_set(process->attr, path);
+
+  return push_status(L, status);
+}
+
+/* process:detach_set(daemonize) -> status {{{1
+ *
+ * Determine if the child should start in detached state. On success true is
+ * returned, otherwise a nil followed by an error message is returned. Default
+ * is no.
+ */
+
+int proc_detach_set(lua_State *L)
+{
+  apr_status_t status;
+  apr_int32_t detach;
+  lua_apr_proc *process;
+
+  process = proc_check(L, 1);
+  detach = lua_toboolean(L, 2);
+  status = apr_procattr_detach_set(process->attr, detach);
+
+  return push_status(L, status);
+}
+
+/* process:io_set(stdin, stdout, stderr) -> status {{{1
+ *
+ * Determine if the child process should be linked to its parent through one or
+ * more pipes. On success true is returned, otherwise a nil followed by an
+ * error message is returned.
+ *
+ * Each argument gives the blocking mode of a pipe, which can be one of the
+ * following strings:
+ *
+ *  - `'none'`: Don't create a pipe
+ *  - `'full-block'`: Create a pipe that blocks until the child process writes to the pipe or dies
+ *  - `'full-nonblock'`: Create a pipe that doesn't block
+ *  - `'parent-block'`: Create a pipe that only blocks on the parent's end
+ *  - `'child-block'`: Create a pipe that only blocks on the child's end
+ *
+ *  _Once the child process has been started_ with `process:exec()`, the pipes
+ *  can be accessed with the methods `process:in_get()`, `process:out_get()`
+ *  and `process:err_get()`.
+ *
+ *  Here's an example that executes the external command `tr a-z A-Z` to
+ *  translate some characters to uppercase:
+ *
+ *      p = apr.proc_create 'tr'
+ *      p:cmdtype_set('shellcmd/env')
+ *      p:io_set('child-block', 'parent-block', 'none')
+ *      p:exec('a-z', 'A-Z')
+ *      input = p:in_get()
+ *      output = p:out_get()
+ *      input:write('Testing, 1, 2, 3\n')
+ *      input:close()
+ *      print(output:read())
+ *      output:close()
+ *      p:wait(true)
+ */
+
+int proc_io_set(lua_State *L)
+{
+  const char *options[] = {
+    "none", "full-block", "full-nonblock",
+    "parent-block", "child-block", NULL
+  };
+
+  const apr_int32_t values[] = {
+    APR_NO_PIPE, APR_FULL_BLOCK, APR_FULL_NONBLOCK,
+    APR_PARENT_BLOCK, APR_CHILD_BLOCK
+  };
+
+  apr_status_t status;
+  lua_apr_proc *process;
+  apr_int32_t input, output, error;
+
+  process = proc_check(L, 1);
+  input = values[luaL_checkoption(L, 2, "none", options)];
+  output = values[luaL_checkoption(L, 3, "none", options)];
+  error = values[luaL_checkoption(L, 4, "none", options)];
+  status = apr_procattr_io_set(process->attr, input, output, error);
+
+  return push_status(L, status);
+}
+
+/* process:in_get() -> pipe {{{1
+ *
+ * Get the parent end of the standard input pipe (a writable pipe).
+ */
+
+int proc_in_get(lua_State *L)
+{
+  lua_apr_proc *process = proc_check(L, 1);
+  apr_file_t *pipe = process->handle.in;
+  if (pipe != NULL) {
+    lua_apr_file *file = file_alloc(L, NULL, NULL);
+    file->handle = pipe;
+    init_file_buffers(L, file, 1);
+    return 1;
+  }
+  return 0;
+}
+
+/* process:out_get() -> pipe {{{1
+ *
+ * Get the parent end of the standard output pipe (a readable pipe).
+ */
+
+int proc_out_get(lua_State *L)
+{
+  lua_apr_proc *process = proc_check(L, 1);
+  apr_file_t *pipe = process->handle.out;
+  if (pipe != NULL) {
+    lua_apr_file *file = file_alloc(L, NULL, NULL);
+    file->handle = pipe;
+    init_file_buffers(L, file, 1);
+    return 1;
+  }
+  return 0;
+}
+
+/* process:err_get() -> pipe {{{1
+ *
+ * Get the parent end of the standard error pipe (a readable pipe).
+ */
+
+int proc_err_get(lua_State *L)
+{
+  lua_apr_proc *process = proc_check(L, 1);
+  apr_file_t *pipe = process->handle.err;
+  if (pipe != NULL) {
+    lua_apr_file *file = file_alloc(L, NULL, NULL);
+    file->handle = pipe;
+    init_file_buffers(L, file, 1);
+    return 1;
+  }
+  return 0;
+}
+
+/* process:exec([arg1 [, arg2, ...]]) -> status {{{1
+ *
+ * Create the child process and execute a program or shell command inside it.
+ * On success true is returned, otherwise a nil followed by an error message is
+ * returned.
+ *
+ * The arguments to this method become the command-line arguments to the child
+ * process. If an error occurs a nil followed by an error message is returned.
+ */
+
+int proc_exec(lua_State *L)
+{
+  apr_status_t status;
+  lua_apr_proc *process;
+  const char **args;
+  int i, top;
+
+  process = proc_check(L, 1);
+
+  /* TODO Should accept numeric arguments */
+  for (i = 2, top = lua_gettop(L); i <= top; i++)
+    luaL_checktype(L, i, LUA_TSTRING);
+
+  args = apr_palloc(process->memory_pool, sizeof args[0] * (top + 1));
+  if (args == NULL)
+    return push_error_memory(L);
+  args[0] = apr_filepath_name_get(process->path);
+  for (i = 2; i <= top; i++)
+    args[i - 1] = lua_tostring(L, i);
+  args[top] = NULL;
+  status = apr_proc_create(&process->handle, process->path, args, process->env, process->attr, process->memory_pool);
+
+  return push_status(L, status);
+}
+
+/* process:wait(how) -> done [, why, code] {{{1
+ *
+ * Wait for the child process to die. If @how is true the call blocks until the
+ * process dies, otherwise the call returns immediately regardless of if the
+ * process is dead or not. The first return value is false if the process isn't
+ * dead yet. If it's true the process died and two more return values are
+ * available. The second return value is the reason the process died, which is
+ * one of:
+ *
+ *  - `'exit'`: Process exited normally
+ *  - `'signal'`: Process exited due to a signal
+ *  - `'signal/core'`: Process exited and dumped a core file
+ *
+ * The third return value is the exit code of the process. If an error occurs a
+ * nil followed by an error message is returned.
+ *
+ */
+
+int proc_wait(lua_State *L)
+{
+  apr_status_t status;
+  apr_exit_why_e why;
+  apr_wait_how_e how;
+  lua_apr_proc *process;
+  int code;
+
+  process = proc_check(L, 1);
+  how = lua_toboolean(L, 2) ? APR_WAIT : APR_NOWAIT;
+  status = apr_proc_wait(&process->handle, &code, &why, how);
+
+  if (APR_STATUS_IS_CHILD_NOTDONE(status)) {
+    lua_pushboolean(L, 0);
+    return 1;
+  } else if (!APR_STATUS_IS_CHILD_DONE(status)) {
+    return push_error_status(L, status);
+  }
+
+  lua_pushboolean(L, 1);
+
+  if (APR_STATUS_IS_ENOTIMPL(status))
+    lua_pushinteger(L, why == APR_PROC_EXIT ? EXIT_SUCCESS : EXIT_FAILURE);
+  else
+    lua_pushinteger(L, code);
+
+  switch (why) {
+    default:
+    case APR_PROC_EXIT:        lua_pushliteral(L, "exit");        break;
+    case APR_PROC_SIGNAL:      lua_pushliteral(L, "signal");      break;
+    case APR_PROC_SIGNAL_CORE: lua_pushliteral(L, "signal/core"); break;
+  }
+
+  return 3;
+}
+
+/* process:kill(how) -> status {{{1
+ *
+ * Terminate a running child process. On success true is returned, otherwise a
+ * nil followed by an error message is returned. The parameter @how must be one
+ * of:
+ *
+ *  - `'never'`: The process is never sent any signals
+ *  - `'always'`: The process is sent the [SIGKILL] [sigkill] signal when its
+ *    Lua userdata is garbage collected
+ *  - `'timeout'`: Send the [SIGTERM] [sigterm] signal, wait for 3 seconds,
+ *    then send the [SIGKILL] [sigkill] signal
+ *  - `'wait'`: Wait forever for the process to complete
+ *  - `'once'`: Send the [SIGTERM] [sigterm] signal and then wait
+ *
+ * [sigkill]: http://en.wikipedia.org/wiki/SIGKILL
+ * [sigterm]: http://en.wikipedia.org/wiki/SIGTERM
+ */
+
+int proc_kill(lua_State *L)
+{
+  const char *options[] = {
+    "never", "always", "timeout", "wait", "once", NULL,
+  };
+
+  const apr_kill_conditions_e values[] = {
+    APR_KILL_NEVER, APR_KILL_ALWAYS, APR_KILL_AFTER_TIMEOUT,
+    APR_JUST_WAIT, APR_KILL_ONLY_ONCE,
+  };
+
+  apr_status_t status;
+  lua_apr_proc *process;
+  int option;
+
+  process = proc_check(L, 1);
+  option = values[luaL_checkoption(L, 2, NULL, options)];
+  status = apr_proc_kill(&process->handle, option);
+
+  return push_status(L, status);
+}
+
+/* }}} */
+
+/* Helpers, process object metamethods and initializer */
+
+lua_apr_proc *proc_alloc(lua_State *L, const char *path)
+{
+  apr_status_t status;
+  lua_apr_proc *process;
+
+  process = new_object(L, &lua_apr_proc_type);
+  status = apr_pool_create(&process->memory_pool, NULL);
+  if (status != APR_SUCCESS)
+    process->memory_pool = NULL;
+  else
+    status = apr_procattr_create(&process->attr, process->memory_pool);
+  if (status != APR_SUCCESS)
+    raise_error_status(L, status);
+  if (path != NULL)
+    process->path = apr_pstrdup(process->memory_pool, path);
+  return process;
+}
+
+lua_apr_proc *proc_check(lua_State *L, int i)
+{
+  return check_object(L, i, &lua_apr_proc_type);
+}
+
+int proc_tostring(lua_State *L)
+{
+  lua_apr_proc *process = proc_check(L, 1);
+  lua_pushfstring(L, "%s (%p)", lua_apr_proc_type.typename, process);
+  return 1;
+}
+
+int proc_gc(lua_State *L)
+{
+  lua_apr_proc *process = proc_check(L, 1);
+  if (process->memory_pool) {
+    apr_pool_destroy(process->memory_pool);
+    process->memory_pool = NULL;
+  }
+  return 0;
+}

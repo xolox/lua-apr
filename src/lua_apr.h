@@ -1,7 +1,7 @@
 /* Header file for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 17, 2010
+ * Last Change: October 18, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -146,6 +146,15 @@ typedef struct lua_apr_file {
   const char *path;
 } lua_apr_file;
 
+/* Structure for process objects. */
+typedef struct lua_apr_proc {
+  apr_pool_t *memory_pool;
+  apr_proc_t handle;
+  apr_procattr_t *attr;
+  const char *path;
+  const char **env;
+} lua_apr_proc;
+
 /* Structure for Lua userdatum types. */
 typedef struct lua_apr_type {
   const char *typename;
@@ -157,6 +166,7 @@ typedef struct lua_apr_type {
 /* External type definitions. */
 extern lua_apr_type lua_apr_dir_type;
 extern lua_apr_type lua_apr_file_type;
+extern lua_apr_type lua_apr_proc_type;
 
 /* Prototypes. {{{1 */
 
@@ -245,6 +255,7 @@ int file_close(lua_State*);
 int file_gc(lua_State*);
 int file_tostring(lua_State*);
 lua_apr_file *file_alloc(lua_State*, const char*, lua_apr_pool*);
+void init_file_buffers(lua_State*, lua_apr_file*, int);
 lua_apr_file *file_check(lua_State*, int, int);
 
 /* io_pipe.c */
@@ -257,6 +268,27 @@ int lua_apr_pipe_create(lua_State*);
 /* permissions.c */
 int push_protection(lua_State*, apr_fileperms_t);
 apr_fileperms_t check_permissions(lua_State*, int, int);
+
+/* proc.c */
+int lua_apr_proc_create(lua_State*);
+int proc_addrspace_set(lua_State*);
+int proc_user_set(lua_State*);
+int proc_group_set(lua_State*);
+int proc_cmdtype_set(lua_State*);
+int proc_env_set(lua_State*);
+int proc_dir_set(lua_State*);
+int proc_detach_set(lua_State*);
+int proc_io_set(lua_State*);
+int proc_in_get(lua_State*);
+int proc_out_get(lua_State*);
+int proc_err_get(lua_State*);
+int proc_exec(lua_State*);
+int proc_wait(lua_State*);
+int proc_kill(lua_State*);
+lua_apr_proc *proc_alloc(lua_State*, const char*);
+lua_apr_proc *proc_check(lua_State*, int);
+int proc_tostring(lua_State*);
+int proc_gc(lua_State*);
 
 /* refpool.c */
 lua_apr_pool *refpool_alloc(lua_State*);
