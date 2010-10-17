@@ -68,7 +68,7 @@ install_deps:
 		lua5.1 liblua5.1-0 liblua5.1-0-dev libreadline-dev shake \
 		liblua5.1-markdown0
 
-ZIPNAME = lua-apr-0.6-3
+ZIPNAME = lua-apr-0.7-2
 
 package:
 	@rm -f $(ZIPNAME).zip
