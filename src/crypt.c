@@ -1,7 +1,7 @@
 /* Cryptography routines module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: September 25, 2010
+ * Last Change: October 17, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -17,16 +17,16 @@
  *
  * If that doesn't look useful consider the following scenario: The Lua authors
  * have just finished a new release of Lua and are about to publish the source
- * code on <http://lua.org>. Before they publish the .tar.gz archive they first
- * generate a hash of the archive. Then they publish both the archive and the
- * [hash] [lua_hashes]. Now when a user downloads the archive they can verify
- * whether it was corrupted or manipulated since it was published on
- * <http://lua.org> by comparing the published hash against the hash of the
- * archive they just downloaded.
+ * code on <http://lua.org>. Before they publish the `.tar.gz` archive they
+ * first calculate its MD5 and SHA1 hash. Then they publish the archive and
+ * hashes on the [downloads page] [lua_downloads]. When a user downloads the
+ * archive they can verify whether it was corrupted or manipulated since it was
+ * published on <http://lua.org> by comparing the published hash against the
+ * hash of the archive they just downloaded.
  *
  * [md5]: http://en.wikipedia.org/wiki/MD5
  * [sha1]: http://en.wikipedia.org/wiki/SHA1
- * [lua_hashes]: http://www.lua.org/ftp/md5sum.out
+ * [lua_downloads]: http://www.lua.org/ftp/
  */
 
 #include "lua_apr.h"
@@ -38,10 +38,10 @@ static int format_digest(char*, const unsigned char*, int);
 
 /* apr.md5(message [, binary]) -> digest {{{1
  *
- * Calculate the MD5 digest of the string @message. On success the digest is
- * returned as a string of 32 hexadecimal characters, or a string of 16 bytes
- * if @binary evaluates to true. Otherwise a nil followed by an error message
- * is returned.
+ * Calculate the [MD5][md5] digest of the string @message. On success the
+ * digest is returned as a string of 32 hexadecimal characters, or a string of
+ * 16 bytes if @binary evaluates to true. Otherwise a nil followed by an error
+ * message is returned.
  */
 
 int lua_apr_md5(lua_State *L)
@@ -78,9 +78,9 @@ int lua_apr_md5(lua_State *L)
 
 /* apr.md5_encode(password, salt) -> digest {{{1
  *
- * Encode the string @password using the MD5 algorithm and a @salt string. On
- * success the digest is returned. Otherwise a nil followed by an error message
- * is returned.
+ * Encode the string @password using the [MD5] [md5] algorithm and a @salt
+ * string. On success the digest is returned. Otherwise a nil followed by an
+ * error message is returned.
  */
 
 int lua_apr_md5_encode(lua_State *L)
@@ -108,10 +108,10 @@ int lua_apr_md5_encode(lua_State *L)
 
 /* apr.sha1(message [, binary]) -> digest {{{1
  *
- * Calculate the SHA1 digest of the string @message. On success the digest is
- * returned as a string of 40 hexadecimal characters, or a string of 20 bytes
- * if @binary evaluates to true. Otherwise a nil followed by an error message
- * is returned.
+ * Calculate the [SHA1] [sha1] digest of the string @message. On success the
+ * digest is returned as a string of 40 hexadecimal characters, or a string of
+ * 20 bytes if @binary evaluates to true. Otherwise a nil followed by an error
+ * message is returned.
  */
 
 int lua_apr_sha1(lua_State *L)
@@ -150,13 +150,16 @@ int lua_apr_sha1(lua_State *L)
 /* apr.password_validate(password, digest) -> valid {{{1
  *
  * Validate the string @password against a @digest created by one of the
- * APR-supported algorithms (MD5 and SHA1). On success true is returned,
- * otherwise a nil followed by an error message is returned.
+ * APR-supported algorithms ([MD5] [md5] and [SHA1] [sha1]). On success true is
+ * returned, otherwise a nil followed by an error message is returned.
  *
  * Hashes created by crypt are supported only on platforms that provide
- * crypt(3), so don't rely on that function unless you know that your
- * application will be run only on platforms that support it. On platforms that
- * don't support crypt(3), this falls back to a clear text string comparison.
+ * [crypt(3)] [crypt_fun], so don't rely on that function unless you know that
+ * your application will be run only on platforms that support it. On platforms
+ * that don't support crypt(3), this falls back to a clear text string
+ * comparison.
+ *
+ * [crypt_fun]: http://linux.die.net/man/3/crypt
  */
 
 int lua_apr_password_validate(lua_State *L)
