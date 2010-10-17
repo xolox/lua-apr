@@ -292,13 +292,11 @@ int read_buffer(lua_State *L, lua_apr_readbuf *B) /* {{{1 */
       }
     }
   }
-  /* TODO Copy approach from Lua's liolib.c? */
-  if (!SUCCESS_OR_EOF(status))
-    raise_error_status(L, status);
-# if 0
-    lua_pop(L, 1); /* remove last result */
-    lua_pushnil(L); /* push nil instead */
-# endif
+  if (!SUCCESS_OR_EOF(status)) {
+    /* Replace results with (nil, message, code). */
+    lua_settop(L, 1);
+    nresults = push_error_status(L, status);
+  }
   return nresults;
 }
 
