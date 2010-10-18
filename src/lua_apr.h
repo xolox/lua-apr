@@ -257,6 +257,7 @@ int file_tostring(lua_State*);
 lua_apr_file *file_alloc(lua_State*, const char*, lua_apr_pool*);
 void init_file_buffers(lua_State*, lua_apr_file*, int);
 lua_apr_file *file_check(lua_State*, int, int);
+apr_status_t file_close_impl(lua_State*, lua_apr_file*);
 
 /* io_pipe.c */
 int lua_apr_pipe_open_stdin(lua_State*);

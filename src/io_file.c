@@ -16,7 +16,6 @@
 
 static int push_file_status(lua_State*, lua_apr_file*, apr_status_t);
 static int push_file_error(lua_State*, lua_apr_file*, apr_status_t);
-static apr_status_t file_close_impl(lua_State*, lua_apr_file*);
   
 /* apr.file_copy(source, target [, permissions]) -> status {{{1
  *

@@ -11,6 +11,9 @@
 #include <apr_strings.h>
 #include <apr_lib.h>
 
+static int get_pipe(lua_State*, apr_file_t*, const char*);
+static void close_pipe(lua_State*, const char*);
+
 /* apr.proc_create(program) -> process {{{1
  *
  * Create a child process that will execute the given @program when started.
@@ -243,24 +246,24 @@ int proc_detach_set(lua_State *L)
  *  - `'parent-block'`: Create a pipe that only blocks on the parent's end
  *  - `'child-block'`: Create a pipe that only blocks on the child's end
  *
- *  _Once the child process has been started_ with `process:exec()`, the pipes
- *  can be accessed with the methods `process:in_get()`, `process:out_get()`
- *  and `process:err_get()`.
+ * _Once the child process has been started_ with `process:exec()`, the pipes
+ * can be accessed with the methods `process:in_get()`, `process:out_get()`
+ * and `process:err_get()`.
  *
- *  Here's an example that executes the external command `tr a-z A-Z` to
- *  translate some characters to uppercase:
+ * Here's an example that executes the external command `tr a-z A-Z` to
+ * translate some characters to uppercase:
  *
- *      p = apr.proc_create 'tr'
- *      p:cmdtype_set('shellcmd/env')
- *      p:io_set('child-block', 'parent-block', 'none')
- *      p:exec('a-z', 'A-Z')
- *      input = p:in_get()
- *      output = p:out_get()
- *      input:write('Testing, 1, 2, 3\n')
- *      input:close()
- *      print(output:read())
- *      output:close()
- *      p:wait(true)
+ *     p = apr.proc_create 'tr'
+ *     p:cmdtype_set('shellcmd/env')
+ *     p:io_set('child-block', 'parent-block', 'none')
+ *     p:exec('a-z', 'A-Z')
+ *     input = p:in_get()
+ *     output = p:out_get()
+ *     input:write('Testing, 1, 2, 3\n')
+ *     input:close()
+ *     print(output:read())
+ *     output:close()
+ *     p:wait(true)
  */
 
 int proc_io_set(lua_State *L)
@@ -296,14 +299,7 @@ int proc_io_set(lua_State *L)
 int proc_in_get(lua_State *L)
 {
   lua_apr_proc *process = proc_check(L, 1);
-  apr_file_t *pipe = process->handle.in;
-  if (pipe != NULL) {
-    lua_apr_file *file = file_alloc(L, NULL, NULL);
-    file->handle = pipe;
-    init_file_buffers(L, file, 1);
-    return 1;
-  }
-  return 0;
+  return get_pipe(L, process->handle.in, "in");
 }
 
 /* process:out_get() -> pipe {{{1
@@ -314,14 +310,7 @@ int proc_in_get(lua_State *L)
 int proc_out_get(lua_State *L)
 {
   lua_apr_proc *process = proc_check(L, 1);
-  apr_file_t *pipe = process->handle.out;
-  if (pipe != NULL) {
-    lua_apr_file *file = file_alloc(L, NULL, NULL);
-    file->handle = pipe;
-    init_file_buffers(L, file, 1);
-    return 1;
-  }
-  return 0;
+  return get_pipe(L, process->handle.out, "out");
 }
 
 /* process:err_get() -> pipe {{{1
@@ -332,14 +321,7 @@ int proc_out_get(lua_State *L)
 int proc_err_get(lua_State *L)
 {
   lua_apr_proc *process = proc_check(L, 1);
-  apr_file_t *pipe = process->handle.err;
-  if (pipe != NULL) {
-    lua_apr_file *file = file_alloc(L, NULL, NULL);
-    file->handle = pipe;
-    init_file_buffers(L, file, 1);
-    return 1;
-  }
-  return 0;
+  return get_pipe(L, process->handle.err, "err");
 }
 
 /* process:exec([arg1 [, arg2, ...]]) -> status {{{1
@@ -505,12 +487,54 @@ int proc_tostring(lua_State *L)
   return 1;
 }
 
+int get_pipe(lua_State *L, apr_file_t *handle, const char *key)
+{
+  lua_apr_file *file;
+
+  lua_getfenv(L, 1); /* get environment table */
+  if (lua_type(L, -1) == LUA_TTABLE) { /* table already exists */
+    lua_getfield(L, -1, key); /* get cached pipe object */
+    if (lua_type(L, -1) == LUA_TUSERDATA)
+      return 1; /* return cached pipe object */
+    lua_pop(L, 1); /* pop nil result from lua_getfield() */
+  } else {
+    lua_pop(L, 1); /* pop nil result from lua_getfenv() */
+    lua_newtable(L); /* create environment table */
+    lua_pushvalue(L, -1); /* copy reference to table */
+    lua_setfenv(L, 1); /* install environment table */
+  }
+  if (handle != NULL) {
+    file = file_alloc(L, NULL, NULL);
+    file->handle = handle;
+    init_file_buffers(L, file, 1);
+    lua_pushvalue(L, -1); /* copy reference to userdata */
+    lua_setfield(L, -3, key); /* cache userdata in environment table */
+    return 1; /* return new pipe */
+  }
+  return 0;
+
+}
+
 int proc_gc(lua_State *L)
 {
   lua_apr_proc *process = proc_check(L, 1);
-  if (process->memory_pool) {
+  lua_getfenv(L, 1);
+  if (lua_type(L, -1) == LUA_TTABLE) {
+    close_pipe(L, "in");
+    close_pipe(L, "out");
+    close_pipe(L, "err");
+  }
+  if (process->memory_pool != NULL) {
     apr_pool_destroy(process->memory_pool);
     process->memory_pool = NULL;
   }
   return 0;
+}
+
+void close_pipe(lua_State *L, const char *key)
+{
+  lua_getfield(L, 2, key);
+  if (lua_type(L, -1) == LUA_TUSERDATA)
+    file_close_impl(L, lua_touserdata(L, -1));
+  lua_pop(L, 1);
 }
