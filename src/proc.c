@@ -1,7 +1,7 @@
 /* Process handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 21, 2010
+ * Last Change: October 22, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -316,17 +316,18 @@ int proc_error_check_set(lua_State *L)
  * Here's an example that executes the external command `tr a-z A-Z` to
  * translate some characters to uppercase:
  *
- *     p = apr.proc_create 'tr'
- *     p:cmdtype_set('shellcmd/env')
- *     p:io_set('child-block', 'parent-block', 'none')
- *     p:exec('a-z', 'A-Z')
- *     input = p:in_get()
- *     output = p:out_get()
- *     input:write('Testing, 1, 2, 3\n')
- *     input:close()
- *     print(output:read())
- *     output:close()
- *     p:wait(true)
+ *     > p = apr.proc_create 'tr'
+ *     > p:cmdtype_set('shellcmd/env')
+ *     > p:io_set('child-block', 'parent-block', 'none')
+ *     > p:exec('a-z', 'A-Z')
+ *     > input = p:in_get()
+ *     > output = p:out_get()
+ *     > input:write('Testing, 1, 2, 3\n')
+ *     > input:close()
+ *     > print(output:read())
+ *     TESTING, 1, 2, 3
+ *     > output:close()
+ *     > p:wait(true)
  */
 
 int proc_io_set(lua_State *L)
@@ -430,14 +431,15 @@ int proc_exec(lua_State *L)
     args = apr_palloc(process->memory_pool, sizeof args[0] * (nargs + 2));
     if (args == NULL)
       return push_error_memory(L);
-    for (i = 2; i <= nargs + 1; i++)
+    for (i = 2; i <= nargs + 1; i++) {
       args[i - 1] = luaL_checkstring(L, i);
+    }
   }
 
   /* Fill in the program name and mark the end of the "args" array. */
   /* TODO Allow users to override the program name? */
   args[0] = apr_filepath_name_get(process->path);
-  args[nargs - 1] = NULL;
+  args[nargs+1] = NULL;
 
   /* Create the child process using the given command line arguments. */
   status = apr_proc_create(&process->handle, process->path, args, process->env, process->attr, process->memory_pool);
