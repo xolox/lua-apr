@@ -1,7 +1,7 @@
 /* Process handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 18, 2010
+ * Last Change: October 21, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -194,8 +194,9 @@ int proc_env_set(lua_State *L)
  * Set which directory the child process should start executing in. On success
  * true is returned, otherwise a nil followed by an error message is returned.
  *
- * By default, this is the same directory as the parent process currently
- * resides in when the `process:exec()` call is made.
+ * By default child processes inherit this directory from their parent process
+ * at the moment when the `process:exec()` call is made. To find out the
+ * current directory see the `apr.filepath_get()` function.
  */
 
 int proc_dir_set(lua_State *L)
@@ -330,30 +331,53 @@ int proc_err_get(lua_State *L)
  * On success true is returned, otherwise a nil followed by an error message is
  * returned.
  *
- * The arguments to this method become the command-line arguments to the child
+ * The arguments to this method become the command line arguments to the child
  * process. If an error occurs a nil followed by an error message is returned.
+ *
+ * If you need to pass a lot of arguments to a process you can put them in a
+ * table and pass this table as the only argument to `process:exec()`.
  */
 
 int proc_exec(lua_State *L)
 {
   apr_status_t status;
   lua_apr_proc *process;
-  const char **args;
-  int i, top;
+  const char *p, **args;
+  int i, nargs;
 
   process = proc_check(L, 1);
 
-  /* TODO Should accept numeric arguments */
-  for (i = 2, top = lua_gettop(L); i <= top; i++)
-    luaL_checktype(L, i, LUA_TSTRING);
+  /* Build "args" array from string arguments or table with string values. */
+  if (lua_type(L, 2) == LUA_TTABLE) {
+    num_args = lua_objlen(L, 2);
+    args = apr_palloc(process->memory_pool, sizeof args[0] * (num_args + 2));
+    if (args == NULL)
+      return push_error_memory(L);
+    for (i = 1; i <= num_args; i++) {
+      lua_pushinteger(L, i);
+      lua_gettable(L, 2);
+      p = lua_tostring(L, -1);
+      if (p == NULL)
+        luaL_argcheck(L, 0, 2, lua_pushfstring(L, "invalid value at index %d", i));
+      /* TODO Should I worry about embedded NUL characters here?! */
+      args[i] = apr_pstrdup(process->memory_pool, p);
+      lua_pop(L, 1);
+    }
+  } else {
+    num_args = lua_gettop(L) - 1;
+    args = apr_palloc(process->memory_pool, sizeof args[0] * (num_args + 2));
+    if (args == NULL)
+      return push_error_memory(L);
+    for (i = 2; i <= num_args + 1; i++)
+      args[i - 1] = luaL_checkstring(L, i);
+  }
 
-  args = apr_palloc(process->memory_pool, sizeof args[0] * (top + 1));
-  if (args == NULL)
-    return push_error_memory(L);
+  /* Fill in the program name and mark the end of the "args" array. */
+  /* TODO Allow users to override the program name? */
   args[0] = apr_filepath_name_get(process->path);
-  for (i = 2; i <= top; i++)
-    args[i - 1] = lua_tostring(L, i);
-  args[top] = NULL;
+  args[num_args - 1] = NULL;
+
+  /* Create the child process using the given command line arguments. */
   status = apr_proc_create(&process->handle, process->path, args, process->env, process->attr, process->memory_pool);
 
   return push_status(L, status);
