@@ -1,7 +1,7 @@
 /* Initialization and miscellaneous routines for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 18, 2010
+ * Last Change: October 21, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -83,6 +83,7 @@ int luaopen_apr_core(lua_State *L)
 
     /* proc -- process handling. */
     { "proc_create", lua_apr_proc_create },
+    { "proc_detach", lua_apr_proc_detach },
 
     /* str.c -- string handling. */
     { "strnatcmp", lua_apr_strnatcmp },

@@ -45,6 +45,29 @@ int lua_apr_proc_create(lua_State *L)
   return 1;
 }
 
+/* apr.proc_detach(daemonize) -> status {{{1
+ *
+ * Detach the current process from the controlling terminal. If @daemonize
+ * evaluates to true the process will [daemonize] [daemons] and become a
+ * background process, otherwise it will stay in the foreground. On success
+ * true is returned, otherwise a nil followed by an error message is
+ * returned.
+ *
+ * [daemons]: http://en.wikipedia.org/wiki/Daemon_%28computer_software%29
+ */
+
+int lua_apr_proc_detach(lua_State *L)
+{
+  apr_status_t status;
+  int daemonize;
+
+  luaL_checkany(L, 1);
+  daemonize = lua_toboolean(L, 1);
+  status = apr_proc_detach(daemonize);
+
+  return push_status(L, status);
+}
+
 /* process:addrspace_set(separate) -> status {{{1
  *
  * If @separate evaluates to true the child process will start in its own
@@ -216,7 +239,7 @@ int proc_dir_set(lua_State *L)
   return push_status(L, status);
 }
 
-/* process:detach_set(daemonize) -> status {{{1
+/* process:detach_set(detach) -> status {{{1
  *
  * Determine if the child should start in detached state. On success true is
  * returned, otherwise a nil followed by an error message is returned. Default

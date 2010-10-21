@@ -1,7 +1,7 @@
 /* Header file for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 18, 2010
+ * Last Change: October 21, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -272,6 +272,7 @@ apr_fileperms_t check_permissions(lua_State*, int, int);
 
 /* proc.c */
 int lua_apr_proc_create(lua_State*);
+int lua_apr_proc_detach(lua_State*);
 int proc_addrspace_set(lua_State*);
 int proc_user_set(lua_State*);
 int proc_group_set(lua_State*);
