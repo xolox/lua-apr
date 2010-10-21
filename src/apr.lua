@@ -3,7 +3,7 @@
  Lua source code for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: October 18, 2010
+ Last Change: October 21, 2010
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
  Version: 0.8.1
@@ -117,3 +117,5 @@ end
 -- }}}1
 
 return apr
+
+-- vim: ts=2 sw=2 et tw=79 fen fdm=marker
