@@ -3,7 +3,7 @@
  Documentation generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: October 18, 2010
+ Last Change: October 21, 2010
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -63,11 +63,11 @@ for filename in SOURCES:gmatch '%S+' do
   end
   local module = getmodule(modulename, filename, header)
   if filename:find '%.c$' then
-    local pattern = '\n/%*(.-)%*/\n\n%w[^\n]- ([%w_]+)%([^\n]-%)\n{'
+    local pattern = '\n/%*([^\n]-%->.-)%*/\n\n%w[^\n]- ([%w_]+)%([^\n]-%)\n{'
     for docblock, funcname in source:gmatch(pattern) do
       local signature, description = docblock:match '^([^\n]- %-> [^\n]+)(\n.-)$'
       if not signature then
-        message("%s: Function %s doesn't have a signature!", filename, funcname)
+        message("%s: Function %s doesn't have a signature?!", filename, funcname)
       else
         table.insert(module.functions, {
           signature = stripfoldmarker(signature),
