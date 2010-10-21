@@ -353,11 +353,11 @@ int proc_exec(lua_State *L)
 
   /* Build "args" array from string arguments or table with string values. */
   if (lua_type(L, 2) == LUA_TTABLE) {
-    num_args = lua_objlen(L, 2);
-    args = apr_palloc(process->memory_pool, sizeof args[0] * (num_args + 2));
+    nargs = lua_objlen(L, 2);
+    args = apr_palloc(process->memory_pool, sizeof args[0] * (nargs + 2));
     if (args == NULL)
       return push_error_memory(L);
-    for (i = 1; i <= num_args; i++) {
+    for (i = 1; i <= nargs; i++) {
       lua_pushinteger(L, i);
       lua_gettable(L, 2);
       p = lua_tostring(L, -1);
@@ -368,18 +368,18 @@ int proc_exec(lua_State *L)
       lua_pop(L, 1);
     }
   } else {
-    num_args = lua_gettop(L) - 1;
-    args = apr_palloc(process->memory_pool, sizeof args[0] * (num_args + 2));
+    nargs = lua_gettop(L) - 1;
+    args = apr_palloc(process->memory_pool, sizeof args[0] * (nargs + 2));
     if (args == NULL)
       return push_error_memory(L);
-    for (i = 2; i <= num_args + 1; i++)
+    for (i = 2; i <= nargs + 1; i++)
       args[i - 1] = luaL_checkstring(L, i);
   }
 
   /* Fill in the program name and mark the end of the "args" array. */
   /* TODO Allow users to override the program name? */
   args[0] = apr_filepath_name_get(process->path);
-  args[num_args - 1] = NULL;
+  args[nargs - 1] = NULL;
 
   /* Create the child process using the given command line arguments. */
   status = apr_proc_create(&process->handle, process->path, args, process->env, process->attr, process->memory_pool);
