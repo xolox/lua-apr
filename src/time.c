@@ -1,14 +1,14 @@
 /* Time routines module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 4, 2010
+ * Last Change: October 21, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
  * Lua represents dates as numbers though the meaning of these numbers is not
  * specified. The manual does state (in the documentation for `os.time()`) that
- * on POSIX, Windows and some other systems these numbers count the number of
- * seconds since some given start time (the epoch). As far as I know that epoch
+ * on [POSIX] [posix], Windows and some other systems these numbers count the
+ * number of seconds since some given start time called the epoch. This epoch
  * is 00:00:00 January 1, 1970 [UTC] [utc]. The Apache Portable Runtime
  * [represents] [apr_time_t] dates as the number of microseconds since that
  * same epoch. As a compromise between the two units Lua/APR uses seconds but
@@ -16,6 +16,7 @@
  * (see [this thread] [2007-03] on [lua-l] [lua-l] for discussion about the
  * API).
  *
+ * [posix]: http://en.wikipedia.org/wiki/POSIX
  * [apr_time_t]: http://apr.apache.org/docs/apr/trunk/group__apr__time.html#gdb4bde16055748190eae190c55aa02bb
  * [2007-03]: http://lua-users.org/lists/lua-l/2007-03/threads.html#00309
  * [lua-l]: http://lua-users.org/lists/lua-l/
@@ -216,12 +217,11 @@ int lua_apr_time_implode(lua_State *L)
 
 /* apr.time_format(format, time) -> formatted {{{1
  *
- * Format @time according to to string @format. On success the formatted date
- * is returned, otherwise a nil followed by an error message is returned. The
- * two special formats `'ctime'` and `'rfc822'` result in a fixed length string
- * of 24 or 29 characters in length. The @time argument may be either a
- * number or a table with components like those returned by
- * `apr.time_explode()`.
+ * Format @time according to string @format. On success the formatted date is
+ * returned, otherwise a nil followed by an error message is returned. The two
+ * special formats `'ctime'` and `'rfc822'` result in a fixed length string of
+ * 24 or 29 characters in length. The @time argument may be either a number or
+ * a table with components like those returned by `apr.time_explode()`.
  *
  *     > = apr.time_format('%Y-%m-%d %H:%I:%S', apr.time_now())
  *     '2010-09-25 17:05:08'
