@@ -148,6 +148,10 @@ int proc_cmdtype_set(lua_State *L)
  * Set the environment variables of the child process to the key/value pairs in
  * the table @environment. On success true is returned, otherwise a nil
  * followed by an error message is returned.
+ *
+ * Please note that the environment table is ignored for the command types
+ * `'shellcmd/env'`, `'program/env'` and `'program/env/path'` (set using the
+ * `process:cmdtype_set()` method).
  */
 
 int proc_env_set(lua_State *L)
