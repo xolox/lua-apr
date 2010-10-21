@@ -1,7 +1,7 @@
 /* String routines module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: September 25, 2010
+ * Last Change: October 22, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -21,9 +21,15 @@
  *     > -- collate order:
  *     > table.sort(list)
  *     > for _, name in ipairs(list) do print(name) end
+ *     rfc1.txt
+ *     rfc2086.txt
+ *     rfc822.txt
  *     > -- natural order:
  *     > table.sort(list, apr.strnatcmp)
  *     > for _, name in ipairs(list) do print(name) end
+ *     rfc1.txt
+ *     rfc822.txt
+ *     rfc2086.txt
  *
  * [natsort]: http://sourcefrog.net/projects/natsort/
  */
