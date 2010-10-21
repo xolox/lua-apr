@@ -3,7 +3,7 @@
  Documentation generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: October 21, 2010
+ Last Change: October 22, 2010
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -133,21 +133,42 @@ local function toanchor(s)
   return s:lower():gsub('[^a-z0-9_.:]+', '_')
 end
 
-local function preprocess(s)
-  return (s
-    :gsub('(%s)@([%w_]+)', '%1`%2`')
-    :gsub('([%s])true([%s%p])', '%1<tt>*true*</tt>%2')
-    :gsub('([%s%p])false([%s%p])', '%1<tt>*false*</tt>%2')
-    :gsub('([%s%p])nil([%s%p])', '%1<tt>*nil*</tt>%2')
-    :gsub('`([%w_.]+)%(%)`', function(funcname)
-      local target
-      if funcname:find '^apr%.[%w_]+$' or funcname:find '^[%w_]+:[%w_]+$' then
-        target = '#' .. toanchor(funcname)
+local function gsplit(string, pattern, capture_delimiters)
+  return coroutine.wrap(function()
+    local index = 1
+    repeat
+      local first, last = string:find(pattern, index)
+      if first and last then
+        if index < first then coroutine.yield(string:sub(index, first - 1)) end
+        if capture_delimiters then coroutine.yield(string:sub(first, last)) end
+        index = last + 1
       else
-        target = 'http://www.lua.org/manual/5.1/manual.html#pdf-' .. funcname
+        if index <= #string then coroutine.yield(string:sub(index)) end
+        break
       end
-      return ('<a href="%s">%s()</a>'):format(target, funcname)
-    end))
+    until index > #string
+  end)
+end
+
+local function preprocess(text)
+  local output = {}
+  for block in gsplit(text, '\n\n', false) do
+    output[#output + 1] = block:find '^    ' and block or (block
+          :gsub('(%s)@([%w_]+)', '%1`%2`')
+          :gsub('([%s])true([%s%p])', '%1<tt>*true*</tt>%2')
+          :gsub('([%s%p])false([%s%p])', '%1<tt>*false*</tt>%2')
+          :gsub('([%s%p])nil([%s%p])', '%1<tt>*nil*</tt>%2')
+          :gsub('`([%w_.]+)%(%)`', function(funcname)
+            local target
+            if funcname:find '^apr%.[%w_]+$' or funcname:find '^[%w_]+:[%w_]+$' then
+              target = '#' .. toanchor(funcname)
+            else
+              target = 'http://www.lua.org/manual/5.1/manual.html#pdf-' .. funcname
+            end
+            return ('<a href="%s">%s()</a>'):format(target, funcname)
+          end))
+  end
+  return table.concat(output, '\n\n')
 end
 
 blocks:add '## List of modules'
