@@ -280,6 +280,7 @@ int proc_cmdtype_set(lua_State*);
 int proc_env_set(lua_State*);
 int proc_dir_set(lua_State*);
 int proc_detach_set(lua_State*);
+int proc_error_check_set(lua_State*);
 int proc_io_set(lua_State*);
 int proc_in_get(lua_State*);
 int proc_out_get(lua_State*);

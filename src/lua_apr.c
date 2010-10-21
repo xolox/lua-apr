@@ -112,12 +112,6 @@ int luaopen_apr_core(lua_State *L)
     { "uuid_format", lua_apr_uuid_format },
     { "uuid_parse", lua_apr_uuid_parse },
 
-    /* Missing:
-     *  - io_file.c
-     *  - io_pipe.c
-     *  - proc.c
-     */
-
     { NULL, NULL }
   };
 
@@ -324,23 +318,24 @@ lua_apr_type lua_apr_file_type = {
 /* lua_apr_proc_type {{{2 */
 
 static luaL_Reg proc_methods[] = {
-  { "cmdtype_set",   proc_cmdtype_set   },
+  { "cmdtype_set", proc_cmdtype_set },
   { "addrspace_set", proc_addrspace_set },
-  { "detach_set" ,   proc_detach_set    },
-  { "user_set",      proc_user_set      },
-  { "env_set",       proc_env_set       },
-  { "dir_set",       proc_dir_set       },
-  { "io_set",        proc_io_set        },
-  { "in_get",        proc_in_get        },
-  { "out_get",       proc_out_get       },
-  { "err_get",       proc_err_get       },
-/*{ "in_set",        proc_in_set        },
-  { "out_set",       proc_out_set       },
-  { "err_set",       proc_err_set       },*/
-  { "exec",          proc_exec          },
-  { "wait",          proc_wait          },
-  { "kill",          proc_kill          },
-  { NULL,            NULL               },
+  { "detach_set" , proc_detach_set },
+  { "error_check_set", proc_error_check_set },
+  { "user_set", proc_user_set },
+  { "env_set", proc_env_set },
+  { "dir_set", proc_dir_set },
+  { "io_set", proc_io_set },
+  { "in_get", proc_in_get },
+  { "out_get", proc_out_get },
+  { "err_get", proc_err_get },
+/*{ "in_set", proc_in_set },
+  { "out_set", proc_out_set },
+  { "err_set", proc_err_set },*/
+  { "exec", proc_exec },
+  { "wait", proc_wait },
+  { "kill", proc_kill },
+  { NULL, NULL },
 };
 
 static luaL_Reg proc_metamethods[] = {

@@ -11,6 +11,15 @@
 #include <apr_strings.h>
 #include <apr_lib.h>
 
+/* TODO Bind useful but missing functions in apr_proc* namespace?
+ *  - apr_procattr_child_in_set()
+ *  - apr_procattr_child_out_set()
+ *  - apr_procattr_child_err_set()
+ *  - apr_procattr_limit_set() isn't supported on all platforms?
+ *  - apr_procattr_perms_set_register()
+ *  - apr_proc_wait_all_procs()
+ */
+
 static int get_pipe(lua_State*, apr_file_t*, const char*);
 static void close_pipe(lua_State*, const char*);
 
@@ -255,6 +264,32 @@ int proc_detach_set(lua_State *L)
   process = proc_check(L, 1);
   detach = lua_toboolean(L, 2);
   status = apr_procattr_detach_set(process->attr, detach);
+
+  return push_status(L, status);
+}
+
+/* process:error_check_set(enabled) -> nothing {{{1
+ *
+ * Specify that `process:exec()` should do whatever it can to report failures
+ * directly, rather than find out in the child that something is wrong. This
+ * leads to extra overhead in the calling process, but it may help you handle
+ * these errors more gracefully.
+ *
+ * Note that this option is only useful on platforms where [fork()][fork] is
+ * used.
+ *
+ * [fork]: http://linux.die.net/man/2/fork
+ */
+
+int proc_error_check_set(lua_State *L)
+{
+  apr_status_t status;
+  apr_int32_t error_check;
+  lua_apr_proc *process;
+
+  process = proc_check(L, 1);
+  error_check = lua_toboolean(L, 2);
+  status = apr_procattr_error_check_set(process->attr, error_check);
 
   return push_status(L, status);
 }
