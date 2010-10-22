@@ -1,7 +1,7 @@
 /* Process handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 22, 2010
+ * Last Change: October 23, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -12,9 +12,6 @@
 #include <apr_lib.h>
 
 /* TODO Bind useful but missing functions in apr_proc* namespace?
- *  - apr_procattr_child_in_set()
- *  - apr_procattr_child_out_set()
- *  - apr_procattr_child_err_set()
  *  - apr_procattr_limit_set() isn't supported on all platforms?
  *  - apr_procattr_perms_set_register()
  *  - apr_proc_wait_all_procs()
@@ -70,7 +67,22 @@ static int get_pipe(lua_State *L, apr_file_t *handle, const char *key) /* {{{2 *
     return 1; /* return new pipe */
   }
   return 0;
+}
 
+
+static int set_pipe(lua_State *L, lua_apr_setpipe_f setpipe) /* {{{2 */
+{
+  lua_apr_proc *process;
+  apr_file_t *child, *parent;
+
+  /* TODO Make sure child and/or parent lua_apr_file objects are not garbage
+   * collected when the process hasn't been started yet or is still running!
+   */
+
+  process = proc_check(L, 1);
+  child = file_check(L, 2, 1)->handle;
+  parent = lua_isnoneornil(L, 3) ? NULL : file_check(L, 3, 1)->handle;
+  return push_status(L, setpipe(process->attr, child, parent));
 }
 
 static void close_pipe(lua_State *L, const char *key) /* {{{2 */
@@ -93,7 +105,7 @@ static void close_pipe(lua_State *L, const char *key) /* {{{2 */
  *       local progname = table.remove(arguments, 1)
  *       local process = apr.proc_create(progname)
  *       process:cmdtype_set('shellcmd/env')
- *       process:exec(unpack(arguments))
+ *       process:exec(arguments)
  *       local done, code, why = process:wait(true)
  *       return code
  *     end
@@ -459,6 +471,74 @@ int proc_io_set(lua_State *L)
   status = apr_procattr_io_set(process->attr, input, output, error);
 
   return push_status(L, status);
+}
+
+/* process:in_set(child_in [, parent_in]) -> status {{{1
+ *
+ * Initialize the [standard input pipe] [stdin] of the child process to an
+ * existing pipe or a pair of pipes. This can be useful if you have already
+ * opened a pipe (or multiple files) that you wish to use, perhaps persistently
+ * across multiple process invocations - such as a log file. On success true is
+ * returned, otherwise a nil followed by an error message is returned. Here's
+ * a basic example that connects two processes using an anonymous pipe:
+ *
+ *     -- Create a gzip process to decompress the Lua source code archive.
+ *     gzip = apr.proc_create 'gunzip'
+ *     gzip:cmdtype_set 'shellcmd/env'
+ *     gzip:in_set(apr.file_open('lua-5.1.4.tar.gz', 'rb'))
+ *
+ *     -- Create a tar process to list the files in the decompressed archive.
+ *     tar = apr.proc_create 'tar'
+ *     tar:cmdtype_set 'shellcmd/env'
+ *     tar:out_set(apr.pipe_open_stdout())
+ *
+ *     -- Connect the two processes using an anonymous pipe.
+ *     input, output = assert(apr.pipe_create())
+ *     gzip:out_set(output)
+ *     tar:in_set(input)
+ *
+ *     -- Start the pipeline by executing both processes.
+ *     gzip:exec()
+ *     tar:exec '-t'
+ *
+ * [stdin]: http://en.wikipedia.org/wiki/Standard_streams#Standard_input_.28stdin.29
+ */
+
+int proc_in_set(lua_State *L)
+{
+  return set_pipe(L, (lua_apr_setpipe_f)apr_procattr_child_in_set);
+}
+
+/* process:out_set(child_out [, parent_out]) -> status {{{1
+ *
+ * Initialize the [standard output pipe] [stdout] of the child process to an
+ * existing pipe or a pair of pipes. This can be useful if you have already
+ * opened a pipe (or multiple files) that you wish to use, perhaps persistently
+ * across multiple process invocations - such as a log file. On success true is
+ * returned, otherwise a nil followed by an error message is returned.
+ *
+ * [stdout]: http://en.wikipedia.org/wiki/Standard_streams#Standard_output_.28stdout.29
+ */
+
+int proc_out_set(lua_State *L)
+{
+  return set_pipe(L, (lua_apr_setpipe_f)apr_procattr_child_out_set);
+}
+
+/* process:err_set(child_err [, parent_err]) -> status {{{1
+ *
+ * Initialize the [standard error pipe] [stderr] of the child process to an
+ * existing pipe or a pair of pipes. This can be useful if you have already
+ * opened a pipe (or multiple files) that you wish to use, perhaps persistently
+ * across multiple process invocations - such as a log file. On success true is
+ * returned, otherwise a nil followed by an error message is returned.
+ *
+ * [stderr]: http://en.wikipedia.org/wiki/Standard_streams#Standard_error_.28stderr.29
+ */
+
+int proc_err_set(lua_State *L)
+{
+  return set_pipe(L, (lua_apr_setpipe_f)apr_procattr_child_err_set);
 }
 
 /* process:in_get() -> pipe {{{1

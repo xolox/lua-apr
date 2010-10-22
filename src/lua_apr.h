@@ -91,20 +91,22 @@ typedef struct lua_apr_dir {
   const char *filepath;
 } lua_apr_dir;
 
-/* Structures for internal I/O buffers. */
+/* Type definitions used to call APR functions through function pointers.
+ * NB: Omitting __stdcall here on Windows causes nasty stack corruption! */
 
 #ifdef WIN32
-/* NB: Omitting __stdcall here causes hard to debug stack corruption! */
-typedef apr_status_t (__stdcall *lua_apr_buf_rf)(void*, char*, apr_size_t*);
-typedef apr_status_t (__stdcall *lua_apr_buf_wf)(void*, const char*, apr_size_t*);
-typedef apr_status_t (__stdcall *lua_apr_buf_ff)(void*);
-typedef apr_status_t (__stdcall *lua_apr_pipe_f)(apr_file_t**, apr_pool_t*);
+# define LUA_APR_CC __stdcall
 #else
-typedef apr_status_t (*lua_apr_buf_rf)(void*, char*, apr_size_t*);
-typedef apr_status_t (*lua_apr_buf_wf)(void*, const char*, apr_size_t*);
-typedef apr_status_t (*lua_apr_buf_ff)(void*);
-typedef apr_status_t (*lua_apr_pipe_f)(apr_file_t**, apr_pool_t*);
+# define LUA_APR_CC
 #endif
+
+typedef apr_status_t (LUA_APR_CC *lua_apr_buf_rf)(void*, char*, apr_size_t*);
+typedef apr_status_t (LUA_APR_CC *lua_apr_buf_wf)(void*, const char*, apr_size_t*);
+typedef apr_status_t (LUA_APR_CC *lua_apr_buf_ff)(void*);
+typedef apr_status_t (LUA_APR_CC *lua_apr_openpipe_f)(apr_file_t**, apr_pool_t*);
+typedef apr_status_t (LUA_APR_CC *lua_apr_setpipe_f)(apr_procattr_t*, apr_file_t*, apr_file_t*);
+
+/* Structures for internal I/O buffers. */
 
 typedef struct lua_apr_buffer {
   size_t index, limit, size;
@@ -278,6 +280,9 @@ int proc_dir_set(lua_State*);
 int proc_detach_set(lua_State*);
 int proc_error_check_set(lua_State*);
 int proc_io_set(lua_State*);
+int proc_in_set(lua_State*);
+int proc_out_set(lua_State*);
+int proc_err_set(lua_State*);
 int proc_in_get(lua_State*);
 int proc_out_get(lua_State*);
 int proc_err_get(lua_State*);

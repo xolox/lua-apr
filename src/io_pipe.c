@@ -1,7 +1,7 @@
 /* Pipe I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 18, 2010
+ * Last Change: October 22, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -9,7 +9,7 @@
 #include "lua_apr.h"
 #include <apr_file_io.h>
 
-static int pipe_open(lua_State*, lua_apr_pipe_f);
+static int pipe_open(lua_State*, lua_apr_openpipe_f);
 
 /* apr.pipe_open_stdin() -> pipe {{{1
  *
@@ -110,7 +110,7 @@ int lua_apr_pipe_create(lua_State *L)
 
 /* }}}1 */
 
-int pipe_open(lua_State *L, lua_apr_pipe_f open_std_pipe)
+int pipe_open(lua_State *L, lua_apr_openpipe_f open_std_pipe)
 {
   apr_status_t status;
   lua_apr_file *pipe;

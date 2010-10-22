@@ -336,9 +336,9 @@ static luaL_Reg proc_methods[] = {
   { "in_get", proc_in_get },
   { "out_get", proc_out_get },
   { "err_get", proc_err_get },
-/*{ "in_set", proc_in_set },
+  { "in_set", proc_in_set },
   { "out_set", proc_out_set },
-  { "err_set", proc_err_set },*/
+  { "err_set", proc_err_set },
   { "exec", proc_exec },
   { "wait", proc_wait },
   { "kill", proc_kill },
