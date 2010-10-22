@@ -431,9 +431,8 @@ int proc_exec(lua_State *L)
     args = apr_palloc(process->memory_pool, sizeof args[0] * (nargs + 2));
     if (args == NULL)
       return push_error_memory(L);
-    for (i = 2; i <= nargs + 1; i++) {
+    for (i = 2; i <= nargs + 1; i++)
       args[i - 1] = luaL_checkstring(L, i);
-    }
   }
 
   /* Fill in the program name and mark the end of the "args" array. */

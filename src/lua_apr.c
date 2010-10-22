@@ -1,7 +1,7 @@
 /* Initialization and miscellaneous routines for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 21, 2010
+ * Last Change: October 22, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -131,7 +131,7 @@ int luaopen_apr_core(lua_State *L)
   return 1;
 }
 
-/* apr.platform_get() -> string {{{1
+/* apr.platform_get() -> name {{{1
  * 
  * Get the name of the platform for which the Lua/APR binding was compiled.
  * Returns one of the following strings:
