@@ -77,6 +77,47 @@ int lua_apr_proc_detach(lua_State *L)
   return push_status(L, status);
 }
 
+#if APR_HAS_FORK
+
+/* apr.proc_fork() -> process, context {{{1
+ *
+ * This is currently the only non-portable function in APR and by extension
+ * Lua/APR. It performs a [standard UNIX fork][fork]. If the fork succeeds a
+ * @process object and @context string (`'parent'` or `'child'`) are returned,
+ * otherwise a nil followed by an error message is returned. The parent process
+ * can use the returned @process object to wait for the child process to die:
+ *
+ *     if apr.proc_fork then -- forking supported?
+ *       process, context = assert(apr.proc_fork())
+ *       if context == 'parent' then
+ *         print "Parent waiting for child.."
+ *         process:wait(true)
+ *         print "Parent is done!"
+ *       else -- context == 'child'
+ *         print "Child simulating activity.."
+ *         apr.sleep(10)
+ *         print "Child is done!"
+ *       end
+ *     end
+ *
+ * As the above example implies the `apr.proc_fork()` function will only be
+ * defined when forking is supported on the current platform.
+ *
+ * [fork]: http://en.wikipedia.org/wiki/Fork_%28operating_system%29
+ */
+
+int lua_apr_proc_fork(lua_State *L)
+{
+  lua_apr_proc *process = proc_alloc(L, NULL);
+  apr_status_t status = apr_proc_fork(&process->handle, process->memory_pool);
+  if (status != APR_INCHILD && status != APR_INPARENT)
+    return push_error_status(L, status);
+  lua_pushstring(L, status == APR_INPARENT ? "parent" : "child");
+  return 2;
+}
+
+#endif
+
 /* process:addrspace_set(separate) -> status {{{1
  *
  * If @separate evaluates to true the child process will start in its own

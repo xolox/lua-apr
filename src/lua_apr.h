@@ -268,6 +268,7 @@ apr_fileperms_t check_permissions(lua_State*, int, int);
 /* proc.c */
 int lua_apr_proc_create(lua_State*);
 int lua_apr_proc_detach(lua_State*);
+int lua_apr_proc_fork(lua_State*);
 int proc_addrspace_set(lua_State*);
 int proc_user_set(lua_State*);
 int proc_group_set(lua_State*);

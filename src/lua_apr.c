@@ -84,6 +84,9 @@ int luaopen_apr_core(lua_State *L)
     /* proc -- process handling. */
     { "proc_create", lua_apr_proc_create },
     { "proc_detach", lua_apr_proc_detach },
+#   if APR_HAS_FORK
+    { "proc_fork", lua_apr_proc_fork },
+#   endif
 
     /* str.c -- string handling. */
     { "strnatcmp", lua_apr_strnatcmp },
