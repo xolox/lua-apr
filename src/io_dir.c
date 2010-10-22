@@ -1,7 +1,7 @@
 /* Directory manipulation module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 22, 2010
+ * Last Change: October 23, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -11,6 +11,18 @@
 #include <apr_fnmatch.h>
 #include <apr_strings.h>
 #include <apr_lib.h>
+
+/* Internal functions {{{1 */
+
+static lua_apr_dir *checkdir(lua_State *L, int idx, int check_open)
+{
+  lua_apr_dir *object;
+ 
+  object = check_object(L, idx, &lua_apr_dir_type);
+  if (check_open && object->handle == NULL)
+    luaL_error(L, "attempt to use a closed directory");
+  return object;
+}
 
 /* apr.temp_dir_get() -> path {{{1
  *
@@ -112,7 +124,6 @@ int lua_apr_dir_remove(lua_State *L)
 
 int lua_apr_dir_remove_recursive(lua_State *L)
 {
-
   apr_status_t status;
   apr_pool_t *outer_pool; /* used to store todo/done arrays and directory pathnames */
   apr_pool_t *middle_pool; /* used to store directory handles (apr_dir_t structs) */
@@ -262,16 +273,6 @@ int lua_apr_dir_open(lua_State *L)
   return 1;
 }
 
-lua_apr_dir *checkdir(lua_State *L, int idx, int check_open) /* {{{1 */
-{
-  lua_apr_dir *object;
- 
-  object = check_object(L, idx, &lua_apr_dir_type);
-  if (check_open && object->handle == NULL)
-    luaL_error(L, "attempt to use a closed directory");
-  return object;
-}
-
 /* directory:entries([property, ...]) -> iterator, directory handle {{{1
  *
  * This method returns a function that iterates over the (remaining) directory
@@ -371,7 +372,9 @@ int dir_close(lua_State *L)
   return push_status(L, status);
 }
 
-int dir_tostring(lua_State *L) /* {{{1 */
+/* directory:__tostring() {{{1 */
+
+int dir_tostring(lua_State *L)
 {
   lua_apr_dir *directory;
   const char *prefix;
@@ -383,7 +386,9 @@ int dir_tostring(lua_State *L) /* {{{1 */
   return 1; 
 }
 
-int dir_gc(lua_State *L) /* {{{1 */
+/* directory:__gc() {{{1 */
+
+int dir_gc(lua_State *L)
 {
   lua_apr_dir *object;
 

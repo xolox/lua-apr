@@ -1,7 +1,7 @@
 /* Cryptography routines module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 17, 2010
+ * Last Change: October 23, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -34,7 +34,16 @@
 #include <apr_md5.h>
 #include <apr_sha1.h>
 
-static int format_digest(char*, const unsigned char*, int);
+/* Internal functions {{{1 */
+
+static int format_digest(char *formatted, const unsigned char *digest, int length)
+{
+  int i;
+  for (i = 0; i < length; i++)
+    if (2 != sprintf(&formatted[i*2], "%02x", digest[i]))
+      return 0;
+  return 1;
+}
 
 /* apr.md5(message [, binary]) -> digest {{{1
  *
@@ -208,17 +217,6 @@ int lua_apr_password_get(lua_State *L)
   free(password);
 
   return pushed;
-}
-
-/* }}}1 */
-
-int format_digest(char *formatted, const unsigned char *digest, int length)
-{
-  int i;
-  for (i = 0; i < length; i++)
-    if (2 != sprintf(&formatted[i*2], "%02x", digest[i]))
-      return 0;
-  return 1;
 }
 
 /* vim: set ts=2 sw=2 et tw=79 fen fdm=marker : */
