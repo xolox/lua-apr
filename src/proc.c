@@ -20,8 +20,66 @@
  *  - apr_proc_wait_all_procs()
  */
 
-static int get_pipe(lua_State*, apr_file_t*, const char*);
-static void close_pipe(lua_State*, const char*);
+/* Internal functions {{{1 */
+
+static lua_apr_proc *proc_alloc(lua_State *L, const char *path) /* {{{2 */
+{
+  apr_status_t status;
+  lua_apr_proc *process;
+
+  process = new_object(L, &lua_apr_proc_type);
+  status = apr_pool_create(&process->memory_pool, NULL);
+  if (status != APR_SUCCESS)
+    process->memory_pool = NULL;
+  else
+    status = apr_procattr_create(&process->attr, process->memory_pool);
+  if (status != APR_SUCCESS)
+    raise_error_status(L, status);
+  if (path != NULL)
+    process->path = apr_pstrdup(process->memory_pool, path);
+  return process;
+}
+
+static lua_apr_proc *proc_check(lua_State *L, int i) /* {{{2 */
+{
+  return check_object(L, i, &lua_apr_proc_type);
+}
+
+static int get_pipe(lua_State *L, apr_file_t *handle, const char *key) /* {{{2 */
+{
+  lua_apr_file *file;
+
+  lua_getfenv(L, 1); /* get environment table */
+  if (lua_type(L, -1) == LUA_TTABLE) { /* table already exists */
+    lua_getfield(L, -1, key); /* get cached pipe object */
+    if (lua_type(L, -1) == LUA_TUSERDATA)
+      return 1; /* return cached pipe object */
+    lua_pop(L, 1); /* pop nil result from lua_getfield() */
+  } else {
+    lua_pop(L, 1); /* pop nil result from lua_getfenv() */
+    lua_newtable(L); /* create environment table */
+    lua_pushvalue(L, -1); /* copy reference to table */
+    lua_setfenv(L, 1); /* install environment table */
+  }
+  if (handle != NULL) {
+    file = file_alloc(L, NULL, NULL);
+    file->handle = handle;
+    init_file_buffers(L, file, 1);
+    lua_pushvalue(L, -1); /* copy reference to userdata */
+    lua_setfield(L, -3, key); /* cache userdata in environment table */
+    return 1; /* return new pipe */
+  }
+  return 0;
+
+}
+
+static void close_pipe(lua_State *L, const char *key) /* {{{2 */
+{
+  lua_getfield(L, 2, key);
+  if (lua_type(L, -1) == LUA_TUSERDATA)
+    file_close_impl(L, lua_touserdata(L, -1));
+  lua_pop(L, 1);
+}
 
 /* apr.proc_create(program) -> process {{{1
  *
@@ -588,32 +646,7 @@ int proc_kill(lua_State *L)
   return push_status(L, status);
 }
 
-/* }}} */
-
-/* Helpers, process object metamethods and initializer */
-
-lua_apr_proc *proc_alloc(lua_State *L, const char *path)
-{
-  apr_status_t status;
-  lua_apr_proc *process;
-
-  process = new_object(L, &lua_apr_proc_type);
-  status = apr_pool_create(&process->memory_pool, NULL);
-  if (status != APR_SUCCESS)
-    process->memory_pool = NULL;
-  else
-    status = apr_procattr_create(&process->attr, process->memory_pool);
-  if (status != APR_SUCCESS)
-    raise_error_status(L, status);
-  if (path != NULL)
-    process->path = apr_pstrdup(process->memory_pool, path);
-  return process;
-}
-
-lua_apr_proc *proc_check(lua_State *L, int i)
-{
-  return check_object(L, i, &lua_apr_proc_type);
-}
+/* process:__tostring() {{{1 */
 
 int proc_tostring(lua_State *L)
 {
@@ -622,33 +655,7 @@ int proc_tostring(lua_State *L)
   return 1;
 }
 
-int get_pipe(lua_State *L, apr_file_t *handle, const char *key)
-{
-  lua_apr_file *file;
-
-  lua_getfenv(L, 1); /* get environment table */
-  if (lua_type(L, -1) == LUA_TTABLE) { /* table already exists */
-    lua_getfield(L, -1, key); /* get cached pipe object */
-    if (lua_type(L, -1) == LUA_TUSERDATA)
-      return 1; /* return cached pipe object */
-    lua_pop(L, 1); /* pop nil result from lua_getfield() */
-  } else {
-    lua_pop(L, 1); /* pop nil result from lua_getfenv() */
-    lua_newtable(L); /* create environment table */
-    lua_pushvalue(L, -1); /* copy reference to table */
-    lua_setfenv(L, 1); /* install environment table */
-  }
-  if (handle != NULL) {
-    file = file_alloc(L, NULL, NULL);
-    file->handle = handle;
-    init_file_buffers(L, file, 1);
-    lua_pushvalue(L, -1); /* copy reference to userdata */
-    lua_setfield(L, -3, key); /* cache userdata in environment table */
-    return 1; /* return new pipe */
-  }
-  return 0;
-
-}
+/* process:__gc() {{{1 */
 
 int proc_gc(lua_State *L)
 {
@@ -664,12 +671,4 @@ int proc_gc(lua_State *L)
     process->memory_pool = NULL;
   }
   return 0;
-}
-
-void close_pipe(lua_State *L, const char *key)
-{
-  lua_getfield(L, 2, key);
-  if (lua_type(L, -1) == LUA_TUSERDATA)
-    file_close_impl(L, lua_touserdata(L, -1));
-  lua_pop(L, 1);
 }

@@ -284,8 +284,6 @@ int proc_err_get(lua_State*);
 int proc_exec(lua_State*);
 int proc_wait(lua_State*);
 int proc_kill(lua_State*);
-lua_apr_proc *proc_alloc(lua_State*, const char*);
-lua_apr_proc *proc_check(lua_State*, int);
 int proc_tostring(lua_State*);
 int proc_gc(lua_State*);
 
