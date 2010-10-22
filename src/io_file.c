@@ -1,7 +1,7 @@
 /* File I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 18, 2010
+ * Last Change: October 22, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -199,7 +199,7 @@ int lua_apr_file_attrs_set(lua_State *L)
 
 int lua_apr_stat(lua_State *L)
 {
-  const char *path, *name;
+  const char *path, *name, *dir;
   apr_pool_t *memory_pool;
   lua_apr_stat_context context = { 0 };
   apr_status_t status;
@@ -207,18 +207,21 @@ int lua_apr_stat(lua_State *L)
   memory_pool = to_pool(L);
   path = luaL_checkstring(L, 1);
   name = apr_filepath_name_get(path);
-
+  dir = apr_pstrndup(memory_pool, path, name - path);
   context.firstarg = 2;
   context.lastarg = lua_gettop(L);
-  check_stat_request(L, &context, STAT_DEFAULT_TABLE);
+  check_stat_request(L, &context);
   status = apr_stat(&context.info, path, context.wanted, memory_pool);
-
-  if (status && !APR_STATUS_IS_INCOMPLETE(status)) {
+  if (status != APR_SUCCESS && !APR_STATUS_IS_INCOMPLETE(status))
     return push_error_status(L, status);
-  } else {
-    const char *parent = apr_pstrndup(memory_pool, path, name - path);
-    return push_stat_results(L, &context, parent);
+
+  /* XXX apr_stat() doesn't fill in finfo.name (tested on Linux) */
+  if (!(context.info.valid & APR_FINFO_NAME)) {
+    context.info.valid |= APR_FINFO_NAME;
+    context.info.name = name;
   }
+
+  return push_stat_results(L, &context, dir);
 }
 
 /* apr.file_open(path [, mode ]) -> file {{{1
@@ -300,7 +303,7 @@ int file_stat(lua_State *L)
   apr_status_t status;
 
   file = file_check(L, 1, 1);
-  check_stat_request(L, &context, STAT_DEFAULT_TABLE);
+  check_stat_request(L, &context);
   status = apr_file_info_get(&context.info, context.wanted, file->handle);
   if (status != APR_SUCCESS && !APR_STATUS_IS_INCOMPLETE(status))
     return push_file_error(L, file, status);

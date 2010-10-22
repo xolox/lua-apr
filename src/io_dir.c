@@ -1,7 +1,7 @@
 /* Directory manipulation module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: September 25, 2010
+ * Last Change: October 22, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -290,7 +290,7 @@ int dir_entries(lua_State *L)
   context = lua_newuserdata(L, sizeof(*context));
   context->firstarg = 2; /* after directory handle */
   context->lastarg = lua_gettop(L) - 1; /* before stat context */
-  check_stat_request(L, context, STAT_DEFAULT_TABLE);
+  check_stat_request(L, context);
 
   /* Return the iterator function and directory object. */
   lua_pushcclosure(L, dir_read, 1);
@@ -320,7 +320,7 @@ int dir_read(lua_State *L)
     /* Standalone call to directory:read() */
     backup_ctx.firstarg = 2;
     backup_ctx.lastarg = lua_gettop(L);
-    check_stat_request(L, &backup_ctx, STAT_DEFAULT_TABLE);
+    check_stat_request(L, &backup_ctx);
     context = &backup_ctx;
   }
 

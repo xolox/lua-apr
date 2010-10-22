@@ -1,7 +1,7 @@
 /* File system permissions handling for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 2, 2010
+ * Last Change: October 22, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -31,7 +31,7 @@ static const apr_int32_t flags[] = {
 
 void push_stat_field(lua_State*, apr_finfo_t*, apr_int32_t, const char*);
 
-void check_stat_request(lua_State *L, lua_apr_stat_context *ctx, lua_apr_stat_result defval)
+void check_stat_request(lua_State *L, lua_apr_stat_context *ctx)
 {
   apr_int32_t flag;
   int i;
@@ -45,17 +45,9 @@ void check_stat_request(lua_State *L, lua_apr_stat_context *ctx, lua_apr_stat_re
       ctx->fields[ctx->count++] = flag;
   }
 
-  if (ctx->count == 0) {
-    if (defval == STAT_DEFAULT_TABLE) {
-        for (i = 0; i < count(flags); ++i)
-          ctx->wanted |= flags[i];
-    } else if (defval == STAT_DEFAULT_PATH) {
-      ctx->fields[ctx->count++] = APR_FINFO_PATH;
-      ctx->wanted = APR_FINFO_NAME;
-    } else {
-      assert(0);
-    }
-  }
+  if (ctx->count == 0)
+    for (i = 0; i < count(flags); ++i)
+      ctx->wanted |= flags[i];
 }
 
 int push_stat_results(lua_State *L, lua_apr_stat_context *ctx, const char *path)
