@@ -128,6 +128,10 @@ int luaopen_apr_core(lua_State *L)
   lua_createtable(L, 0, count(functions));
   luaL_register(L, NULL, functions);
 
+  /* Let callers of process:user_set() know whether it requires a password. */
+  lua_pushboolean(L, APR_PROCATTR_USER_SET_REQUIRES_PASSWORD);
+  lua_setfield(L, -2, "user_set_requires_password");
+
   return 1;
 }
 

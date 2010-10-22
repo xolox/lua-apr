@@ -99,10 +99,13 @@ int proc_addrspace_set(lua_State *L)
   return push_status(L, status);
 }
 
-/* process:user_set(username, password) -> status {{{1
+/* process:user_set(username [, password]) -> status {{{1
  *
  * Set the user under which the child process will run. On success true is
  * returned, otherwise a nil followed by an error message is returned.
+ *
+ * On Windows and other platforms where `apr.user_set_requires_password` is
+ * true this method _requires_ a password.
  */
 
 int proc_user_set(lua_State *L)
@@ -113,7 +116,11 @@ int proc_user_set(lua_State *L)
 
   process = proc_check(L, 1);
   username = luaL_checkstring(L, 2);
+# if APR_PROCATTR_USER_SET_REQUIRES_PASSWORD
   password = luaL_checkstring(L, 3);
+# else
+  password = luaL_optstring(L, 3, NULL);
+# endif
   status = apr_procattr_user_set(process->attr, username, password);
 
   return push_status(L, status);
