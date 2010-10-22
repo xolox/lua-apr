@@ -1,7 +1,7 @@
 /* Time routines module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 21, 2010
+ * Last Change: October 22, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -51,13 +51,17 @@ static const struct {
   { "gmtoff", offsetof(apr_time_exp_t, tm_gmtoff), 0 },
 };
 
-void time_check_exploded(lua_State *L, int idx, apr_time_exp_t *components)
+void time_check_exploded(lua_State *L, int idx, apr_time_exp_t *components, int default_to_now)
 {
   int i;
   char *field;
   apr_status_t status;
 
-  if (lua_isnumber(L, idx)) {
+  if (default_to_now && lua_isnoneornil(L, idx)) {
+    status = apr_time_exp_lt(components, apr_time_now());
+    if (status != APR_SUCCESS)
+      raise_error_status(L, status);
+  } else if (lua_isnumber(L, idx)) {
     status = apr_time_exp_lt(components, time_get(L, idx));
     if (status != APR_SUCCESS)
       raise_error_status(L, status);
@@ -77,14 +81,16 @@ void time_check_exploded(lua_State *L, int idx, apr_time_exp_t *components)
 
 apr_time_t time_check(lua_State *L, int idx)
 {
-  if (!lua_istable(L, idx)) {
+  if (lua_isnoneornil(L, idx)) {
+    return apr_time_now();
+  } else if (!lua_istable(L, idx)) {
     luaL_checktype(L, idx, LUA_TNUMBER);
     return time_get(L, idx);
   } else {
     apr_time_t time;
     apr_status_t status;
     apr_time_exp_t components;
-    time_check_exploded(L, idx, &components);
+    time_check_exploded(L, idx, &components, 1);
     status = apr_time_exp_get(&time, &components);
     if (status != APR_SUCCESS)
       raise_error_status(L, status);
@@ -125,14 +131,15 @@ int lua_apr_time_now(lua_State *L)
   return time_push(L, apr_time_now());
 }
 
-/* apr.time_explode(time [, timezone]) -> components {{{1
+/* apr.time_explode([time [, timezone]]) -> components {{{1
  *
- * Convert a numeric time to its human readable components. If @timezone isn't
- * given or evaluates to false the local timezone is used. If its a number then
- * this number is used as the offset in seconds from [GMT] [gmt]. The value
- * true is treated the same as 0, i.e. GMT. On success the table of components
- * is returned, otherwise a nil followed by an error message is returned. The
- * resulting table contains the following fields:
+ * Convert the numeric value @time (current time if none given) to its human
+ * readable components. If @timezone isn't given or evaluates to false the
+ * local timezone is used. If its a number then this number is used as the
+ * offset in seconds from [GMT] [gmt]. The value true is treated the same as 0,
+ * i.e. GMT. On success the table of components is returned, otherwise a nil
+ * followed by an error message is returned. The resulting table contains the
+ * following fields:
  *
  *  - `usec` is the number of microseconds past `sec`
  *  - `sec` is the number of seconds past `min` (0-61)
@@ -204,7 +211,7 @@ int lua_apr_time_implode(lua_State *L)
   apr_time_exp_t components = { 0 };
   apr_time_t time;
 
-  time_check_exploded(L, 1, &components);
+  time_check_exploded(L, 1, &components, 0);
   if (lua_toboolean(L, 2)) {
     status = apr_time_exp_gmt_get(&time, &components);
   } else {
@@ -215,13 +222,14 @@ int lua_apr_time_implode(lua_State *L)
   return time_push(L, time);
 }
 
-/* apr.time_format(format, time) -> formatted {{{1
+/* apr.time_format(format [, time]) -> formatted {{{1
  *
- * Format @time according to string @format. On success the formatted date is
- * returned, otherwise a nil followed by an error message is returned. The two
- * special formats `'ctime'` and `'rfc822'` result in a fixed length string of
- * 24 or 29 characters in length. The @time argument may be either a number or
- * a table with components like those returned by `apr.time_explode()`.
+ * Format @time (current time if none given) according to string @format. On
+ * success the formatted date is returned, otherwise a nil followed by an error
+ * message is returned. The two special formats `'ctime'` and `'rfc822'` result
+ * in a fixed length string of 24 or 29 characters in length. The @time
+ * argument may be either a number or a table with components like those
+ * returned by `apr.time_explode()`.
  *
  *     > = apr.time_format('%Y-%m-%d %H:%I:%S', apr.time_now())
  *     '2010-09-25 17:05:08'
@@ -239,13 +247,13 @@ int lua_apr_time_format(lua_State *L)
 
   format = luaL_checkstring(L, 1);
 
-  if (!strcmp(format, "ctime")) {
+  if (strcmp(format, "ctime") == 0) {
     status = apr_ctime(formatted, time_check(L, 2));
     if (status != APR_SUCCESS)
       return push_error_status(L, status);
     lua_pushlstring(L, formatted, APR_CTIME_LEN - 1);
     return 1;
-  } else if (!strcmp(format, "rfc822")) {
+  } else if (strcmp(format, "rfc822") == 0) {
     status = apr_rfc822_date(formatted, time_check(L, 2));
     if (status != APR_SUCCESS)
       return push_error_status(L, status);
@@ -254,7 +262,7 @@ int lua_apr_time_format(lua_State *L)
   } else {
     apr_time_exp_t components = { 0 };
     apr_size_t length = count(formatted);
-    time_check_exploded(L, 2, &components);
+    time_check_exploded(L, 2, &components, 1);
     status = apr_strftime(formatted, &length, length, format, &components);
     if (status != APR_SUCCESS)
       return push_error_status(L, status);
