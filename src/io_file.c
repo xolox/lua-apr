@@ -17,6 +17,36 @@
 static int push_file_status(lua_State*, lua_apr_file*, apr_status_t);
 static int push_file_error(lua_State*, lua_apr_file*, apr_status_t);
 
+#if APR_MAJOR_VERSION > 1 || (APR_MAJOR_VERSION == 1 && APR_MINOR_VERSION >= 4)
+
+/* apr.file_link(source, target) -> status {{{1
+ *
+ * Create a [hard link] [hard_link] to the specified file. On success true is
+ * returned, otherwise a nil followed by an error message is returned. Both
+ * files must reside on the same device.
+ *
+ * Please note that this function will only be available when the Lua/APR
+ * binding is compiled against APR 1.4 or newer because the [apr\_file\_link()]
+ * [apr_file_link] function wasn't available in earlier releases.
+ *
+ * [hard_link]: http://en.wikipedia.org/wiki/Hard_link
+ * [apr_file_link]: http://apr.apache.org/docs/apr/trunk/group__apr__file__io.html#ga7911275c0e97edc064b8167be658f9e
+ */
+
+int lua_apr_file_link(lua_State *L)
+{
+  const char *source, *target;
+  apr_status_t status;
+
+  source = luaL_checkstring(L, 1);
+  target = luaL_checkstring(L, 2);
+  status = apr_file_link(source, target);
+
+  return push_status(L, status);
+}
+
+#endif
+
 /* apr.file_copy(source, target [, permissions]) -> status {{{1
  *
  * Copy the file @source to @target. On success true is returned, otherwise a

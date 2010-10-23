@@ -65,6 +65,9 @@ int luaopen_apr_core(lua_State *L)
     { "dir_open", lua_apr_dir_open },
 
     /* io_file.c -- file i/o handling. */
+#   if APR_MAJOR_VERSION > 1 || (APR_MAJOR_VERSION == 1 && APR_MINOR_VERSION >= 4)
+    { "file_link", lua_apr_file_link },
+#   endif
     { "file_copy", lua_apr_file_copy },
     { "file_append", lua_apr_file_append },
     { "file_rename", lua_apr_file_rename },

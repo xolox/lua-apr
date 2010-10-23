@@ -12,6 +12,7 @@
 #include <lauxlib.h>
 #include <apr.h>
 #include <apu.h>
+#include <apr_version.h>
 #include <apr_general.h>
 #include <apr_file_info.h>
 #include <apr_file_io.h>
@@ -232,6 +233,7 @@ int dir_gc(lua_State*);
 int dir_tostring(lua_State*);
 
 /* io_file.c */
+int lua_apr_file_link(lua_State*);
 int lua_apr_file_copy(lua_State*);
 int lua_apr_file_append(lua_State*);
 int lua_apr_file_rename(lua_State*);
