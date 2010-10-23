@@ -3,7 +3,7 @@
  Test suite for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: October 17, 2010
+ Last Change: October 23, 2010
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -440,7 +440,6 @@ assert(cmdline[5] == 'argument 4')
 -- Time routines (time.c) {{{1
 message "Testing time routines ..\n"
 
--- TODO Clean up and add some inline documentation because this is a mess!
 -- Based on http://svn.apache.org/viewvc/apr/apr/trunk/test/testtime.c?view=markup.
 
 local now = 1032030336186711 / 1000000
@@ -448,38 +447,21 @@ local now = 1032030336186711 / 1000000
 -- Check that apr.time_now() more or less matches os.time()
 assert(math.abs(os.time() - apr.time_now()) <= 1)
 
--- test_gmtstr (TODO: APR_ENOTIMPL)
+-- apr.time_explode() using apr_time_exp_lt()
+local posix_exp = os.date('*t', now)
+local xt = assert(apr.time_explode(now)) -- apr_time_exp_lt()
+for k, v in pairs(posix_exp) do assert(v == xt[k]) end
 
--- test_exp_lt (TODO: APR_ENOTIMPL)
-do
-  local posix_exp = os.date('*t', now)
-  local xt = assert(apr.time_explode(now))
-  for k, v in pairs(posix_exp) do assert(v == xt[k]) end
-end
+-- apr.time_implode() on a local time table (ignores floating point precision
+-- because on my laptop "now" equals 1032030336.186711 while "imp" equals
+-- 1032037536.186710)
+local imp = assert(apr.time_implode(xt)) -- apr_time_exp_gmt_get()
+assert(math.floor(now) == math.floor(imp))
 
--- test_exp_get_gmt (ignores floating point precision because on my laptop
--- "now" equals 1032030336.186711 while "imp" equals 1032037536.186710)
-do
-  local xt = assert(apr.time_explode(now, false)) -- apr_time_exp_gmt
-  local imp = assert(apr.time_implode(xt)) -- apr_time_exp_get
-  -- gmtoff depends on who runs the tests!
-  assert(math.floor(now + xt.gmtoff) == math.floor(imp))
-end
-
--- test_exp_get_lt
-do
-  local xt = assert(apr.time_explode(now, true)) -- apr_time_exp_lt
-  local imp = assert(apr.time_implode(xt)) -- apr_time_exp_get
-  assert(xt.gmtoff == 0)
-  assert(math.floor(now) == math.floor(imp))
-end
-
--- test_imp_gmt
-do
-  local xt = assert(apr.time_explode(now, false)) -- apr_time_exp_gmt
-  local imp = assert(apr.time_implode(xt, true)) -- apr_time_exp_gmt_get
-  assert(math.floor(now) == math.floor(imp))
-end
+-- apr.time_implode() on a GMT time table
+local xt = assert(apr.time_explode(now, true)) -- apr_time_exp_gmt()
+local imp = assert(apr.time_implode(xt)) -- apr_time_exp_gmt_get()
+assert(math.floor(now) == math.floor(imp))
 
 -- URI parsing module (uri.c) {{{1
 message "Testing URI parsing ..\n"

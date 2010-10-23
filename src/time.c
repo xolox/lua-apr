@@ -1,7 +1,7 @@
 /* Time routines module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 22, 2010
+ * Last Change: October 23, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -145,7 +145,7 @@ int lua_apr_time_now(lua_State *L)
  *  - `sec` is the number of seconds past `min` (0-61)
  *  - `min` is the number of minutes past `hour` (0-59)
  *  - `hour` is the number of hours past midnight (0-23)
- *  - `mday` is the day of the month (1-31)
+ *  - `day` is the day of the month (1-31)
  *  - `month` is the month of the year (0-11).
  *  - `year` is the year since 1900
  *  - `wday` is the number of days since Sunday (0-6)
@@ -154,6 +154,29 @@ int lua_apr_time_now(lua_State *L)
  *  - `isdst` is true when [daylight saving time] [dst] is in effect
  *
  * All of these fields are numbers except for `isdst` which is a boolean.
+ * Here's an example of the output returned by `apr.time_explode()`:
+ *
+ *     > -- Note that numeric dates are always in UTC while tables with
+ *     > -- date components are in the local timezone by default.
+ *     > components = apr.time_explode(1032030336.18671)
+ *     > = components
+ *     {
+ *      usec = 186710,
+ *      sec = 36,
+ *      min = 5,
+ *      hour = 21,
+ *      day = 14,
+ *      month = 9,
+ *      year = 2002,
+ *      wday = 7,
+ *      yday = 257,
+ *      gmtoff = 7200, -- my local timezone
+ *      isdst = true,
+ *     }
+ *     > -- To convert a table of date components back into a number
+ *     > -- you can use the apr.time_implode() function as follows:
+ *     > = apr.time_implode(components)
+ *     1032030336.18671
  *
  * [gmt]: http://en.wikipedia.org/wiki/Greenwich_Mean_Time
  * [utc]: http://en.wikipedia.org/wiki/Coordinated_Universal_Time
@@ -164,25 +187,22 @@ int lua_apr_time_explode(lua_State *L)
 {
   apr_time_exp_t components;
   apr_status_t status;
-  apr_int32_t offset;
   apr_time_t time;
   char *field;
   int i;
 
   time = time_check(L, 1);
-
-  /* explode time according to local or given timezone */
-  if (!lua_toboolean(L, 2)) {
+  if (!lua_toboolean(L, 2))
+    /* Explode the time according to the local timezone by default. */
     status = apr_time_exp_lt(&components, time);
-  } else {
-    offset = lua_isboolean(L, 2) ? 0 : (apr_int32_t) luaL_checkinteger(L, 2);
-    status = apr_time_exp_tz(&components, time, offset);
-  }
-
+  else
+    /* Or explode the time according to (an offset from) GMT instead. */
+    status = apr_time_exp_tz(&components, time,
+        lua_isboolean(L, 2) ? 0 : (apr_int32_t) luaL_checkinteger(L, 2));
   if (status != APR_SUCCESS)
     return push_error_status(L, status);
 
-  /* copy numeric fields of exploded time to Lua table */
+  /* Copy numeric fields of exploded time to Lua table. */
   lua_createtable(L, 0, count(fields) + 1);
   for (i = 0; i < count(fields); i++) {
     field = (char*)&components + fields[i].byte_offset;
@@ -190,19 +210,18 @@ int lua_apr_time_explode(lua_State *L)
     lua_setfield(L, -2, fields[i].name);
   }
 
-  /* copy boolean `isdst' field */
+  /* Copy boolean `isdst' field. */
   lua_pushboolean(L, components.tm_isdst);
   lua_setfield(L, -2, "isdst");
 
   return 1;
 }
 
-/* apr.time_implode(components [, gmt]) -> time {{{1
+/* apr.time_implode(components) -> time {{{1
  *
- * Convert a table of date @components to its numeric value. If @gmt evaluates
- * to true the resulting value will represent [GMT] [gmt]. On success the time
- * is returned, otherwise a nil followed by an error message is returned. See
- * `apr.time_explode()` for a list of supported components.
+ * Convert a table of time @components to its numeric value. On success the
+ * time is returned, otherwise a nil followed by an error message is returned.
+ * See `apr.time_explode()` for a list of supported components.
  */
 
 int lua_apr_time_implode(lua_State *L)
@@ -212,20 +231,17 @@ int lua_apr_time_implode(lua_State *L)
   apr_time_t time;
 
   time_check_exploded(L, 1, &components, 0);
-  if (lua_toboolean(L, 2)) {
-    status = apr_time_exp_gmt_get(&time, &components);
-  } else {
-    status = apr_time_exp_get(&time, &components);
-  }
+  status = apr_time_exp_gmt_get(&time, &components);
   if (status != APR_SUCCESS)
     return push_error_status(L, status);
+
   return time_push(L, time);
 }
 
 /* apr.time_format(format [, time]) -> formatted {{{1
  *
  * Format @time (current time if none given) according to string @format. On
- * success the formatted date is returned, otherwise a nil followed by an error
+ * success the formatted time is returned, otherwise a nil followed by an error
  * message is returned. The two special formats `'ctime'` and `'rfc822'` result
  * in a fixed length string of 24 or 29 characters in length. The @time
  * argument may be either a number or a table with components like those
