@@ -19,7 +19,9 @@
 
 /* Internal functions {{{1 */
 
-static lua_apr_proc *proc_alloc(lua_State *L, const char *path) /* {{{2 */
+/* proc_alloc(L, path) -- allocate and initialize process object {{{2 */
+
+static lua_apr_proc *proc_alloc(lua_State *L, const char *path)
 {
   apr_status_t status;
   lua_apr_proc *process;
@@ -37,26 +39,38 @@ static lua_apr_proc *proc_alloc(lua_State *L, const char *path) /* {{{2 */
   return process;
 }
 
-static lua_apr_proc *proc_check(lua_State *L, int i) /* {{{2 */
+/* proc_check(L, i) -- check for process object on Lua stack {{{2 */
+
+static lua_apr_proc *proc_check(lua_State *L, int i)
 {
   return check_object(L, i, &lua_apr_proc_type);
 }
 
-static int get_pipe(lua_State *L, apr_file_t *handle, const char *key) /* {{{2 */
+/* getoenv(L) -- get/create environment table for userdata {{{2 */
+
+static int getoenv(lua_State *L)
+{
+  lua_getfenv(L, 1); /* get environment table */
+  if (lua_type(L, -1) == LUA_TTABLE)
+    return 1;
+  lua_pop(L, 1); /* pop nil result from lua_getfenv() */
+  lua_newtable(L); /* create environment table */
+  lua_pushvalue(L, -1); /* copy reference to table */
+  lua_setfenv(L, 1); /* install environment table */
+  return 0;
+}
+
+/* get_pipe(L, file, key) -- return standard input/output/error pipe {{{2 */
+
+static int get_pipe(lua_State *L, apr_file_t *handle, const char *key)
 {
   lua_apr_file *file;
 
-  lua_getfenv(L, 1); /* get environment table */
-  if (lua_type(L, -1) == LUA_TTABLE) { /* table already exists */
+  if (getoenv(L)) {
     lua_getfield(L, -1, key); /* get cached pipe object */
     if (lua_type(L, -1) == LUA_TUSERDATA)
       return 1; /* return cached pipe object */
     lua_pop(L, 1); /* pop nil result from lua_getfield() */
-  } else {
-    lua_pop(L, 1); /* pop nil result from lua_getfenv() */
-    lua_newtable(L); /* create environment table */
-    lua_pushvalue(L, -1); /* copy reference to table */
-    lua_setfenv(L, 1); /* install environment table */
   }
   if (handle != NULL) {
     file = file_alloc(L, NULL, NULL);
@@ -69,23 +83,32 @@ static int get_pipe(lua_State *L, apr_file_t *handle, const char *key) /* {{{2 *
   return 0;
 }
 
+/* set_pipe(L, ck, pk, cb) -- open standard input/output/error pipe {{{2 */
 
-static int set_pipe(lua_State *L, lua_apr_setpipe_f setpipe) /* {{{2 */
+static int set_pipe(lua_State *L, const char *ck, const char *pk, lua_apr_setpipe_f cb)
 {
   lua_apr_proc *process;
-  apr_file_t *child, *parent;
+  apr_file_t *child, *parent = NULL;
 
-  /* TODO Make sure child and/or parent lua_apr_file objects are not garbage
-   * collected when the process hasn't been started yet or is still running!
-   */
-
+  /* Validate and collect arguments. */
+  lua_settop(L, 3); /* process, child_pipe, parent_pipe */
   process = proc_check(L, 1);
   child = file_check(L, 2, 1)->handle;
-  parent = lua_isnoneornil(L, 3) ? NULL : file_check(L, 3, 1)->handle;
-  return push_status(L, setpipe(process->attr, child, parent));
+  if (!lua_isnil(L, 3))
+    parent = file_check(L, 3, 1)->handle;
+
+  /* Make sure pipe(s) aren't garbage collected while process is alive! */
+  getoenv(L); /* process, child_pipe, parent_pipe, environment */
+  lua_insert(L, 1); /* environment, process, child_pipe, parent_pipe */
+  lua_setfield(L, 1, pk); /* environment, process, child_pipe */
+  lua_setfield(L, 1, ck); /* environment, process */
+
+  return push_status(L, cb(process->attr, child, parent));
 }
 
-static void close_pipe(lua_State *L, const char *key) /* {{{2 */
+/* close_pipe(L, key) -- close standard input/output/error pipe {{{2 */
+
+static void close_pipe(lua_State *L, const char *key)
 {
   lua_getfield(L, 2, key);
   if (lua_type(L, -1) == LUA_TUSERDATA)
@@ -506,7 +529,8 @@ int proc_io_set(lua_State *L)
 
 int proc_in_set(lua_State *L)
 {
-  return set_pipe(L, (lua_apr_setpipe_f)apr_procattr_child_in_set);
+  return set_pipe(L, "in_child", "in_parent",
+      (lua_apr_setpipe_f)apr_procattr_child_in_set);
 }
 
 /* process:out_set(child_out [, parent_out]) -> status {{{1
@@ -522,7 +546,8 @@ int proc_in_set(lua_State *L)
 
 int proc_out_set(lua_State *L)
 {
-  return set_pipe(L, (lua_apr_setpipe_f)apr_procattr_child_out_set);
+  return set_pipe(L, "out_child", "out_parent",
+      (lua_apr_setpipe_f)apr_procattr_child_out_set);
 }
 
 /* process:err_set(child_err [, parent_err]) -> status {{{1
@@ -538,7 +563,8 @@ int proc_out_set(lua_State *L)
 
 int proc_err_set(lua_State *L)
 {
-  return set_pipe(L, (lua_apr_setpipe_f)apr_procattr_child_err_set);
+  return set_pipe(L, "err_child", "err_parent",
+      (lua_apr_setpipe_f)apr_procattr_child_err_set);
 }
 
 /* process:in_get() -> pipe {{{1
@@ -549,7 +575,7 @@ int proc_err_set(lua_State *L)
 int proc_in_get(lua_State *L)
 {
   lua_apr_proc *process = proc_check(L, 1);
-  return get_pipe(L, process->handle.in, "in");
+  return get_pipe(L, process->handle.in, "in_parent");
 }
 
 /* process:out_get() -> pipe {{{1
@@ -560,7 +586,7 @@ int proc_in_get(lua_State *L)
 int proc_out_get(lua_State *L)
 {
   lua_apr_proc *process = proc_check(L, 1);
-  return get_pipe(L, process->handle.out, "out");
+  return get_pipe(L, process->handle.out, "out_parent");
 }
 
 /* process:err_get() -> pipe {{{1
@@ -571,7 +597,7 @@ int proc_out_get(lua_State *L)
 int proc_err_get(lua_State *L)
 {
   lua_apr_proc *process = proc_check(L, 1);
-  return get_pipe(L, process->handle.err, "err");
+  return get_pipe(L, process->handle.err, "err_parent");
 }
 
 /* process:exec([arg1 [, arg2, ...]]) -> status {{{1
@@ -740,11 +766,15 @@ int proc_tostring(lua_State *L)
 int proc_gc(lua_State *L)
 {
   lua_apr_proc *process = proc_check(L, 1);
+  lua_settop(L, 1);
   lua_getfenv(L, 1);
   if (lua_type(L, -1) == LUA_TTABLE) {
-    close_pipe(L, "in");
-    close_pipe(L, "out");
-    close_pipe(L, "err");
+    close_pipe(L, "in_child");
+    close_pipe(L, "in_parent");
+    close_pipe(L, "out_child");
+    close_pipe(L, "out_parent");
+    close_pipe(L, "err_child");
+    close_pipe(L, "err_parent");
   }
   if (process->memory_pool != NULL) {
     apr_pool_destroy(process->memory_pool);
