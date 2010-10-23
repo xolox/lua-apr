@@ -1,7 +1,7 @@
 /* File I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 22, 2010
+ * Last Change: October 23, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -16,7 +16,7 @@
 
 static int push_file_status(lua_State*, lua_apr_file*, apr_status_t);
 static int push_file_error(lua_State*, lua_apr_file*, apr_status_t);
-  
+
 /* apr.file_copy(source, target [, permissions]) -> status {{{1
  *
  * Copy the file @source to @target. On success true is returned, otherwise a
@@ -311,6 +311,28 @@ int file_stat(lua_State *L)
   return push_stat_results(L, &context, NULL);
 }
 
+/* file:lines() -> iterator {{{1
+ *
+ * _This function imitates Lua's [file:lines()] [flines] function, so here is
+ * the documentation for that function:_
+ *
+ * Return an iterator function that, each time it is called, returns a new line
+ * from the file. Therefore, the construction
+ *
+ *     for line in file:lines() do body end
+ *
+ * will iterate over all lines of the file. This function does not close the
+ * file when the loop ends.
+ *
+ * [flines]: http://www.lua.org/manual/5.1/manual.html#pdf-file:lines
+ */
+
+int file_lines(lua_State *L)
+{
+  lua_apr_file *file = file_check(L, 1, 1);
+  return read_lines(L, &file->input);
+}
+
 /* file:read([format, ...]) -> mixed value, ... {{{1
  *
  * _This function imitates Lua's [file:read()] [fread] function, so here is the
@@ -518,7 +540,7 @@ int file_unlock(lua_State *L)
  * value is returned, otherwise a nil followed by an error message is returned.
  *
  * The @timeout true means wait forever, false means don't wait at all and a
- * number is the microseconds to wait. 
+ * number is the microseconds to wait.
  */
 
 int pipe_timeout_get(lua_State *L)
@@ -544,7 +566,13 @@ int pipe_timeout_get(lua_State *L)
  * returned, otherwise a nil followed by an error message is returned.
  *
  * The @timeout true means wait forever, false means don't wait at all and a
- * number is the microseconds to wait.
+ * number is the microseconds to wait. For example:
+ *
+ *     -- Configure read end of pipe to block for a maximum of 5 seconds.
+ *     pipe:timeout_set(1000000 * 5)
+ *     for line in pipe:lines() do
+ *       print(line)
+ *     end
  */
 
 int pipe_timeout_set(lua_State *L)

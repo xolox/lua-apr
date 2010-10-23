@@ -1,7 +1,7 @@
 /* Buffered I/O interface for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 17, 2010
+ * Last Change: October 23, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -253,6 +253,27 @@ static apr_status_t read_all(lua_State *L, lua_apr_readbuf *input) /* {{{1 */
   B->index = B->limit;
 
   return status;
+}
+
+static int read_lines_cb(lua_State *L) /* {{{1 */
+{
+  apr_status_t status;
+
+  status = read_line(L, lua_touserdata(L, lua_upvalueindex(1)));
+  if (status == APR_SUCCESS)
+    return 1;
+  else if (APR_STATUS_IS_EOF(status))
+    return 0;
+  else
+    return push_error_status(L, status);
+}
+
+int read_lines(lua_State *L, lua_apr_readbuf *B) /* {{{1 */
+{
+  /* Return the iterator function. */
+  lua_pushlightuserdata(L, B);
+  lua_pushcclosure(L, read_lines_cb, 1);
+  return 1;
 }
 
 int read_buffer(lua_State *L, lua_apr_readbuf *B) /* {{{1 */

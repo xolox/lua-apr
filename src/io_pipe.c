@@ -1,7 +1,7 @@
 /* Pipe I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 22, 2010
+ * Last Change: October 23, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -82,7 +82,8 @@ int lua_apr_namedpipe_create(lua_State *L)
  *
  * Create an [anonymous pipe] [anon_pipe]. On success the write and read ends
  * of the pipe are returned, otherwise a nil followed by an error message is
- * returned.
+ * returned. There's an example use of this function in the documentation for
+ * `process:in_set()`.
  *
  * [anon_pipe]: http://en.wikipedia.org/wiki/Anonymous_pipe
  */

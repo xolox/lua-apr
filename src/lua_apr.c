@@ -1,7 +1,7 @@
 /* Initialization and miscellaneous routines for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 22, 2010
+ * Last Change: October 23, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -299,6 +299,7 @@ static luaL_Reg file_methods[] = {
   { "close", file_close },
   { "flush", file_flush },
   { "lock", file_lock },
+  { "lines", file_lines },
   { "read", file_read },
   { "seek", file_seek },
   { "stat", file_stat },

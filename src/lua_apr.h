@@ -1,7 +1,7 @@
 /* Header file for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 22, 2010
+ * Last Change: October 23, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -184,6 +184,7 @@ int lua_apr_base64_decode(lua_State*);
 /* buffer.c */
 void init_buffers(lua_State*, lua_apr_readbuf*, lua_apr_writebuf*, void*, int,
                   lua_apr_buf_rf, lua_apr_buf_wf, lua_apr_buf_ff);
+int read_lines(lua_State*, lua_apr_readbuf*);
 int read_buffer(lua_State*, lua_apr_readbuf*);
 int write_buffer(lua_State*, lua_apr_writebuf*);
 apr_status_t flush_buffer(lua_State*, lua_apr_writebuf*, int);
@@ -240,6 +241,7 @@ int lua_apr_file_attrs_set(lua_State*);
 int lua_apr_stat(lua_State*);
 int lua_apr_file_open(lua_State*);
 int file_stat(lua_State*);
+int file_lines(lua_State*);
 int file_read(lua_State*);
 int file_write(lua_State*);
 int file_seek(lua_State*);
