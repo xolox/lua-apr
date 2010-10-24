@@ -1,7 +1,7 @@
 /* File I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 24, 2010
+ * Last Change: October 25, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -264,7 +264,7 @@ int lua_apr_stat(lua_State *L)
   return push_stat_results(L, &context, dir);
 }
 
-/* apr.file_open(path [, mode ]) -> file {{{1
+/* apr.file_open(path [, mode [, permissions]]) -> file {{{1
  *
  * <em>This function imitates Lua's `io.open()` function, so here is the
  * documentation for that function:</em>
@@ -283,19 +283,24 @@ int lua_apr_stat(lua_State *L)
  *
  * The @mode string may also have a `b` at the end, which is needed in some
  * systems to open the file in binary mode. This string is exactly what is used
- * in the standard C function fopen().
+ * in the standard C function [fopen()] [fopen]. The @permissions argument is
+ * documented elsewhere.
+ *
+ * [fopen]: http://linux.die.net/man/3/fopen
  */
 
 int lua_apr_file_open(lua_State *L)
 {
   apr_status_t status;
   lua_apr_file *file;
+  apr_fileperms_t perm;
   apr_int32_t flags;
   const char *path;
   char *mode;
 
   path = luaL_checkstring(L, 1);
   mode = (char *)luaL_optstring(L, 2, "r");
+  perm = check_permissions(L, 3, 0);
   flags = 0;
 
   /* Parse the mode string.
@@ -323,7 +328,7 @@ int lua_apr_file_open(lua_State *L)
 
   /* Create the file object and open the file. */
   file = file_alloc(L, path, NULL);
-  status = apr_file_open(&file->handle, path, flags, APR_FPROT_OS_DEFAULT, file->pool->ptr);
+  status = apr_file_open(&file->handle, path, flags, perm, file->pool->ptr);
   if (status != APR_SUCCESS)
     return push_file_error(L, file, status);
   init_file_buffers(L, file, !(flags & APR_FOPEN_BINARY));
