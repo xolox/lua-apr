@@ -3,19 +3,18 @@
  Documentation generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: October 24, 2010
+ Last Change: October 25, 2010
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
-
- This Lua script uses the 
 
 ]]
 
 local SOURCES = [[ base64.c crypt.c dbm.c env.c filepath.c fnmatch.c io_dir.c
-  io_file.c io_pipe.c lua_apr.c permissions.c proc.c stat.c str.c time.c uri.c
-  user.c uuid.c apr.lua ]]
+  io_file.c io_pipe.c lua_apr.c proc.c stat.c str.c time.c uri.c user.c uuid.c
+  apr.lua permissions.c ]]
 
 local modules = {}
+local sorted_modules = {}
 local misc_module = {functions={}}
 
 local function getmodule(name, file, header)
@@ -27,6 +26,7 @@ local function getmodule(name, file, header)
     if not value then
       value = {name=name, file=file, header=header, functions={}}
       modules[key] = value
+      table.insert(sorted_modules, value)
     end
     return value
   end
@@ -92,14 +92,6 @@ for filename in SOURCES:gmatch '%S+' do
   end
 end
 
-local sorted_modules = {}
-for _, module in pairs(modules) do
-  table.insert(sorted_modules, module)
-end
-table.sort(sorted_modules, function(a, b)
-  return a.file < b.file
-end)
-
 local blocks = { trim [[
 
 # Lua/APR binding documentation
@@ -154,6 +146,7 @@ local function preprocess(text)
   local output = {}
   for block in gsplit(text, '\n\n', false) do
     output[#output + 1] = block:find '^    ' and block or (block
+          :gsub('@permissions', '[permissions](#file_system_permissions)')
           :gsub('(%s)@([%w_]+)', '%1`%2`')
           :gsub('([%s])true([%s%p])', '%1<tt>*true*</tt>%2')
           :gsub('([%s%p])false([%s%p])', '%1<tt>*false*</tt>%2')
@@ -175,9 +168,7 @@ blocks:add '## List of modules'
 
 local items = {}
 for _, module in ipairs(sorted_modules) do
-  if next(module.functions) then
-    items[#items + 1] = (' - [%s](#%s)'):format(module.name, toanchor(module.name))
-  end
+  items[#items + 1] = (' - [%s](#%s)'):format(module.name, toanchor(module.name))
 end
 
 blocks:add('%s', table.concat(items, '\n'))
@@ -197,18 +188,16 @@ local function dumpentries(functions)
 end
 
 for _, module in ipairs(sorted_modules) do
-  if next(module.functions) then
-    local a = toanchor(module.name)
-    blocks:add('## <a name="%s" href="#%s">%s</a>', a, a, module.name)
-    local intro = module.header
-    if intro then
-      intro = intro:match '\n\n.-\n\n(.-)$'
-      if (intro or ''):find '%S' then
-        blocks:add('%s', preprocess(intro))
-      end
+  local a = toanchor(module.name)
+  blocks:add('## <a name="%s" href="#%s">%s</a>', a, a, module.name)
+  local intro = module.header
+  if intro then
+    intro = intro:match '\n\n.-\n\n(.-)$'
+    if (intro or ''):find '%S' then
+      blocks:add('%s', preprocess(intro))
     end
-    dumpentries(module.functions)
   end
+  dumpentries(module.functions)
 end
 
 if next(misc_module.functions) then

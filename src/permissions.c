@@ -1,54 +1,57 @@
-/* File system information handling for the Lua/APR binding.
+/* File system permissions module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: September 19, 2010
+ * Last Change: October 25, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
  * The Apache Portable Runtime represents file system permissions somewhat
- * similar to those of UNIX. There are three categories of permissions, one for
- * the user, one for the group and one for everyone else, the world. Each
+ * similar to those of [UNIX] [unix]. There are three categories of
+ * permissions: the user, the group and everyone else (the world). Each
  * category supports read and write permission bits while the meaning of the
- * third permission bit differs between the categories.
+ * third permission bit differs between categories.
  *
- * Interpreting permission strings
- * -------------------------------
+ * [unix]: http://en.wikipedia.org/wiki/Unix
  *
- * When Lua/APR pushes the permissions of a file or directory the permissions
- * are represented as a string of 9 characters, similar to the absolute display
- * format supported by command-line tools like ls.
+ * ### How Lua/APR presents permissions
  *
- * Character 1:       'r' if the user has read permissions, otherwise '-';
- * Character 2:       'w' if the user has write permissions, otherwise '-';
- * Character 3:       'x' if the user has execute permissions, 'S' if the user
- *                    has set user id permissions or 's' if the user has both
- *                    permissions;
- * Characters 4 .. 6: the same respective permissions for the group;
- * Characters 7 .. 8: the same respective permissions for the world;
- * Character 9:       'x' if the world has execute permissions, 'T' if the
- *                    world has sticky permissions or 't' if the world has
- *                    both permissions.
+ * The Lua/APR binding uses a string of 9 characters to represent file system
+ * permissions such as those returned by `apr.stat()`. Here's an example:
  *
- * As an example, 'rwxrwx---' means the user and group have full permissions
- * while the world has none. Another example: 'r-xr-xr-x' means no-one has
+ *     > = apr.stat('.', 'protection')
+ *     'rwxr-xr-x'
+ *
+ * This is the syntax of these permissions strings:
+ *
+ *  - Character 1: `r` if the user has read permissions, `-` otherwise
+ *  - Character 2: `w` if the user has write permissions, `-` otherwise
+ *  - Character 3: `x` if the user has execute permissions, `S` if the user
+ *    has set user id permissions or `s` if the user has both permissions
+ *  - Characters 4..6: the same respective permissions for the group
+ *  - Characters 7..8: the same respective permissions for the world
+ *  - Character 9: `x` if the world has execute permissions, `T` if the world
+ *    has sticky permissions or `t` if the world has both permissions
+ *
+ * As an example, `rwxrwx---` means the user and group have full permissions
+ * while the world has none. Another example: `r-xr-xr-x` means no-one has
  * write permissions.
  *
- * Requesting permissions
- * ----------------------
+ * ### How you can request permissions
  *
  * When you need to request file system permissions for an operation like
- * reading or copying a file there are two string formats you can use. The
- * first format is a string of nine characters that lists each permission
- * explicitly. This is the same format used by Lua/APR to represent the
- * file system permissions of existing files and it's explained above.
+ * [reading](#apr.file_open) or [copying](#apr.file_copy) a file there are two
+ * string formats you can use. The first format is a string of nine characters
+ * that lists each permission explicitly. This is the format documented above.
  *
  * The second format is very flexible and is one of the formats accepted by the
- * Linux command-line program chmod. The permissions are split in three groups
- * with a one-letter code: user is 'u', group is 'g' and world is 'o' (for
- * "others"). One or more permissions can then be assigned to one or more of
- * these groups. Here's an example that requests read permission for user,
- * group and others: 'ugo=r'. Now when you also need write permission for user
- * and group, you can use 'ugo=r,ug=w'.
+ * Linux command line program [chmod] [chmod]. The permissions are split in
+ * three groups with a one-letter code: user is `u`, group is `g` and world is
+ * `o` (for "others"). One or more permissions can then be assigned to one or
+ * more of these groups. Here's an example that requests read permission for
+ * user, group and others: `ugo=r`. Now when you also need write permission for
+ * user and group, you can use `ugo=r,ug=w`.
+ *
+ * [chmod]: http://en.wikipedia.org/wiki/chmod
  */
 
 #include "lua_apr.h"

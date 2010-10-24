@@ -1,7 +1,7 @@
 /* DBM routines module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 24, 2010
+ * Last Change: October 25, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -84,7 +84,7 @@ static void dbm_close_impl(lua_State *L, lua_apr_dbm *dbm)
   }
 }
 
-/* apr.dbm_open(path [, mode [, perm [, type ]]]) -> dbm object {{{1
+/* apr.dbm_open(path [, mode [, permissions [, type ]]]) -> dbm object {{{1
  *
  * Open a [dbm] [dbm] file by @path. On success a database object is returned,
  * otherwise a nil followed by an error message is returned. The following
@@ -97,10 +97,11 @@ static void dbm_close_impl(lua_State *L, lua_apr_dbm *dbm)
  *  - `'n'` to open a database for reading and writing, truncating it if it
  *    already exists
  *
- * The @perm string is documented elsewhere. Valid values for @type are listed
- * in the introductory text for this module. Also note that the @path string
- * may not be a real file name, as many [dbm] [dbm] packages append suffixes
- * for separate data and index files (see also `apr.dbm_getnames()`).
+ * The @permissions string is documented elsewhere. Valid values for @type are
+ * listed in the introductory text for this module. Also note that the @path
+ * string may not be a real file name, as many [dbm] [dbm] packages append
+ * suffixes for separate data and index files (see also
+ * `apr.dbm_getnames()`).
  */
 
 int lua_apr_dbm_open(lua_State *L)

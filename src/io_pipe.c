@@ -1,7 +1,7 @@
 /* Pipe I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 23, 2010
+ * Last Change: October 25, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -47,8 +47,8 @@ int lua_apr_pipe_open_stderr(lua_State *L)
 /* apr.namedpipe_create(name [, permissions]) -> status {{{1
  *
  * Create a [named pipe] [named_pipe]. On success true is returned, otherwise a
- * nil followed by an error message is returned. See the documentation on
- * permissions for the optional second argument.
+ * nil followed by an error message is returned. The @permissions argument is
+ * documented elsewhere.
  *
  * Named pipes can be used for interprocess communication:
  *
