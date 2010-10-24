@@ -3,7 +3,7 @@
  Documentation generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: October 23, 2010
+ Last Change: October 24, 2010
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -158,14 +158,14 @@ local function preprocess(text)
           :gsub('([%s])true([%s%p])', '%1<tt>*true*</tt>%2')
           :gsub('([%s%p])false([%s%p])', '%1<tt>*false*</tt>%2')
           :gsub('([%s%p])nil([%s%p])', '%1<tt>*nil*</tt>%2')
-          :gsub('`([%w_.]+)%(%)`', function(funcname)
+          :gsub('`([%w_.:]+)%(%)`', function(funcname)
             local target
             if funcname:find '^apr%.[%w_]+$' or funcname:find '^[%w_]+:[%w_]+$' then
               target = '#' .. toanchor(funcname)
             else
               target = 'http://www.lua.org/manual/5.1/manual.html#pdf-' .. funcname
             end
-            return ('<a href="%s">%s()</a>'):format(target, funcname)
+            return ('[%s()](%s)'):format(funcname, target)
           end))
   end
   return table.concat(output, '\n\n')
