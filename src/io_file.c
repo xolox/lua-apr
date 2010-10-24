@@ -1,7 +1,7 @@
 /* File I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 23, 2010
+ * Last Change: October 24, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -16,6 +16,16 @@
 
 static int push_file_status(lua_State*, lua_apr_file*, apr_status_t);
 static int push_file_error(lua_State*, lua_apr_file*, apr_status_t);
+
+/* TODO Bind functions missing from io_file.c
+ *  - apr_file_perms_set()
+ *  - apr_file_inherit_set()
+ *  - apr_file_inherit_unset()
+ *  - apr_file_mktemp()
+ *  - apr_file_pipe_create_ex()
+ *  - apr_file_sync()
+ *  - apr_file_datasync()
+ */
 
 #if APR_MAJOR_VERSION > 1 || (APR_MAJOR_VERSION == 1 && APR_MINOR_VERSION >= 4)
 
@@ -717,7 +727,7 @@ int push_file_error(lua_State *L, lua_apr_file *file, apr_status_t status) /* {{
   else
     lua_pushstring(L, message);
   lua_pushinteger(L, status);
-  return 1;
+  return 3;
 }
 
 int file_gc(lua_State *L) /* {{{1 */
