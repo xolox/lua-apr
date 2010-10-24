@@ -25,6 +25,7 @@ int luaopen_apr_core(lua_State *L)
 
     /* lua_apr.c -- the "main" file. */
     { "platform_get", lua_apr_platform_get },
+    { "version_get", lua_apr_version_get },
 
     /* base64.c -- base64 encoding/decoding. */
     { "base64_encode", lua_apr_base64_encode },
@@ -172,6 +173,37 @@ int lua_apr_platform_get(lua_State *L)
   lua_pushstring(L, "UNIX");
 # endif
   return 1;
+}
+
+/* apr.version_get() -> apr_version, apu_version {{{1
+ *
+ * Get the version numbers of the Apache Portable Runtime and its utility
+ * library as strings. Each string contains three numbers separated by dots.
+ * The numbers have the following meaning:
+ *
+ *  - The 1st number is used for major [API] [api] changes that can cause
+ *    compatibility problems between the Lua/APR binding and the APR and
+ *    APR-util libraries
+ *  - The 2nd number is used for minor API changes that shouldn't impact
+ *    existing functionality in the Lua/APR binding
+ *  - The 3rd number is used exclusively for bug fixes
+ *
+ * This function can be useful when you want to know whether a certain bug fix
+ * has been applied to APR and/or APR-util or if you want to report a bug in
+ * APR, APR-util or the Lua/APR binding.
+ *
+ * If you're looking for the version of the Lua/APR binding you can use the
+ * `apr._VERSION` string, but note that Lua/APR currently does not use the
+ * above versioning rules.
+ *
+ * [api]: http://en.wikipedia.org/wiki/Application_programming_interface
+ */
+
+int lua_apr_version_get(lua_State *L)
+{
+  lua_pushstring(L, apr_version_string());
+  lua_pushstring(L, apu_version_string());
+  return 2;
 }
 
 /* to_pool() returns the global memory pool from the registry. {{{1 */

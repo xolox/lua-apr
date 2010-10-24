@@ -13,6 +13,7 @@
 #include <apr.h>
 #include <apu.h>
 #include <apr_version.h>
+#include <apu_version.h>
 #include <apr_general.h>
 #include <apr_file_info.h>
 #include <apr_file_io.h>
@@ -170,6 +171,7 @@ extern lua_apr_type lua_apr_proc_type;
 
 /* lua_apr.c */
 int lua_apr_platform_get(lua_State*);
+int lua_apr_version_get(lua_State*);
 apr_pool_t *to_pool(lua_State*);
 int status_to_message(lua_State*, apr_status_t);
 int push_status(lua_State*, apr_status_t);
