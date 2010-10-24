@@ -4,6 +4,7 @@ The [Lua/APR binding](http://peterodding.com/code/lua/apr/) aims to bring most o
 
  * [Base64 encoding](http://peterodding.com/code/lua/apr/docs/#base64_encoding)
  * [Cryptography routines](http://peterodding.com/code/lua/apr/docs/#cryptography_routines)
+ * [DBM routines](http://peterodding.com/code/lua/apr/docs/#dbm_routines)
  * [Environment manipulation](http://peterodding.com/code/lua/apr/docs/#environment_manipulation)
  * [File path manipulation](http://peterodding.com/code/lua/apr/docs/#file_path_manipulation)
  * [Filename matching](http://peterodding.com/code/lua/apr/docs/#filename_matching)
