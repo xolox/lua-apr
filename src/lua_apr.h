@@ -1,7 +1,7 @@
 /* Header file for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 23, 2010
+ * Last Change: October 24, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -197,6 +197,10 @@ int lua_apr_md5_encode(lua_State*);
 int lua_apr_sha1(lua_State*);
 int lua_apr_password_validate(lua_State*);
 int lua_apr_password_get(lua_State*);
+
+/* dbm.c */
+int lua_apr_dbm_open(lua_State*);
+int lua_apr_dbm_getnames(lua_State*);
 
 /* env.c */
 int lua_apr_env_get(lua_State*);

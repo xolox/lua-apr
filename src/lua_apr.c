@@ -1,7 +1,7 @@
 /* Initialization and miscellaneous routines for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 23, 2010
+ * Last Change: October 24, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -36,6 +36,10 @@ int luaopen_apr_core(lua_State *L)
     { "password_get", lua_apr_password_get },
     { "password_validate", lua_apr_password_validate },
     { "sha1", lua_apr_sha1 },
+
+    /* dbm.c -- dbm routines. */
+    { "dbm_open", lua_apr_dbm_open },
+    { "dbm_getnames", lua_apr_dbm_getnames },
 
     /* env.c -- environment variable handling. */
     { "env_get", lua_apr_env_get },
