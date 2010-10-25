@@ -1,7 +1,7 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: October 23, 2010
+# Last Change: October 25, 2010
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -71,9 +71,9 @@ install_deps:
 
 ZIPNAME = lua-apr-0.7-2
 
-package:
+package: docs
 	@rm -f $(ZIPNAME).zip
-	@mkdir -p $(ZIPNAME)/etc $(ZIPNAME)/src
+	@mkdir -p $(ZIPNAME)/doc $(ZIPNAME)/etc $(ZIPNAME)/src
 	@cp -a src/lua_apr.h $(SOURCES) src/apr.lua $(ZIPNAME)/src
 	@cp -a etc/docs.lua etc/tests.lua \
 		etc/lua-apr-0.6-1.rockspec \
@@ -82,6 +82,7 @@ package:
 		etc/lua-apr-0.7-2.rockspec \
 		$(ZIPNAME)/etc
 	@cp Makefile Makefile.win NOTES.md README.md $(ZIPNAME)
+	@cp docs.html $(ZIPNAME)/doc/apr.html
 	@zip $(ZIPNAME).zip -r $(ZIPNAME)
 	@rm -R $(ZIPNAME)
 
