@@ -62,6 +62,7 @@ test:
 	@which shake >/dev/null && shake etc/tests.lua || lua etc/tests.lua
 
 docs: etc/docs.lua src/apr.lua $(SOURCES)
+	@echo Generating documentation..
 	@lua etc/docs.lua docs.md docs.html
 
 install_deps:
@@ -69,9 +70,10 @@ install_deps:
 		lua5.1 liblua5.1-0 liblua5.1-0-dev libreadline-dev shake \
 		liblua5.1-markdown0
 
-ZIPNAME = lua-apr-0.7-2
+ZIPNAME = lua-apr-0.9.3-1
 
 package: docs
+	@echo Packaging sources
 	@rm -f $(ZIPNAME).zip
 	@mkdir -p $(ZIPNAME)/doc $(ZIPNAME)/etc $(ZIPNAME)/src
 	@cp -a src/lua_apr.h $(SOURCES) src/apr.lua $(ZIPNAME)/src
@@ -85,9 +87,11 @@ package: docs
 	@cp docs.html $(ZIPNAME)/doc/apr.html
 	@zip $(ZIPNAME).zip -r $(ZIPNAME)
 	@rm -R $(ZIPNAME)
+	@echo Calculating MD5 sum for LuaRocks
+	@md5sum $(ZIPNAME).zip
 
 clean:
-	@rm -f $(BINARY_MODULE) $(OBJECTS) docs.html
+	@rm -f $(BINARY_MODULE) $(OBJECTS)
 
 .PHONY: install uninstall test docs install_deps clean
 
