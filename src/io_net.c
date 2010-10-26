@@ -1,7 +1,7 @@
 /* Network I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 26, 2010
+ * Last Change: October 27, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -72,6 +72,18 @@ static int family_check(lua_State *L, int i)
   const int values[] = { APR_INET, APR_UNSPEC };
 # endif
   return values[luaL_checkoption(L, i, "inet", options)];
+}
+
+/* option_check(L, i) -- check for socket option on Lua stack {{{2 */
+
+static apr_int32_t option_check(lua_State *L, int i)
+{
+  const char *options[] = { "debug", "keep-alive", "linger", "non-block",
+    "reuse-addr", "sndbuf", "rcvbuf", "disconnected", NULL };
+  const apr_int32_t values[] = { APR_SO_DEBUG, APR_SO_KEEPALIVE, APR_SO_LINGER,
+    APR_SO_NONBLOCK, APR_SO_REUSEADDR, APR_SO_SNDBUF, APR_SO_RCVBUF,
+    APR_SO_DISCONNECTED };
+  return values[luaL_checkoption(L, i, NULL, options)];
 }
 
 /* socket_close_impl(L, socket) -- destroy socket object {{{2 */
@@ -431,6 +443,57 @@ static int socket_timeout_set(lua_State *L)
   return push_status(L, status);
 }
 
+/* socket:opt_get(name) -> value {{{1
+ *
+ * Query socket options for the specified socket. Valid values for @name are:
+ *
+ *  - `'debug'`: turn on debugging information
+ *  - `'keep-alive'`: keep connections active
+ *  - `'linger'`: lingers on close if data is present
+ *  - `'non-block'`: turns blocking on/off for socket
+ *  - `'reuse-addr'`: the rules used in validating addresses supplied to bind
+ *    should allow reuse of local addresses
+ *  - `'sndbuf'`: set the send buffer size
+ *  - `'rcvbuf'`: set the receive buffer size
+ *  - `'disconnected'`: query the disconnected state of the socket (currently only used on Windows)
+ */
+
+static int socket_opt_get(lua_State *L)
+{
+  apr_status_t status;
+  lua_apr_socket *object;
+  apr_int32_t option, value;
+
+  object = socket_check(L, 1, 1);
+  option = option_check(L, 2);
+  status = apr_socket_opt_get(object->handle, option, &value);
+  if (status != APR_SUCCESS)
+    return push_error_status(L, status);
+  lua_pushinteger(L, value);
+  return 1;
+}
+
+/* socket:opt_set(name, value) -> status {{{1
+ *
+ * Setup socket options for the specified socket. Valid values for @name are
+ * documented under `socket:opt_get()`, @value should be a boolean or integer
+ * value. On success true is returned, otherwise a nil followed by an error
+ * message is returned.
+ */
+
+static int socket_opt_set(lua_State *L)
+{
+  apr_status_t status;
+  lua_apr_socket *object;
+  apr_int32_t option, value;
+
+  object = socket_check(L, 1, 1);
+  option = option_check(L, 2);
+  value = lua_isboolean(L, 3) ? lua_toboolean(L, 3) : luaL_checkinteger(L, 3);
+  status = apr_socket_opt_set(object->handle, option, value);
+  return push_status(L, status);
+}
+
 /* socket:addr_get([type]) -> ip_address [, hostname] {{{1
  *
  * Get one of the addresses associated with @socket, according to @type:
@@ -510,6 +573,8 @@ luaL_reg socket_methods[] = {
   { "lines", socket_lines },
   { "timeout_get", socket_timeout_get },
   { "timeout_set", socket_timeout_set },
+  { "opt_get", socket_opt_get },
+  { "opt_set", socket_opt_set },
   { "addr_get", socket_addr_get },
   { "close", socket_close },
   { NULL, NULL },
