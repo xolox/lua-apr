@@ -10,6 +10,7 @@ The [Lua/APR binding](http://peterodding.com/code/lua/apr/) aims to bring most o
  * [Filename matching](http://peterodding.com/code/lua/apr/docs/#filename_matching)
  * [Directory manipulation](http://peterodding.com/code/lua/apr/docs/#directory_manipulation)
  * [File I/O handling](http://peterodding.com/code/lua/apr/docs/#file_i_o_handling)
+ * [Network I/O handling](http://peterodding.com/code/lua/apr/docs/#network_i_o_handling)
  * [Pipe I/O handling](http://peterodding.com/code/lua/apr/docs/#pipe_i_o_handling)
  * [Process handling](http://peterodding.com/code/lua/apr/docs/#process_handling)
  * [String routines](http://peterodding.com/code/lua/apr/docs/#string_routines)
@@ -58,11 +59,16 @@ The makefile creates a debug build by default. Use `NMAKE /f Makefile.win RELEAS
 
 ## Status
 
-The [process handling module](http://peterodding.com/code/lua/apr/docs/#process_handling) has just been released but hasn't seen a lot of use and there aren't any tests yet (working on it though). The following functionality has not been implemented yet but is on the todo list (highest to lowest priority):
+The following modules have just been implemented but haven't seen a lot of use and need automated tests:
+
+ * [Process handling](http://peterodding.com/code/lua/apr/docs/#process_handling)
+ * [Network I/O handling](http://peterodding.com/code/lua/apr/docs/#network_i_o_handling)
+ * [DBM routines](http://peterodding.com/code/lua/apr/docs/#dbm_routines)
+
+The following functionality has not been implemented yet but is on the todo list (highest to lowest priority):
 
  * [**Date parsing**](http://apr.apache.org/docs/apr/trunk/group___a_p_r___util___date.html)
  * [**I18N translation library**](http://apr.apache.org/docs/apr/trunk/group___a_p_r___x_l_a_t_e.html)
- * I've never used the APR [**network sockets**](http://apr.apache.org/docs/apr/trunk/group__apr__network__io.html) API but once I get to grips with it I'd like to support it in the binding. On the other hand it does seem one of the largest modules in APR.
  * If I ever find the time it might be useful to bind the [**relational database API**](http://apr.apache.org/docs/apr-util/trunk/group___a_p_r___util___d_b_d.html) which provides access to common relational database servers/engines such as [MySQL](http://en.wikipedia.org/wiki/MySQL), [SQLite](http://en.wikipedia.org/wiki/SQLite) and [PostgreSQL](http://en.wikipedia.org/wiki/PostgreSQL).
 
 ## Contact

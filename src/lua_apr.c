@@ -1,7 +1,7 @@
 /* Initialization and miscellaneous routines for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 24, 2010
+ * Last Change: October 26, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -82,6 +82,12 @@ int luaopen_apr_core(lua_State *L)
     { "stat", lua_apr_stat },
     { "file_open", lua_apr_file_open },
 
+    /* io_net.c -- network i/o handling. */
+    { "socket_create", lua_apr_socket_create },
+    { "hostname_get", lua_apr_hostname_get },
+    { "host_to_addr", lua_apr_host_to_addr },
+    { "addr_to_host", lua_apr_addr_to_host },
+
     /* io_pipe.c -- pipe i/o handling. */
     { "pipe_open_stdin", lua_apr_pipe_open_stdin },
     { "pipe_open_stdout", lua_apr_pipe_open_stdout },
@@ -142,6 +148,10 @@ int luaopen_apr_core(lua_State *L)
   /* Let callers of process:user_set() know whether it requires a password. */
   lua_pushboolean(L, APR_PROCATTR_USER_SET_REQUIRES_PASSWORD);
   lua_setfield(L, -2, "user_set_requires_password");
+
+  /* Let callers of apr.socket_create() know whether it supports IPv6. */
+  lua_pushboolean(L, APR_HAVE_IPV6);
+  lua_setfield(L, -2, "socket_supports_ipv6");
 
   return 1;
 }

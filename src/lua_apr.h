@@ -1,7 +1,7 @@
 /* Header file for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 24, 2010
+ * Last Change: October 26, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -265,6 +265,12 @@ lua_apr_file *file_alloc(lua_State*, const char*, lua_apr_pool*);
 void init_file_buffers(lua_State*, lua_apr_file*, int);
 lua_apr_file *file_check(lua_State*, int, int);
 apr_status_t file_close_impl(lua_State*, lua_apr_file*);
+
+/* io_net.c */
+int lua_apr_socket_create(lua_State*);
+int lua_apr_hostname_get(lua_State*);
+int lua_apr_host_to_addr(lua_State*);
+int lua_apr_addr_to_host(lua_State*);
 
 /* io_pipe.c */
 int lua_apr_pipe_open_stdin(lua_State*);
