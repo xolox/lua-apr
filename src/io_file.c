@@ -1,7 +1,7 @@
 /* File I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 25, 2010
+ * Last Change: October 26, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -358,18 +358,7 @@ int file_stat(lua_State *L)
 
 /* file:lines() -> iterator {{{1
  *
- * _This function imitates Lua's [file:lines()] [flines] function, so here is
- * the documentation for that function:_
- *
- * Return an iterator function that, each time it is called, returns a new line
- * from the file. Therefore, the construction
- *
- *     for line in file:lines() do body end
- *
- * will iterate over all lines of the file. This function does not close the
- * file when the loop ends.
- *
- * [flines]: http://www.lua.org/manual/5.1/manual.html#pdf-file:lines
+ * This function implements the interface of Lua's `file:lines()` function.
  */
 
 int file_lines(lua_State *L)
@@ -380,28 +369,7 @@ int file_lines(lua_State *L)
 
 /* file:read([format, ...]) -> mixed value, ... {{{1
  *
- * _This function imitates Lua's [file:read()] [fread] function, so here is the
- * documentation for that function:_
- *
- * Reads the file @file, according to the given formats, which specify what to
- * read. For each format, the function returns a string (or a number) with the
- * characters read, or nil if it cannot read data with the specified format.
- * When called without formats, it uses a default format that reads the entire
- * next line (see below).
- *
- * The available formats are:
- *
- *  - `'*n'`: reads a number; this is the only format that returns a number
- *    instead of a string
- *  - `'*a'`: reads the whole file, starting at the current position. On end of
- *    file, it returns the empty string
- *  - `'*l'`: reads the next line (skipping the end of line), returning nil on
- *    end of file (this is the default format)
- *  - `number`: reads a string with up to this number of characters, returning
- *    nil on end of file. If number is zero, it reads nothing and returns an
- *    empty string, or nil on end of file
- *
- * [fread]: http://www.lua.org/manual/5.1/manual.html#pdf-file:read
+ * This function implements the interface of Lua's `file:read()` function.
  */
 
 int file_read(lua_State *L)
@@ -412,14 +380,7 @@ int file_read(lua_State *L)
 
 /* file:write(value [, ...]) -> status {{{1
  *
- * _This function imitates Lua's [file:write()] [fwrite] function, so here is
- * the documentation for that function:_
- *
- * Writes the value of each of its arguments to the @file. The arguments must
- * be strings or numbers. To write other values, use `tostring()` or
- * `string.format()` before `file:write()`.
- *
- * [fwrite]: http://www.lua.org/manual/5.1/manual.html#pdf-file:write
+ * This function implements the interface of Lua's `file:write()` function.
  */
 
 int file_write(lua_State *L)

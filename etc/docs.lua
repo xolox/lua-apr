@@ -3,15 +3,15 @@
  Documentation generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: October 25, 2010
+ Last Change: October 26, 2010
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
 ]]
 
 local SOURCES = [[ base64.c crypt.c dbm.c env.c filepath.c fnmatch.c io_dir.c
-  io_file.c io_pipe.c lua_apr.c proc.c stat.c str.c time.c uri.c user.c uuid.c
-  apr.lua permissions.c ]]
+  io_file.c io_net.c io_pipe.c lua_apr.c proc.c stat.c str.c time.c uri.c
+  user.c uuid.c apr.lua permissions.c ]]
 
 local modules = {}
 local sorted_modules = {}
@@ -48,6 +48,51 @@ local function stripcomment(s)
   return trim(s:gsub('\n %* ?', '\n'))
 end
 
+local shareddocs = {
+  ['file:read'] = [[
+_This function implements the interface of the [file:read()] [fread] function described in the Lua 5.1 reference manual. Here is the description from the reference manual:_
+
+Read from @file, according to the given formats, which specify what to read. For each format, the function returns a string (or a number) with the characters read, or nil if it cannot read data with the specified format. When called without formats, it uses a default format that reads the entire next line (see below).
+
+The available formats are:
+
+ - `'*n'`: reads a number; this is the only format that returns a number instead of a string
+ - `'*a'`: reads all data from the @file, starting at the current position. On end of input, it returns the empty string
+ - `'*l'`: reads the next line (skipping the end of line), returning nil on end of input (this is the default format)
+ - `number`: reads a string with up to this number of characters, returning nil on end of input. If number is zero, it reads nothing and returns an empty string, or nil on end of input
+   
+[fread]: http://www.lua.org/manual/5.1/manual.html#pdf-file:read
+]],
+  ['file:write'] = [[
+_This function implements the interface of the [file:write()] [fwrite] function described in the Lua 5.1 reference manual. Here is the description from the reference manual:_
+
+Write the value of each argument to @file. The arguments must be strings or numbers. To write other values, use `tostring()` or `string.format()` before this function.
+
+[fwrite]: http://www.lua.org/manual/5.1/manual.html#pdf-file:write
+]],
+  ['file:lines'] = [[
+_This function implements the interface of the [file:lines()] [flines] function described in the Lua 5.1 reference manual. Here is the description from the reference manual:_
+
+Return an iterator function that, each time it is called, returns a new line read from the @file. Therefore, the construction
+
+    for line in file:lines() do body end
+
+will iterate over all lines. This function does not close the @file when the loop ends.
+
+[flines]: http://www.lua.org/manual/5.1/manual.html#pdf-file:lines
+]]
+}
+
+local function mungedesc(signature, description)
+  local sname = description:match "This function implements the interface of Lua's `([^`]+)%(%)` function."
+  if sname and shareddocs[sname] then
+    local oldobjname = '@' .. sname:match '^(%w+)'
+    local newobjname = '@' .. signature:match '^%s*(%w+)'
+    description = shareddocs[sname]:gsub(oldobjname, newobjname)
+  end
+  return description
+end
+
 for filename in SOURCES:gmatch '%S+' do
   local handle = assert(io.open('src/' .. filename))
   local source = assert(handle:read('*all')):gsub('\r\n', '\n')
@@ -69,6 +114,7 @@ for filename in SOURCES:gmatch '%S+' do
       if not signature then
         message("%s: Function %s doesn't have a signature?!", filename, funcname)
       else
+        description = mungedesc(signature, description)
         table.insert(module.functions, {
           signature = stripfoldmarker(signature),
           description = stripcomment(description) })
