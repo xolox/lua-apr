@@ -232,9 +232,39 @@ int lua_apr_file_attrs_set(lua_State *L)
  *  - `inode` is a unique number within the file system on which the file
  *    resides
  *  - `dev` is a number identifying the device on which the file is stored
+ *  - `protection` is a 9 character string with the file system @permissions
  *  - `link` *is a special flag that does not return a field*, instead it is
  *    used to signal that symbolic links should not be followed, i.e. the
  *    status of the link itself should be returned
+ *
+ * Here are some examples:
+ *
+ *     > -- Here's an example of a table with all properties:
+ *     > = apr.stat('lua-5.1.4.tar.gz')
+ *     {
+ *      name = 'lua-5.1.4.tar.gz',
+ *      path = 'lua-5.1.4.tar.gz',
+ *      type = 'file',
+ *      user = 'peter',
+ *      group = 'peter',
+ *      size = 216679,
+ *      csize = 217088,
+ *      ctime = 1284159662.7264,
+ *      atime = 1287954158.6019,
+ *      mtime = 1279317348.194,
+ *      nlink = 1,
+ *      inode = 1838576,
+ *      dev  = 64514,
+ *      protection = 'rw-r--r--',
+ *     }
+ *     > -- To check whether a directory exists:
+ *     > function isdir(p) return apr.stat(p, 'type') == 'directory' end
+ *     > = isdir('.')
+ *     true
+ *     > -- To get a file's size in bytes:
+ *     > function filesize(p) return apr.stat(p, 'size') end
+ *     > = filesize('lua-5.1.4.tar.gz')
+ *     216679
  */
 
 int lua_apr_stat(lua_State *L)
