@@ -3,7 +3,7 @@
  Test suite for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: October 23, 2010
+ Last Change: October 26, 2010
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -503,8 +503,6 @@ assert(apr.uri_encode(plain_chars):lower() == uri_encoded:lower())
 
 -- Check that apr.uri_decode() works
 assert(apr.uri_decode(uri_encoded):lower() == plain_chars:lower())
-
--- TODO Check uri_encode() / uri_decode()
 
 -- User/group identification module (user.c) {{{1
 message "Testing user/group identification ..\n"
