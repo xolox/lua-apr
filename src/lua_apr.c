@@ -1,7 +1,7 @@
 /* Initialization and miscellaneous routines for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 26, 2010
+ * Last Change: December 1, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -277,13 +277,30 @@ int push_error_status(lua_State *L, apr_status_t status)
 
 void *new_object(lua_State *L, lua_apr_type *T)
 {
-  void *object = lua_newuserdata(L, T->objsize);
+  void *object;
+
+  object = lua_newuserdata(L, T->objsize);
   if (object != NULL) {
     memset(object, 0, T->objsize);
     get_metatable(L, T);
     lua_setmetatable(L, -2);
+    getdefaultenv(L);
+    lua_setfenv(L, -2);
   }
   return object;
+}
+
+void getdefaultenv(lua_State *L) /* {{{1 */
+{
+  const char *key = "Lua/APR default environment for userdata";
+
+  lua_getfield(L, LUA_REGISTRYINDEX, key);
+  if (!lua_istable(L, -1)) {
+    lua_pop(L, 1);
+    lua_newtable(L);
+    lua_pushvalue(L, -1);
+    lua_setfield(L, LUA_REGISTRYINDEX, key);
+  }
 }
 
 /* check_object() validates objects created by new_object(). {{{1 */

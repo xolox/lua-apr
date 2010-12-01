@@ -1,7 +1,7 @@
 /* Header file for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 26, 2010
+ * Last Change: December 1, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -177,6 +177,7 @@ int status_to_message(lua_State*, apr_status_t);
 int push_status(lua_State*, apr_status_t);
 int push_error_status(lua_State*, apr_status_t);
 void *new_object(lua_State*, lua_apr_type*);
+void getdefaultenv(lua_State*);
 void *check_object(lua_State*, int, lua_apr_type*);
 int get_metatable(lua_State*, lua_apr_type*);
 
