@@ -27,11 +27,11 @@ There are [Windows binaries](http://github.com/downloads/xolox/lua-apr/lua-apr-0
 
 The easiest way to download, build & install the Lua/APR binding is to use [LuaRocks](http://luarocks.org/):
 
-    $ luarocks install http://github.com/xolox/lua-apr/raw/master/etc/lua-apr-0.9.3-1.rockspec
+    $ luarocks install http://peterodding.com/code/lua/apr/downloads/lua-apr-0.9.3-2.rockspec
 
 If you have git installed you can also download and install the latest sources using the following command:
 
-    $ luarocks install http://github.com/xolox/lua-apr/raw/master/etc/lua-apr-scm-1.rockspec
+    $ luarocks install http://peterodding.com/code/lua/apr/downloads/lua-apr-scm-1.rockspec
 
 ### Build on UNIX using makefile
 
@@ -40,7 +40,7 @@ If you don't have LuaRocks installed the following shell commands should help yo
     $ if which git; then # Get the latest sources using `git'?
     $   git clone git://github.com/xolox/lua-apr.git
     $ else # Or get the most recently released archive using `wget'.
-    $   wget http://github.com/downloads/xolox/lua-apr/lua-apr-0.9.3-1.zip
+    $   wget http://peterodding.com/code/lua/apr/downloads/lua-apr-0.9.3-1.zip
     $   unzip lua-apr-0.9.3-1.zip
     $   mv lua-apr-0.9.3-1 lua-apr
     $ fi
