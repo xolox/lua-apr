@@ -1,7 +1,7 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: October 26, 2010
+# Last Change: December 23, 2010
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -9,9 +9,9 @@
 # external dependencies using the `install_deps' target (see below).
 
 # Based on http://www.luarocks.org/en/Recommended_practices_for_Makefiles
-LUA_DIR=/usr/local
-LUA_LIBDIR=$(LUA_DIR)/lib/lua/5.1
-LUA_SHAREDIR=$(LUA_DIR)/share/lua/5.1
+LUA_DIR = /usr/local
+LUA_LIBDIR = $(LUA_DIR)/lib/lua/5.1
+LUA_SHAREDIR = $(LUA_DIR)/share/lua/5.1
 
 # Names of source / binary modules to install.
 SOURCE_MODULE = src/apr.lua
