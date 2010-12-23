@@ -51,17 +51,17 @@ install: $(BINARY_MODULE)
 	@mkdir -p $(LUA_SHAREDIR)
 	cp $(SOURCE_MODULE) $(LUA_SHAREDIR)/apr.lua
 	@mkdir -p $(LUA_LIBDIR)/apr
-	cp $(BINARY_MODULE) $(LUA_LIBDIR)/apr/core.so
+	cp $(BINARY_MODULE) $(LUA_LIBDIR)/apr/$(BINARY_MODULE)
 
 uninstall:
 	@rm $(LUA_SHAREDIR)/apr.lua
-	@rm $(LUA_LIBDIR)/apr/core.so
+	@rm $(LUA_LIBDIR)/apr/$(BINARY_MODULE)
 	@rmdir $(LUA_LIBDIR)/apr
 
 test:
 	@which shake >/dev/null && shake etc/tests.lua || lua etc/tests.lua
 
-docs: etc/docs.lua src/apr.lua $(SOURCES)
+docs: etc/docs.lua $(SOURCE_MODULE) $(SOURCES)
 	@echo Generating documentation..
 	@lua etc/docs.lua docs.md docs.html
 
@@ -76,7 +76,7 @@ package: docs
 	@echo Packaging sources
 	@rm -f $(ZIPNAME).zip
 	@mkdir -p $(ZIPNAME)/doc $(ZIPNAME)/etc $(ZIPNAME)/src
-	@cp -a src/lua_apr.h $(SOURCES) src/apr.lua $(ZIPNAME)/src
+	@cp -a src/lua_apr.h $(SOURCES) $(SOURCE_MODULE) $(ZIPNAME)/src
 	@cp -a etc/docs.lua etc/tests.lua \
 		etc/lua-apr-0.6-1.rockspec \
 		etc/lua-apr-0.6-3.rockspec \
