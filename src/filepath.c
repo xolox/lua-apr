@@ -1,7 +1,7 @@
 /* File path manipulation module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: September 25, 2010
+ * Last Change: December 23, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -122,7 +122,7 @@ int lua_apr_filepath_name(lua_State *L)
   name = apr_filepath_name_get(path);
 
   if (!lua_toboolean(L, 2)) {
-    lua_pushlstring(L, path, name - path);
+    lua_pushstring(L, name);
     return 1;
   } else {
     ext = strrchr(name, '.');

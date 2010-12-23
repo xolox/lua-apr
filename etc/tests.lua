@@ -3,7 +3,7 @@
  Test suite for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: October 26, 2010
+ Last Change: December 23, 2010
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -127,6 +127,12 @@ assert(apr.env_delete(TEST_ENVVAR2_NAME))
 
 -- File path manipulation module (filepath.c) {{{1
 message "Testing file path manipulation ..\n"
+
+assert(apr.filepath_name('/usr/bin/lua') == 'lua')
+local parts = { apr.filepath_name('/home/xolox/.vimrc', true) }
+assert(#parts == 2 and parts[1] == '.vimrc' and parts[2] == '')
+parts = { apr.filepath_name('index.html.en', true) }
+assert(#parts == 2 and parts[1] == 'index.html' and parts[2] == '.en')
 
 -- Based on http://svn.apache.org/viewvc/apr/apr/trunk/test/testpath.c?view=markup.
 
