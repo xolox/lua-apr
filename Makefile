@@ -30,7 +30,7 @@ OBJECTS = $(patsubst %.c,%.o,$(SOURCES))
 # If you're building Lua/APR with LuaRocks it should locate the external
 # dependencies automatically, otherwise we fall back to `pkg-config'.
 CFLAGS = `pkg-config --cflags lua5.1` `pkg-config --cflags apr-1` `pkg-config --cflags apr-util-1`
-LFLAGS = `pkg-config --libs lua5.1` `pkg-config --libs apr-1` `pkg-config --libs apr-util-1`
+LFLAGS = `pkg-config --libs apr-1` `pkg-config --libs apr-util-1`
 
 # Create debug builds by default but enable release
 # builds using the command line "make RELEASE=1".
@@ -70,7 +70,7 @@ install_deps:
 		lua5.1 liblua5.1-0 liblua5.1-0-dev libreadline-dev shake \
 		liblua5.1-markdown0
 
-ZIPNAME = lua-apr-0.9.3-1
+ZIPNAME = lua-apr-0.9.6-1
 
 package: docs
 	@echo Packaging sources
