@@ -77,12 +77,7 @@ package: docs
 	@rm -f $(ZIPNAME).zip
 	@mkdir -p $(ZIPNAME)/doc $(ZIPNAME)/etc $(ZIPNAME)/src
 	@cp -a src/lua_apr.h $(SOURCES) $(SOURCE_MODULE) $(ZIPNAME)/src
-	@cp -a etc/docs.lua etc/tests.lua \
-		etc/lua-apr-0.6-1.rockspec \
-		etc/lua-apr-0.6-3.rockspec \
-		etc/lua-apr-scm-1.rockspec \
-		etc/lua-apr-0.7-2.rockspec \
-		$(ZIPNAME)/etc
+	@cp -a etc/docs.lua etc/tests.lua $(ZIPNAME)/etc
 	@cp Makefile Makefile.win NOTES.md README.md $(ZIPNAME)
 	@cp docs.html $(ZIPNAME)/doc/apr.html
 	@zip $(ZIPNAME).zip -r $(ZIPNAME)
