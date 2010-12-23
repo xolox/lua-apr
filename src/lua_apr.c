@@ -1,7 +1,7 @@
 /* Initialization and miscellaneous routines for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: December 1, 2010
+ * Last Change: December 23, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -26,6 +26,7 @@ int luaopen_apr_core(lua_State *L)
     /* lua_apr.c -- the "main" file. */
     { "platform_get", lua_apr_platform_get },
     { "version_get", lua_apr_version_get },
+    { "type", lua_apr_type },
 
     /* base64.c -- base64 encoding/decoding. */
     { "base64_encode", lua_apr_base64_encode },
@@ -216,6 +217,40 @@ int lua_apr_version_get(lua_State *L)
   return 2;
 }
 
+/* apr.type(object) -> name {{{1
+ *
+ * Return the type of a userdata value as a string. If @object is of a known
+ * type one of the strings `'file'`, `'directory'`, `'socket'`, `'process'` or
+ * `'dbm'` will be returned, otherwise nothing is returned.
+ */
+
+int lua_apr_type(lua_State *L)
+{
+  lua_apr_objtype *types[] = {
+    &lua_apr_file_type,
+    &lua_apr_dir_type,
+    &lua_apr_socket_type,
+    &lua_apr_proc_type,
+    &lua_apr_dbm_type
+  };
+  int i;
+
+  lua_settop(L, 1);
+  luaL_checktype(L, 1, LUA_TUSERDATA);
+  lua_getmetatable(L, 1);
+
+  for (i = 0; i < count(types); i++) {
+    get_metatable(L, types[i]);
+    if (lua_rawequal(L, 2, 3)) {
+      lua_pushstring(L, types[i]->friendlyname);
+      return 1;
+    }
+    lua_pop(L, 1);
+  }
+
+  return 0;
+}
+
 /* to_pool() returns the global memory pool from the registry. {{{1 */
 
 apr_pool_t *to_pool(lua_State *L)
@@ -275,7 +310,7 @@ int push_error_status(lua_State *L, apr_status_t status)
 
 /* new_object() allocates userdata of the given type. {{{1 */
 
-void *new_object(lua_State *L, lua_apr_type *T)
+void *new_object(lua_State *L, lua_apr_objtype *T)
 {
   void *object;
 
@@ -305,7 +340,7 @@ void getdefaultenv(lua_State *L) /* {{{1 */
 
 /* check_object() validates objects created by new_object(). {{{1 */
 
-void *check_object(lua_State *L, int idx, lua_apr_type *T)
+void *check_object(lua_State *L, int idx, lua_apr_objtype *T)
 {
   int valid = 0;
   get_metatable(L, T);
@@ -320,7 +355,7 @@ void *check_object(lua_State *L, int idx, lua_apr_type *T)
 
 /* get_metatable() returns the metatable for the given type. {{{1 */
 
-int get_metatable(lua_State *L, lua_apr_type *T)
+int get_metatable(lua_State *L, lua_apr_objtype *T)
 {
   luaL_getmetatable(L, T->typename);
   if (lua_type(L, -1) != LUA_TTABLE) {
@@ -352,8 +387,9 @@ static luaL_Reg dir_metamethods[] = {
   { NULL, NULL }
 };
 
-lua_apr_type lua_apr_dir_type = {
+lua_apr_objtype lua_apr_dir_type = {
   "lua_apr_dir*",
+  "directory",
   sizeof(lua_apr_dir),
   dir_methods,
   dir_metamethods
@@ -382,8 +418,9 @@ static luaL_Reg file_metamethods[] = {
   { NULL, NULL }
 };
 
-lua_apr_type lua_apr_file_type = {
+lua_apr_objtype lua_apr_file_type = {
   "lua_apr_file*",
+  "file",
   sizeof(lua_apr_file),
   file_methods,
   file_metamethods
@@ -418,8 +455,9 @@ static luaL_Reg proc_metamethods[] = {
   { NULL, NULL }
 };
 
-lua_apr_type lua_apr_proc_type = {
+lua_apr_objtype lua_apr_proc_type = {
   "lua_apr_proc*",
+  "process",
   sizeof(lua_apr_proc),
   proc_methods,
   proc_metamethods

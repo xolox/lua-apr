@@ -1,7 +1,7 @@
 /* Header file for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: December 1, 2010
+ * Last Change: December 23, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -155,31 +155,34 @@ typedef struct lua_apr_proc {
 } lua_apr_proc;
 
 /* Structure for Lua userdatum types. */
-typedef struct lua_apr_type {
-  const char *typename;
+typedef struct lua_apr_objtype {
+  const char *typename, *friendlyname;
   const size_t objsize;
   luaL_Reg *methods;
   luaL_Reg *metamethods;
-} lua_apr_type;
+} lua_apr_objtype;
 
 /* External type definitions. */
-extern lua_apr_type lua_apr_dir_type;
-extern lua_apr_type lua_apr_file_type;
-extern lua_apr_type lua_apr_proc_type;
+extern lua_apr_objtype lua_apr_dbm_type;
+extern lua_apr_objtype lua_apr_dir_type;
+extern lua_apr_objtype lua_apr_file_type;
+extern lua_apr_objtype lua_apr_proc_type;
+extern lua_apr_objtype lua_apr_socket_type;
 
 /* Prototypes. {{{1 */
 
 /* lua_apr.c */
 int lua_apr_platform_get(lua_State*);
 int lua_apr_version_get(lua_State*);
+int lua_apr_type(lua_State*);
 apr_pool_t *to_pool(lua_State*);
 int status_to_message(lua_State*, apr_status_t);
 int push_status(lua_State*, apr_status_t);
 int push_error_status(lua_State*, apr_status_t);
-void *new_object(lua_State*, lua_apr_type*);
+void *new_object(lua_State*, lua_apr_objtype*);
 void getdefaultenv(lua_State*);
-void *check_object(lua_State*, int, lua_apr_type*);
-int get_metatable(lua_State*, lua_apr_type*);
+void *check_object(lua_State*, int, lua_apr_objtype*);
+int get_metatable(lua_State*, lua_apr_objtype*);
 
 /* base64.c */
 int lua_apr_base64_encode(lua_State*);

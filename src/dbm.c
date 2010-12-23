@@ -1,7 +1,7 @@
 /* DBM routines module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 25, 2010
+ * Last Change: December 23, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -38,9 +38,6 @@ typedef struct {
   apr_dbm_t *handle;
   const char *path;
 } lua_apr_dbm;
-
-/* Forward declaration for type structure defined at bottom of file. */
-lua_apr_type lua_apr_dbm_type;
 
 /* dbm_check(L, i, open) -- get dbm object from Lua stack {{{2 */
 
@@ -345,8 +342,9 @@ luaL_reg dbm_metamethods[] = {
   { NULL, NULL },
 };
 
-lua_apr_type lua_apr_dbm_type = {
+lua_apr_objtype lua_apr_dbm_type = {
   "lua_apr_dbm*",
+  "dbm",
   sizeof(lua_apr_dbm),
   dbm_methods,
   dbm_metamethods

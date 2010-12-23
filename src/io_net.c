@@ -1,7 +1,7 @@
 /* Network I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 27, 2010
+ * Last Change: December 23, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -19,9 +19,6 @@ typedef struct {
   apr_socket_t *handle;
   int family, protocol;
 } lua_apr_socket;
-
-/* Forward declaration for type structure defined at bottom of file. */
-lua_apr_type lua_apr_socket_type;
 
 /* socket_alloc(L) -- allocate and initialize socket object {{{2 */
 
@@ -586,8 +583,9 @@ luaL_reg socket_metamethods[] = {
   { NULL, NULL },
 };
 
-lua_apr_type lua_apr_socket_type = {
+lua_apr_objtype lua_apr_socket_type = {
   "lua_apr_socket*",
+  "socket",
   sizeof(lua_apr_socket),
   socket_methods,
   socket_metamethods
