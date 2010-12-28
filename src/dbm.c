@@ -1,7 +1,7 @@
 /* DBM routines module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: December 23, 2010
+ * Last Change: December 28, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -264,11 +264,12 @@ int dbm_firstkey(lua_State *L)
   return 1;
 }
 
-/* dbm:nextkey() -> key {{{1
+/* dbm:nextkey(key1) -> key2 {{{1
  *
- * Retrieve the next record key from a [dbm] [dbm]. On success the next key is
- * returned as a string, otherwise a nil followed by an error message is
- * returned.
+ * Retrieve the next record key from a [dbm] [dbm]. This function works just
+ * like Lua's `next()` function: On success the next key is returned as a
+ * string and when there are no more keys nil is returned. In case of error
+ * a nil followed by an error message is returned.
  */
 
 int dbm_nextkey(lua_State *L)
@@ -278,9 +279,12 @@ int dbm_nextkey(lua_State *L)
   apr_status_t status;
 
   object = dbm_check(L, 1, 1);
+  datum_check(L, 2, &key);
   status = apr_dbm_nextkey(object->handle, &key);
   if (status != APR_SUCCESS)
     return push_error_status(L, status);
+  if (key.dsize == 0)
+    return 0;
   lua_pushlstring(L, key.dptr, key.dsize);
 
   return 1;
