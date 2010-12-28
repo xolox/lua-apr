@@ -501,6 +501,11 @@ assert(apr.uri_unparse(parsed) == input)
 assert(apr.uri_unparse(parsed, 'hostinfo') == hostinfo)
 assert(apr.uri_unparse(parsed, 'pathinfo') == pathinfo)
 
+-- Make sure uri_port_of_scheme() works.
+assert(apr.uri_port_of_scheme 'ssh' == 22)
+assert(apr.uri_port_of_scheme 'http' == 80)
+assert(apr.uri_port_of_scheme 'https' == 443)
+
 -- The following string constant was generated using this PHP code:
 --   $t=array();
 --   for ($i=0; $i <= 255; $i++) $t[] = chr($i);
