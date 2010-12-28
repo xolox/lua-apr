@@ -583,6 +583,18 @@ assert(pcall(function()
   end
 end))
 
+-- I can't find any binary/formatted example UUIDs on the internet and don't
+-- really know how to make the following tests useful. At least they illustrate
+-- the purpose…
+
+-- Check that apr.uuid_format() works.
+assert(apr.uuid_format(('\0'):rep(16)) == '00000000-0000-0000-0000-000000000000')
+assert(apr.uuid_format(('\255'):rep(16)) == 'ffffffff-ffff-ffff-ffff-ffffffffffff')
+
+-- Check that apr.uuid_parse() works.
+assert(apr.uuid_parse '00000000-0000-0000-0000-000000000000' == ('\0'):rep(16))
+assert(apr.uuid_parse 'ffffffff-ffff-ffff-ffff-ffffffffffff' == ('\255'):rep(16))
+
 -- }}}
 
 -- vim: nowrap
