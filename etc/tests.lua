@@ -127,11 +127,27 @@ assert(apr.env_delete(TEST_ENVVAR2_NAME))
 -- File path manipulation module (filepath.c) {{{1
 message "Testing file path manipulation ..\n"
 
+-- Test apr.filepath_name()
 assert(apr.filepath_name('/usr/bin/lua') == 'lua')
 local parts = { apr.filepath_name('/home/xolox/.vimrc', true) }
 assert(#parts == 2 and parts[1] == '.vimrc' and parts[2] == '')
 parts = { apr.filepath_name('index.html.en', true) }
 assert(#parts == 2 and parts[1] == 'index.html' and parts[2] == '.en')
+
+-- Test apr.filepath_root()
+if apr.platform_get() == 'WIN32' then
+  assert(apr.filepath_root 'c:/foo/bar' == 'c:/')
+else
+  -- Doesn't really do anything useful on UNIX :-P
+  assert(apr.filepath_root '/foo/bar' == '/')
+end
+
+-- Test apr.filepath_merge()
+if apr.platform_get() == 'WIN32' then
+  assert(apr.filepath_merge('c:/', 'foo') == 'c:/foo')
+else
+  assert(apr.filepath_merge('/foo', 'bar') == '/foo/bar')
+end
 
 -- Based on http://svn.apache.org/viewvc/apr/apr/trunk/test/testpath.c?view=markup.
 
