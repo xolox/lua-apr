@@ -3,7 +3,7 @@
  Test suite for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: December 23, 2010
+ Last Change: December 28, 2010
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -411,6 +411,12 @@ for testsize = 1, maxmultiplier do
 
 end
 
+-- Miscellaneous routines (lua_apr.c) {{{1
+
+assert(apr.type(apr.file_open(arg[0])) == 'file')
+assert(apr.type(apr.socket_create()) == 'socket')
+assert(apr.type(apr.proc_create 'test') == 'process')
+assert(apr.type(apr.dir_open '.') == 'directory')
 
 -- String module (str.c) {{{1
 message "Testing string module ..\n"
