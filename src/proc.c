@@ -1,7 +1,7 @@
 /* Process handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: December 1, 2010
+ * Last Change: December 28, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -692,19 +692,12 @@ int proc_wait(lua_State *L)
   how = lua_toboolean(L, 2) ? APR_WAIT : APR_NOWAIT;
   status = apr_proc_wait(&process->handle, &code, &why, how);
 
-  if (APR_STATUS_IS_CHILD_NOTDONE(status)) {
-    lua_pushboolean(L, 0);
-    return 1;
-  } else if (!APR_STATUS_IS_CHILD_DONE(status)) {
+  if (APR_STATUS_IS_CHILD_NOTDONE(status))
+    return (lua_pushboolean(L, 0), 1);
+  else if (!APR_STATUS_IS_CHILD_DONE(status))
     return push_error_status(L, status);
-  }
-
-  lua_pushboolean(L, 1);
-
-  if (APR_STATUS_IS_ENOTIMPL(status))
-    lua_pushinteger(L, why == APR_PROC_EXIT ? EXIT_SUCCESS : EXIT_FAILURE);
   else
-    lua_pushinteger(L, code);
+    lua_pushboolean(L, 1);
 
   switch (why) {
     default:
@@ -712,6 +705,11 @@ int proc_wait(lua_State *L)
     case APR_PROC_SIGNAL:      lua_pushliteral(L, "signal");      break;
     case APR_PROC_SIGNAL_CORE: lua_pushliteral(L, "signal/core"); break;
   }
+
+  if (APR_STATUS_IS_ENOTIMPL(status))
+    lua_pushinteger(L, why == APR_PROC_EXIT ? EXIT_SUCCESS : EXIT_FAILURE);
+  else
+    lua_pushinteger(L, code);
 
   return 3;
 }
