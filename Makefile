@@ -1,7 +1,7 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: December 23, 2010
+# Last Change: December 28, 2010
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -39,6 +39,12 @@ CFLAGS := $(CFLAGS) -g -DDEBUG
 LFLAGS := $(LFLAGS) -g
 endif
 
+# Enable profiling with "make PROFILING=1".
+ifdef PROFILING
+CFLAGS := $(CFLAGS) -fprofile-arcs -ftest-coverage
+LFLAGS := $(LFLAGS) -fprofile-arcs
+endif
+
 # The build rules.
 
 $(BINARY_MODULE): $(OBJECTS)
@@ -60,6 +66,11 @@ uninstall:
 
 test:
 	@which shake >/dev/null && shake etc/tests.lua || lua etc/tests.lua
+
+coverage:
+	[ -d etc/coverage ] || mkdir etc/coverage
+	lcov -d . -b . --capture --output-file etc/coverage/lua-apr.info
+	cd etc/coverage && genhtml lua-apr.info
 
 docs: etc/docs.lua $(SOURCE_MODULE) $(SOURCES)
 	@echo Generating documentation..
