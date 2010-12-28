@@ -417,7 +417,19 @@ assert(apr.stat(copy2, 'protection'):find '^.[^w]..[^w]....$')
 local handle = assert(apr.file_open(copy2))
 assert(handle:stat('type') == 'file')
 assert(handle:stat('size') == #testdata)
-assert(handle:close())
+
+-- Test file:lines(). {{{2
+local lines = {}
+for line in assert(handle:lines()) do lines[#lines + 1] = line end
+for line in testdata:gmatch '[^\n]+' do
+  local otherline = table.remove(lines, 1)
+  if otherline == '' then
+    -- the pattern above ignores the empty line
+    otherline = table.remove(lines, 1)
+  end
+  assert(line == otherline)
+end
+assert(#lines == 0)
 
 -- Test file:read(), file:write() and file:seek() {{{2
 

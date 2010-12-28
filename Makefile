@@ -70,7 +70,7 @@ test:
 coverage: test
 	[ -d etc/coverage ] || mkdir etc/coverage
 	lcov -d . -b . --capture --output-file etc/coverage/lua-apr.info
-	cd etc/coverage && genhtml lua-apr.info
+	genhtml -o etc/coverage etc/coverage/lua-apr.info
 
 docs: etc/docs.lua $(SOURCE_MODULE) $(SOURCES)
 	@echo Generating documentation..
