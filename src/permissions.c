@@ -1,7 +1,7 @@
 /* File system permissions module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 25, 2010
+ * Last Change: December 28, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -55,8 +55,6 @@
  */
 
 #include "lua_apr.h"
-#include <stdlib.h>
-#include <assert.h>
 
 /* Character constants used to represent permission bits */
 

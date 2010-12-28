@@ -7,6 +7,7 @@
  */
 
 /* Global headers. {{{1 */
+#include <assert.h>
 #include <stdlib.h>
 #include <lua.h>
 #include <lauxlib.h>

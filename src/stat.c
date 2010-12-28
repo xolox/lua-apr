@@ -9,7 +9,6 @@
 #include "lua_apr.h"
 #include <apr_lib.h>
 #include <apr_strings.h>
-#include <assert.h>
 
 /* Lua/APR introduces one new field to the apr_stat() interface, which is the
  * filepath. It's defined to 0 so it won't influence the .wanted bitfield :) */

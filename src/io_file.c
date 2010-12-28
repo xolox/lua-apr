@@ -1,7 +1,7 @@
 /* File I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 26, 2010
+ * Last Change: December 28, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -11,7 +11,6 @@
 #include <apr_file_io.h>
 #include <apr_file_info.h>
 #include <apr_lib.h>
-#include <stdlib.h>
 #include <stdio.h>
 
 static int push_file_status(lua_State*, lua_apr_file*, apr_status_t);
