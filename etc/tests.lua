@@ -94,11 +94,19 @@ local function checkdbm()
   assert(dbm:fetch(dbmkey) == dbmvalue)
   assert(dbm:firstkey() == dbmkey)
   assert(not dbm:nextkey(dbmkey)) -- only 1 record exists
-  assert(dbm:close())
 end
 checkdbm()
-dbm = assert(apr.dbm_open(dbmfile))
+assert(dbm:close())
+local file1, file2 = assert(apr.dbm_getnames(dbmfile))
+assert(apr.stat(file1, 'type') == 'file')
+assert(not file2 or apr.stat(file2, 'type') == 'file')
+dbm = assert(apr.dbm_open(dbmfile, 'w'))
 checkdbm()
+assert(dbm:delete(dbmkey))
+print(dbm:fetch(dbmkey))
+assert(not dbm:fetch(dbmkey))
+assert(not dbm:firstkey())
+assert(dbm:close())
 
 -- Environment manipulation module (env.c) {{{1
 message "Testing environment manipulation ..\n"
