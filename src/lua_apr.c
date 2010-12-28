@@ -80,6 +80,7 @@ int luaopen_apr_core(lua_State *L)
     { "file_remove", lua_apr_file_remove },
     { "file_mtime_set", lua_apr_file_mtime_set },
     { "file_attrs_set", lua_apr_file_attrs_set },
+    { "file_perms_set", lua_apr_file_perms_set },
     { "stat", lua_apr_stat },
     { "file_open", lua_apr_file_open },
 

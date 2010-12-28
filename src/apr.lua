@@ -6,7 +6,7 @@
  Last Change: December 28, 2010
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
- Version: 0.9.10
+ Version: 0.9.11
 
  This Lua script is executed on require("apr"), loads the binary module using
  require("apr.core"), defines several library functions implemented on top of
@@ -15,7 +15,7 @@
 --]]
 
 local apr = require 'apr.core'
-apr._VERSION = '0.9.10'
+apr._VERSION = '0.9.11'
 
 -- apr.filepath_which(program [, find_all]) -> pathname {{{1
 -- 

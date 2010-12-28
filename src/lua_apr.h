@@ -250,6 +250,7 @@ int lua_apr_file_rename(lua_State*);
 int lua_apr_file_remove(lua_State*);
 int lua_apr_file_mtime_set(lua_State*);
 int lua_apr_file_attrs_set(lua_State*);
+int lua_apr_file_perms_set(lua_State*);
 int lua_apr_stat(lua_State*);
 int lua_apr_file_open(lua_State*);
 int file_stat(lua_State*);

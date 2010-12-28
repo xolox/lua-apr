@@ -208,6 +208,30 @@ int lua_apr_file_attrs_set(lua_State *L)
   return push_status(L, status);
 }
 
+/* apr.file_perms_set(path, permissions) {{{1
+ *
+ * Set the permissions of the file specified by @path. On success true is
+ * returned, otherwise a nil followed by an error message is returned.
+ *
+ * Warning: Some platforms may not be able to apply all of the available
+ * permission bits.
+ *
+ * TODO: Document error codes and make their values available somewhere.
+ */
+
+int lua_apr_file_perms_set(lua_State *L)
+{
+  const char *path;
+  apr_status_t status;
+  apr_fileperms_t perms;
+
+  path = luaL_checkstring(L, 1);
+  perms = check_permissions(L, 2, 0);
+  status = apr_file_perms_set(path, perms);
+
+  return push_status(L, status);
+}
+
 /* apr.stat(path [, property, ...]) -> value, ... {{{1
  *
  * Get the status of the file pointed to by @path. On success, if no properties
