@@ -401,6 +401,8 @@ int file_stat(lua_State *L)
   apr_status_t status;
 
   file = file_check(L, 1, 1);
+  context.firstarg = 2;
+  context.lastarg = lua_gettop(L);
   check_stat_request(L, &context);
   status = apr_file_info_get(&context.info, context.wanted, file->handle);
   if (status != APR_SUCCESS && !APR_STATUS_IS_INCOMPLETE(status))
