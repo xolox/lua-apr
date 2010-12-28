@@ -72,7 +72,7 @@ int lua_apr_file_copy(lua_State *L)
   apr_status_t status;
 
   source = luaL_checkstring(L, 1);
-  target = luaL_checkstring(L, 1);
+  target = luaL_checkstring(L, 2);
   permissions = check_permissions(L, 3, 1);
   status = apr_file_copy(source, target, permissions, to_pool(L));
 
@@ -94,7 +94,7 @@ int lua_apr_file_append(lua_State *L)
   apr_status_t status;
 
   source = luaL_checkstring(L, 1);
-  target = luaL_checkstring(L, 1);
+  target = luaL_checkstring(L, 2);
   permissions = check_permissions(L, 3, 1);
   status = apr_file_append(source, target, permissions, to_pool(L));
 
@@ -115,7 +115,7 @@ int lua_apr_file_rename(lua_State *L)
   apr_status_t status;
 
   source = luaL_checkstring(L, 1);
-  target = luaL_checkstring(L, 1);
+  target = luaL_checkstring(L, 2);
   status = apr_file_rename(source, target, to_pool(L));
 
   return push_status(L, status);
