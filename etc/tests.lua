@@ -80,6 +80,24 @@ assert(apr.password_validate(pass, hash))
 assert(apr.sha1 'The quick brown fox jumps over the lazy dog' == '2fd4e1c67a2d28fced849ee1bb76e7391b93eb12')
 assert(apr.sha1 'The quick brown fox jumps over the lazy cog' == 'de9f2c7fd25e1b3afad3e85a0bd17d9b100db4b3')
 
+-- DBM routines module (dbm.c) {{{1
+
+local dbmfile = os.tmpname()
+local dbm = assert(apr.dbm_open(dbmfile, 'n'))
+local dbmkey, dbmvalue = 'the key', 'the value'
+assert(not dbm:firstkey()) -- nothing there yet
+assert(dbm:store(dbmkey, dbmvalue))
+local function checkdbm()
+  assert(dbm:exists(dbmkey))
+  assert(dbm:fetch(dbmkey) == dbmvalue)
+  assert(dbm:firstkey() == dbmkey)
+  assert(not dbm:nextkey(dbmkey)) -- only 1 record exists
+  assert(dbm:close())
+end
+checkdbm()
+dbm = assert(apr.dbm_open(dbmfile))
+checkdbm()
+
 -- Environment manipulation module (env.c) {{{1
 message "Testing environment manipulation ..\n"
 
