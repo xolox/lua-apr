@@ -502,10 +502,16 @@ end
 -- Miscellaneous routines (lua_apr.c) {{{1
 message "Testing miscellaneous functions ..\n"
 
+-- Test apr.type()
 assert(apr.type(apr.file_open(arg[0])) == 'file')
 assert(apr.type(apr.socket_create()) == 'socket')
 assert(apr.type(apr.proc_create 'test') == 'process')
 assert(apr.type(apr.dir_open '.') == 'directory')
+
+-- Test apr.version_get()
+local apr_v, apu_v = assert(apr.version_get())
+assert(apr_v:find '^%d+%.%d+%.%d+$')
+assert(apu_v:find '^%d+%.%d+%.%d+$')
 
 -- String module (str.c) {{{1
 message "Testing string module ..\n"
@@ -567,6 +573,10 @@ assert(math.floor(now) == math.floor(imp))
 -- Test apr.time_format() (example from http://en.wikipedia.org/wiki/Unix_time)
 assert(apr.time_format('rfc822', 1000000000) == 'Sun, 09 Sep 2001 01:46:40 GMT')
 assert(apr.time_format('%Y-%m', 1000000000) == '2001-09')
+
+-- Test apr.sleep() :-)
+local before = apr.time_now(); apr.sleep(1); local after = apr.time_now()
+assert((after - before) >= 1)
 
 -- URI parsing module (uri.c) {{{1
 message "Testing URI parsing ..\n"
