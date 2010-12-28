@@ -260,10 +260,22 @@ assert(not apr.fnmatch_test('+-^#@!%'))
 -- Directory manipulation module (io_dir.c) {{{1
 message "Testing directory manipulation ..\n"
 
+local function readfile(path)
+  local handle = assert(io.open(path, 'r'))
+  local data = assert(handle:read '*all')
+  assert(handle:close())
+  return data
+end
+
+local function writefile(path, data)
+  local handle = assert(io.open(path, 'w'))
+  assert(handle:write(data))
+  assert(handle:close())
+end
+
 local function writable(directory)
   local entry = apr.filepath_merge(directory, 'io_dir_writable_check')
-  local handle = io.open(entry, 'w')
-  if handle and handle:write 'something' and handle:close() then
+  if pcall(writefile, entry, 'something') then
     os.remove(entry)
     return true
   end
@@ -367,7 +379,7 @@ assert(prot:find '^[-r][-w][-xSs][-r][-w][-xSs][-r][-w][-xTt]$')
 
 -- Test apr.file_perms_set().  {{{2
 local tempname = assert(os.tmpname())
-local handle = assert(io.open(tempname, 'w')); handle:write 'something'; handle:close()
+writefile(tempname, 'something')
 assert(apr.file_perms_set(tempname, 'rw-rw----'))
 assert(apr.stat(tempname, 'protection') == 'rw-rw----')
 assert(apr.file_perms_set(tempname, 'ug=r,o='))
@@ -375,18 +387,37 @@ assert(apr.stat(tempname, 'protection') == 'r--r-----')
 
 -- Test apr.file_copy(). {{{2
 local copy1 = assert(os.tmpname())
-local handle = assert(io.open(copy1, 'w'))
-assert(handle:write(testdata))
-assert(handle:close())
+writefile(copy1, testdata)
 local copy2 = assert(os.tmpname())
-print('copy1:', copy1)
-print('copy2:', copy2)
-print('status:', apr.file_copy(copy1, copy2))
 assert(apr.file_copy(copy1, copy2))
-handle = assert(io.open(copy2, 'r'))
-local copied_data = assert(handle:read '*a')
+assert(testdata == readfile(copy2))
+
+-- Test apr.file_append(). {{{2
+assert(apr.file_append(copy1, copy2))
+assert(readfile(copy2) == testdata:rep(2))
+
+-- Test apr.file_rename(). {{{2
+assert(apr.file_rename(copy1, copy2))
+assert(not apr.stat(copy1))
+assert(readfile(copy2) == testdata)
+
+-- Test apr.file_mtime_set(). {{{2
+local mtime = math.random(0, apr.time_now())
+assert(apr.stat(copy2, 'mtime') ~= mtime)
+assert(apr.file_mtime_set(copy2, mtime))
+assert(apr.stat(copy2, 'mtime') == mtime)
+
+-- Test apr.file_attrs_set(). {{{2
+assert(apr.file_perms_set(copy2, 'ug=rw,o='))
+assert(apr.stat(copy2, 'protection'):find '^.w..w....$')
+assert(apr.file_attrs_set(copy2, { readonly=true }))
+assert(apr.stat(copy2, 'protection'):find '^.[^w]..[^w]....$')
+
+-- Test file:stat(). {{{2
+local handle = assert(apr.file_open(copy2))
+assert(handle:stat('type') == 'file')
+assert(handle:stat('size') == #testdata)
 assert(handle:close())
-assert(testdata == copied_data)
 
 -- Test file:read(), file:write() and file:seek() {{{2
 
