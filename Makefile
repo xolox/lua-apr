@@ -65,9 +65,9 @@ uninstall:
 	@rmdir $(LUA_LIBDIR)/apr
 
 test:
-	@which shake >/dev/null && shake etc/tests.lua || lua etc/tests.lua
+	@lua etc/tests.lua
 
-coverage:
+coverage: test
 	[ -d etc/coverage ] || mkdir etc/coverage
 	lcov -d . -b . --capture --output-file etc/coverage/lua-apr.info
 	cd etc/coverage && genhtml lua-apr.info
