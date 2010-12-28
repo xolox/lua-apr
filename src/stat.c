@@ -1,7 +1,7 @@
-/* File system permissions handling for the Lua/APR binding.
+/* File status querying (stat()) for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 22, 2010
+ * Last Change: December 28, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
