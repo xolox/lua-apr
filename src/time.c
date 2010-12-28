@@ -1,7 +1,7 @@
 /* Time routines module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 23, 2010
+ * Last Change: December 28, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -261,7 +261,8 @@ int lua_apr_time_format(lua_State *L)
   apr_status_t status;
   const char *format;
 
-  format = luaL_checkstring(L, 1);
+  luaL_checktype(L, 1, LUA_TSTRING);
+  format = lua_tostring(L, 1);
 
   if (strcmp(format, "ctime") == 0) {
     status = apr_ctime(formatted, time_check(L, 2));
