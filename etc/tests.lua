@@ -331,7 +331,19 @@ assert(apr.dir_remove_recursive 'io_dir_tests')
 -- File I/O handling module (io_file.c) {{{1
 message "Testing file I/O module ..\n"
 
--- Test the stat() function.
+local testdata = [[
+ 1
+ 3.1
+ 100
+ 0xCAFEBABE
+ 0xDEADBEEF
+ 3.141592653589793115997963468544185161590576171875
+ this line is in fact not a number :-)
+
+ that was an empty line
+]]
+
+-- Test the stat() function. {{{2
 local info = apr.stat(arg[0])
 assert(type(info) == 'table')
 assert(info.name == 'tests.lua')
@@ -344,7 +356,7 @@ assert(type(info.inode) == 'number')
 assert(type(info.dev) == 'number')
 assert(info.protection:find '^[-r][-w][-xSs][-r][-w][-xSs][-r][-w][-xTt]$')
 
--- Test the alternative stat() interface.
+-- Test the alternative stat() interface. {{{2
 assert(apr.stat(arg[0], 'type') == 'file')
 assert(apr.stat(arg[0], 'name') == 'tests.lua')
 local etcdir = apr.filepath_parent(arg[0])
@@ -353,7 +365,7 @@ assert(kind == 'directory')
 assert(type(size) == 'number')
 assert(prot:find '^[-r][-w][-xSs][-r][-w][-xSs][-r][-w][-xTt]$')
 
--- Test apr.file_perms_set()
+-- Test apr.file_perms_set().  {{{2
 local tempname = assert(os.tmpname())
 local handle = assert(io.open(tempname, 'w')); handle:write 'something'; handle:close()
 assert(apr.file_perms_set(tempname, 'rw-rw----'))
@@ -361,22 +373,27 @@ assert(apr.stat(tempname, 'protection') == 'rw-rw----')
 assert(apr.file_perms_set(tempname, 'ug=r,o='))
 assert(apr.stat(tempname, 'protection') == 'r--r-----')
 
-local testdata_single = [[
- 1
- 3.1
- 100
- 0xCAFEBABE
- 0xDEADBEEF
- 3.141592653589793115997963468544185161590576171875
- this line is in fact not a number :-)
+-- Test apr.file_copy(). {{{2
+local copy1 = assert(os.tmpname())
+local handle = assert(io.open(copy1, 'w'))
+assert(handle:write(testdata))
+assert(handle:close())
+local copy2 = assert(os.tmpname())
+print('copy1:', copy1)
+print('copy2:', copy2)
+print('status:', apr.file_copy(copy1, copy2))
+assert(apr.file_copy(copy1, copy2))
+handle = assert(io.open(copy2, 'r'))
+local copied_data = assert(handle:read '*a')
+assert(handle:close())
+assert(testdata == copied_data)
 
- that was an empty line
-]]
+-- Test file:read(), file:write() and file:seek() {{{2
 
 local maxmultiplier = 20
 for testsize = 1, maxmultiplier do
 
-  local testdata = testdata_single:rep(testsize)
+  local testdata = testdata:rep(testsize)
   message("Testing file I/O on a file of %i bytes (step %i/%i)..\n", #testdata, testsize, maxmultiplier)
   local testlines = {}
   for l in testdata:gmatch '[^\r\n]*' do
@@ -389,7 +406,7 @@ for testsize = 1, maxmultiplier do
   assert(testfile:write(testdata))
   assert(testfile:close())
 
-  -- Read back the temporary file's contents using various formats. {{{2
+  -- Read back the temporary file's contents using various formats.
   local escapes = { ['\r'] = '\\r', ['\n'] = '\\n', ['"'] = '\\"', ['\0'] = '\\0' }
   local function formatvalue(v)
     if type(v) == 'number' then
@@ -439,7 +456,7 @@ for testsize = 1, maxmultiplier do
 
   assert(os.remove(tempname))
 
-  -- Perform write tests {{{2
+  -- Perform write tests.
 
   local lua_file = assert(os.tmpname())
   local apr_file = assert(os.tmpname())
