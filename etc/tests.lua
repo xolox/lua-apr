@@ -577,6 +577,46 @@ local apr_v, apu_v = assert(apr.version_get())
 assert(apr_v:find '^%d+%.%d+%.%d+$')
 assert(apu_v:find '^%d+%.%d+%.%d+$')
 
+-- Process handling module (proc.c) {{{1
+message "Testing process handling module ..\n"
+
+local function newchild(cmdtype, script, env)
+  local child = assert(apr.proc_create(arg[-1]))
+  assert(child:cmdtype_set(cmdtype))
+  if env then child:env_set(env) end
+  assert(child:io_set('child-block', 'parent-block', 'parent-block'))
+  assert(child:exec(apr.filepath_merge(apr.filepath_parent(arg[0]), script)))
+  return child, assert(child:in_get()), assert(child:out_get()), assert(child:err_get())
+end
+
+-- Test bidirectional pipes. {{{2
+local child, stdin, stdout, stderr = newchild('shellcmd/env', 'test-bidi-pipes.lua')
+local testmsg = "Is There Anyone Out There?!"
+assert(stdin:write(testmsg)); assert(stdin:close())
+assert(stdout:read() == testmsg:lower())
+assert(stderr:read() == testmsg:upper())
+
+-- Test child environment manipulation. {{{2
+local child = newchild('program', 'test-child-env.lua', { LUA_APR_MAGIC_ENV_KEY = apr._VERSION })
+local done, why, code = assert(child:wait(true))
+assert(done == true)
+assert(why == 'exit')
+assert(code == 255 or code == 42)
+
+-- Test apr.proc_fork() when supported. {{{2
+if apr.proc_fork then
+  local process, context = assert(apr.proc_fork())
+  local forked_file, forked_text = assert(os.tmpname()), 'hello from forked child!'
+  if context == 'child' then
+    io.output(forked_file)
+    io.write(forked_text, '\n')
+    os.exit(0)
+  elseif context == 'child' then
+    for i = 1, 10 do if (apr.stat(forked_file, 'size') or 0) > 0 then break end apr.sleep(1) end
+    assert(readfile(forked_file) == forked_text)
+  end
+end
+
 -- String module (str.c) {{{1
 message "Testing string module ..\n"
 
