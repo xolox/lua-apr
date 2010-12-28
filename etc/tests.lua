@@ -42,6 +42,7 @@ do
   function os.tmpname()
     local name = 'lua-apr-tempfile-' .. tmpnum
     local file = apr.filepath_merge(tmpdir, name)
+    apr.file_remove(file)
     tmpnum = tmpnum + 1
     return file
   end
