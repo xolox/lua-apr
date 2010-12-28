@@ -276,6 +276,7 @@ assert(writable(assert(apr.temp_dir_get())))
 assert(apr.dir_make 'io_dir_tests')
 
 -- Change to the temporary workspace directory
+local cwd_save = assert(apr.filepath_get())
 assert(apr.filepath_set 'io_dir_tests')
 
 -- Test dir_make()
@@ -304,14 +305,28 @@ for _, name in ipairs(nonascii) do
   assert(apr.dir_make(name))
   -- Using writable() here won't work because the APR API deals with UTF-8
   -- while the Lua API does not, which makes the strings non-equal... :-)
-  assert('directory' == assert(apr.stat(name, 'type')))
-  assert(apr.dir_remove(name))
-  assert('directory' ~= apr.stat(name, 'type'))
+  assert(assert(apr.stat(name, 'type')) == 'directory')
+end
+
+-- Test apr.dir_open() and directory methods.
+local dir = assert(apr.dir_open '.')
+local entries = {}
+for name in dir:entries 'name' do entries[#entries+1] = name end
+assert(dir:rewind())
+local rewinded = {}
+for name in dir:entries 'name' do rewinded[#rewinded+1] = name end
+assert(dir:close())
+table.sort(nonascii)
+table.sort(entries)
+table.sort(rewinded)
+for i = 1, math.max(#nonascii, #entries, #rewinded) do
+  assert(nonascii[i] == entries[i])
+  assert(entries[i] == rewinded[i])
 end
 
 -- Remove temporary workspace directory
-assert(apr.filepath_set '..')
-assert(apr.dir_remove 'io_dir_tests')
+assert(apr.filepath_set(cwd_save))
+assert(apr.dir_remove_recursive 'io_dir_tests')
 
 -- File I/O handling module (io_file.c) {{{1
 message "Testing file I/O module ..\n"
