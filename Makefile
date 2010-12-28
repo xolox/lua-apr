@@ -97,7 +97,7 @@ package: docs
 	@md5sum $(ZIPNAME).zip
 
 clean:
-	@rm -f $(BINARY_MODULE) $(OBJECTS)
+	@rm -Rf $(BINARY_MODULE) $(OBJECTS) etc/coverage
 	@which lcov && lcov -z -d .
 
 .PHONY: install uninstall test docs install_deps clean
