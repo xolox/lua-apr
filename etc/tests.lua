@@ -291,7 +291,7 @@ assert(apr.stat(arg[0], 'name') == 'tests.lua')
 local etcdir = apr.filepath_parent(arg[0])
 local kind, size, prot = apr.stat(etcdir, 'type', 'size', 'protection')
 assert(kind == 'directory')
-assert(size > 0)
+assert(type(size) == 'number')
 assert(prot:find '^[-r][-w][-xSs][-r][-w][-xSs][-r][-w][-xTt]$')
 
 local testdata_single = [[
