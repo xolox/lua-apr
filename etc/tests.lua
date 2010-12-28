@@ -380,10 +380,12 @@ assert(prot:find '^[-r][-w][-xSs][-r][-w][-xSs][-r][-w][-xTt]$')
 -- Test apr.file_perms_set().  {{{2
 local tempname = assert(os.tmpname())
 writefile(tempname, 'something')
-assert(apr.file_perms_set(tempname, 'rw-rw----'))
-assert(apr.stat(tempname, 'protection') == 'rw-rw----')
-assert(apr.file_perms_set(tempname, 'ug=r,o='))
-assert(apr.stat(tempname, 'protection') == 'r--r-----')
+local status, errmsg = apr.file_perms_set(tempname, 'rw-rw----')
+if not (errmsg and errmsg:find 'not .- implemented') then
+  assert(apr.stat(tempname, 'protection') == 'rw-rw----')
+  assert(apr.file_perms_set(tempname, 'ug=r,o='))
+  assert(apr.stat(tempname, 'protection') == 'r--r-----')
+end
 
 -- Test apr.file_copy(). {{{2
 local copy1 = assert(os.tmpname())
@@ -408,15 +410,17 @@ assert(apr.file_mtime_set(copy2, mtime))
 assert(apr.stat(copy2, 'mtime') == mtime)
 
 -- Test apr.file_attrs_set(). {{{2
-assert(apr.file_perms_set(copy2, 'ug=rw,o='))
-assert(apr.stat(copy2, 'protection'):find '^.w..w....$')
-assert(apr.file_attrs_set(copy2, { readonly=true }))
-assert(apr.stat(copy2, 'protection'):find '^.[^w]..[^w]....$')
+local status, errmsg = apr.file_perms_set(copy2, 'ug=rw,o=')
+if not (errmsg and errmsg:find 'not .- implemented') then
+  assert(apr.stat(copy2, 'protection'):find '^.w..w....$')
+  assert(apr.file_attrs_set(copy2, { readonly=true }))
+  assert(apr.stat(copy2, 'protection'):find '^.[^w]..[^w]....$')
+end
 
 -- Test file:stat(). {{{2
 local handle = assert(apr.file_open(copy2))
 assert(handle:stat('type') == 'file')
-assert(handle:stat('size') == #testdata)
+assert(handle:stat('size') >= #testdata)
 
 -- Test file:lines(). {{{2
 local lines = {}
