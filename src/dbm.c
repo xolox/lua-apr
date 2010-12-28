@@ -182,8 +182,8 @@ int dbm_exists(lua_State *L)
 /* dbm:fetch(key) -> value {{{1
  *
  * Fetch the [dbm] [dbm] record with the given string @key. On success the
- * fetched value is returned as a string, otherwise a nil followed by an error
- * message is returned.
+ * fetched value is returned as a string, if the key doesn't exist nothing is
+ * returned and on error a nil followed by an error message is returned.
  */
 
 int dbm_fetch(lua_State *L)
@@ -197,8 +197,9 @@ int dbm_fetch(lua_State *L)
   status = apr_dbm_fetch(object->handle, key, &val);
   if (status != APR_SUCCESS)
     return push_error_status(L, status);
+  else if (val.dsize == 0)
+    return 0;
   lua_pushlstring(L, val.dptr, val.dsize);
-
   return 1;
 }
 
@@ -245,8 +246,8 @@ int dbm_delete(lua_State *L)
 /* dbm:firstkey() -> key {{{1
  *
  * Retrieve the first record key from a [dbm] [dbm]. On success the first key
- * is returned as a string, otherwise a nil followed by an error message is
- * returned.
+ * is returned as a string, when there are no keys nothing is returned. In case
+ * of error a nil followed by an error message is returned.
  */
 
 int dbm_firstkey(lua_State *L)
@@ -259,6 +260,8 @@ int dbm_firstkey(lua_State *L)
   status = apr_dbm_firstkey(object->handle, &key);
   if (status != APR_SUCCESS)
     return push_error_status(L, status);
+  else if (key.dsize == 0)
+    return 0;
   lua_pushlstring(L, key.dptr, key.dsize);
 
   return 1;
@@ -268,8 +271,8 @@ int dbm_firstkey(lua_State *L)
  *
  * Retrieve the next record key from a [dbm] [dbm]. This function works just
  * like Lua's `next()` function: On success the next key is returned as a
- * string and when there are no more keys nil is returned. In case of error
- * a nil followed by an error message is returned.
+ * string, when there are no more keys nothing is returned. In case of error a
+ * nil followed by an error message is returned.
  */
 
 int dbm_nextkey(lua_State *L)
@@ -283,7 +286,7 @@ int dbm_nextkey(lua_State *L)
   status = apr_dbm_nextkey(object->handle, &key);
   if (status != APR_SUCCESS)
     return push_error_status(L, status);
-  if (key.dsize == 0)
+  else if (key.dsize == 0)
     return 0;
   lua_pushlstring(L, key.dptr, key.dsize);
 
