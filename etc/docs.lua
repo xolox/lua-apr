@@ -138,7 +138,7 @@ for filename in SOURCES:gmatch '%S+' do
   end
 end
 
-local blocks = { trim [[
+local blocks = { trim([[
 
 # Lua/APR binding documentation
 
@@ -156,12 +156,14 @@ for the Lua/APR binding. Some notes about this documentation:
    source code of the binding to prevent that documentation and implementation
    become out of sync.
 
+*This document was generated from the Lua/APR **]] .. apr._VERSION .. [[** source code.*
+
 [homepage]: http://peterodding.com/code/lua/apr/
 [apr_wiki]: http://en.wikipedia.org/wiki/Apache_Portable_Runtime
 [lua_wiki]: http://en.wikipedia.org/wiki/Lua_%28programming_language%29
 [apr_docs]: http://apr.apache.org/docs/apr/trunk/modules.html
 
-]] }
+]]) }
 
 function blocks:add(string, ...)
   self[#self+1] = string:format(...)
