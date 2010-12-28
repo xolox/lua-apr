@@ -355,7 +355,7 @@ assert(prot:find '^[-r][-w][-xSs][-r][-w][-xSs][-r][-w][-xTt]$')
 
 -- Test apr.file_perms_set()
 local tempname = assert(os.tmpname())
-local handle = io.open(tempname, 'w'); handle:write 'something'; handle:close()
+local handle = assert(io.open(tempname, 'w')); handle:write 'something'; handle:close()
 assert(apr.file_perms_set(tempname, 'rw-rw----'))
 assert(apr.stat(tempname, 'protection') == 'rw-rw----')
 assert(apr.file_perms_set(tempname, 'ug=r,o='))
