@@ -496,6 +496,10 @@ local xt = assert(apr.time_explode(now, true)) -- apr_time_exp_gmt()
 local imp = assert(apr.time_implode(xt)) -- apr_time_exp_gmt_get()
 assert(math.floor(now) == math.floor(imp))
 
+-- Test apr.time_format() (example from http://en.wikipedia.org/wiki/Unix_time)
+assert(apr.time_format('rfc822', 1000000000) == 'Sun, 09 Sep 2001 01:46:40 GMT')
+assert(apr.time_format('%Y-%m', 1000000000) == '2001-09')
+
 -- URI parsing module (uri.c) {{{1
 message "Testing URI parsing ..\n"
 
