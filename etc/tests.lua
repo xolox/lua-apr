@@ -21,9 +21,8 @@ local apr = assert(require 'apr')
 local _real_assert_ = _G.assert --> hack around `Shake'.
 
 -- TODO Cleanup and extend the tests for `filepath.c'.
--- TODO Create tests for `io_file.c'.
 -- TODO Add tests for file:seek() (tricky to get right!)
--- TODO apr.dir(), apr.glob(), apr.stat()!
+-- TODO Add tests for apr.dir() and apr.glob()!
 
 -- Test infrastructure {{{1
 
@@ -272,6 +271,28 @@ assert(apr.dir_remove 'io_dir_tests')
 
 -- File I/O handling module (io_file.c) {{{1
 message "Testing file I/O module ..\n"
+
+-- Test the stat() function.
+local info = apr.stat(arg[0])
+assert(type(info) == 'table')
+assert(info.name == 'tests.lua')
+assert(info.path:find 'tests%.lua$')
+assert(info.type == 'file')
+assert(info.size >= 1024 * 19)
+assert(info.mtime >= 1293510503)
+assert(info.nlink >= 1)
+assert(type(info.inode) == 'number')
+assert(type(info.dev) == 'number')
+assert(info.protection:find '^[-r][-w][-xSs][-r][-w][-xSs][-r][-w][-xTt]$')
+
+-- Test the alternative stat() interface.
+assert(apr.stat(arg[0], 'type') == 'file')
+assert(apr.stat(arg[0], 'name') == 'tests.lua')
+local etcdir = apr.filepath_parent(arg[0])
+local kind, size, prot = apr.stat(etcdir, 'type', 'size', 'protection')
+assert(kind == 'directory')
+assert(size > 0)
+assert(prot:find '^[-r][-w][-xSs][-r][-w][-xSs][-r][-w][-xTt]$')
 
 local testdata_single = [[
  1
