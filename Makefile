@@ -98,6 +98,7 @@ package: docs
 
 clean:
 	@rm -f $(BINARY_MODULE) $(OBJECTS)
+	@which lcov && lcov -z -d .
 
 .PHONY: install uninstall test docs install_deps clean
 
