@@ -1,7 +1,7 @@
 /* Initialization and miscellaneous routines for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: December 23, 2010
+ * Last Change: December 29, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -394,37 +394,6 @@ lua_apr_objtype lua_apr_dir_type = {
   sizeof(lua_apr_dir),
   dir_methods,
   dir_metamethods
-};
-
-/* lua_apr_file_type {{{2 */
-
-static luaL_Reg file_methods[] = {
-  { "close", file_close },
-  { "flush", file_flush },
-  { "lock", file_lock },
-  { "lines", file_lines },
-  { "read", file_read },
-  { "seek", file_seek },
-  { "stat", file_stat },
-  { "unlock", file_unlock },
-  { "write", file_write },
-  { "timeout_get", pipe_timeout_get },
-  { "timeout_set", pipe_timeout_set },
-  { NULL, NULL }
-};
-
-static luaL_Reg file_metamethods[] = {
-  { "__gc", file_gc },
-  { "__tostring", file_tostring },
-  { NULL, NULL }
-};
-
-lua_apr_objtype lua_apr_file_type = {
-  "lua_apr_file*",
-  "file",
-  sizeof(lua_apr_file),
-  file_methods,
-  file_metamethods
 };
 
 /* lua_apr_proc_type {{{2 */

@@ -1,7 +1,7 @@
 /* Header file for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: December 23, 2010
+ * Last Change: December 29, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -254,19 +254,6 @@ int lua_apr_file_attrs_set(lua_State*);
 int lua_apr_file_perms_set(lua_State*);
 int lua_apr_stat(lua_State*);
 int lua_apr_file_open(lua_State*);
-int file_stat(lua_State*);
-int file_lines(lua_State*);
-int file_read(lua_State*);
-int file_write(lua_State*);
-int file_seek(lua_State*);
-int file_flush(lua_State*);
-int file_lock(lua_State*);
-int file_unlock(lua_State*);
-int pipe_timeout_get(lua_State*);
-int pipe_timeout_set(lua_State*);
-int file_close(lua_State*);
-int file_gc(lua_State*);
-int file_tostring(lua_State*);
 lua_apr_file *file_alloc(lua_State*, const char*, lua_apr_pool*);
 void init_file_buffers(lua_State*, lua_apr_file*, int);
 lua_apr_file *file_check(lua_State*, int, int);

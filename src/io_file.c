@@ -1,7 +1,7 @@
 /* File I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: December 28, 2010
+ * Last Change: December 29, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -394,7 +394,7 @@ int lua_apr_file_open(lua_State *L)
  * instead of a filepath to access the file.
  */
 
-int file_stat(lua_State *L)
+static int file_stat(lua_State *L)
 {
   lua_apr_stat_context context = { 0 };
   lua_apr_file *file;
@@ -416,7 +416,7 @@ int file_stat(lua_State *L)
  * This function implements the interface of Lua's `file:lines()` function.
  */
 
-int file_lines(lua_State *L)
+static int file_lines(lua_State *L)
 {
   lua_apr_file *file = file_check(L, 1, 1);
   return read_lines(L, &file->input);
@@ -427,7 +427,7 @@ int file_lines(lua_State *L)
  * This function implements the interface of Lua's `file:read()` function.
  */
 
-int file_read(lua_State *L)
+static int file_read(lua_State *L)
 {
   lua_apr_file *file = file_check(L, 1, 1);
   return read_buffer(L, &file->input);
@@ -438,7 +438,7 @@ int file_read(lua_State *L)
  * This function implements the interface of Lua's `file:write()` function.
  */
 
-int file_write(lua_State *L)
+static int file_write(lua_State *L)
 {
   lua_apr_file *file = file_check(L, 1, 1);
   return write_buffer(L, &file->output);
@@ -470,7 +470,7 @@ int file_write(lua_State *L)
  * [fseek]: http://www.lua.org/manual/5.1/manual.html#pdf-file:seek
  */
 
-int file_seek(lua_State *L)
+static int file_seek(lua_State *L)
 {
   const char *const modenames[] = { "set", "cur", "end", NULL };
   const apr_seek_where_t modes[] = { APR_SET, APR_CUR, APR_END };
@@ -528,7 +528,7 @@ int file_seek(lua_State *L)
  * nil followed by an error message is returned.
  */
 
-int file_flush(lua_State *L)
+static int file_flush(lua_State *L)
 {
   lua_apr_file *file = file_check(L, 1, 1);
   apr_status_t status = flush_buffer(L, &file->output, 0);
@@ -556,7 +556,7 @@ int file_flush(lua_State *L)
  * thread will not block.
  */
 
-int file_lock(lua_State *L)
+static int file_lock(lua_State *L)
 {
   const char *options[] = { "shared", "exclusive", NULL };
   const int flags[] = { APR_FLOCK_SHARED, APR_FLOCK_EXCLUSIVE };
@@ -584,7 +584,7 @@ int file_lock(lua_State *L)
  * otherwise a nil followed by an error message is returned.
  */
 
-int file_unlock(lua_State *L)
+static int file_unlock(lua_State *L)
 {
   apr_status_t status;
   lua_apr_file *file;
@@ -604,7 +604,7 @@ int file_unlock(lua_State *L)
  * number is the microseconds to wait.
  */
 
-int pipe_timeout_get(lua_State *L)
+static int pipe_timeout_get(lua_State *L)
 {
   lua_apr_file *pipe;
   apr_status_t status;
@@ -636,7 +636,7 @@ int pipe_timeout_get(lua_State *L)
  *     end
  */
 
-int pipe_timeout_set(lua_State *L)
+static int pipe_timeout_set(lua_State *L)
 {
   lua_apr_file *pipe;
   apr_status_t status;
@@ -657,7 +657,7 @@ int pipe_timeout_set(lua_State *L)
  * error message is returned.
  */
 
-int file_close(lua_State *L)
+static int file_close(lua_State *L)
 {
   lua_apr_file *file;
   apr_status_t status;
@@ -666,6 +666,26 @@ int file_close(lua_State *L)
   status = file_close_impl(L, file);
 
   return push_file_status(L, file, status);
+}
+
+/* file:__tostring() {{{1 */
+
+static int file_tostring(lua_State *L)
+{
+  lua_apr_file *file = file_check(L, 1, 0);
+  if (file->handle != NULL)
+    lua_pushfstring(L, "%s (%p)", lua_apr_file_type.typename, file);
+  else
+    lua_pushfstring(L, "%s (closed)", lua_apr_file_type.typename);
+  return 1;
+}
+
+/* file:__gc() {{{1 */
+
+static int file_gc(lua_State *L)
+{
+  file_close_impl(L, file_check(L, 1, 0));
+  return 0;
 }
 
 lua_apr_file *file_alloc(lua_State *L, const char *path, lua_apr_pool *refpool) /* {{{1 */
@@ -718,16 +738,6 @@ apr_status_t file_close_impl(lua_State *L, lua_apr_file *file) /* {{{1 */
   return status;
 }
 
-int file_tostring(lua_State *L) /* {{{1 */
-{
-  lua_apr_file *file = file_check(L, 1, 0);
-  if (file->handle != NULL)
-    lua_pushfstring(L, "%s (%p)", lua_apr_file_type.typename, file);
-  else
-    lua_pushfstring(L, "%s (closed)", lua_apr_file_type.typename);
-  return 1;
-}
-
 int push_file_status(lua_State *L, lua_apr_file *file, apr_status_t status) /* {{{1 */
 {
   if (status == APR_SUCCESS) {
@@ -751,10 +761,35 @@ int push_file_error(lua_State *L, lua_apr_file *file, apr_status_t status) /* {{
   return 3;
 }
 
-int file_gc(lua_State *L) /* {{{1 */
-{
-  file_close_impl(L, file_check(L, 1, 0));
-  return 0;
-}
+/* }}}1 */
+
+static luaL_Reg file_methods[] = {
+  { "close", file_close },
+  { "flush", file_flush },
+  { "lock", file_lock },
+  { "lines", file_lines },
+  { "read", file_read },
+  { "seek", file_seek },
+  { "stat", file_stat },
+  { "unlock", file_unlock },
+  { "write", file_write },
+  { "timeout_get", pipe_timeout_get },
+  { "timeout_set", pipe_timeout_set },
+  { NULL, NULL }
+};
+
+static luaL_Reg file_metamethods[] = {
+  { "__gc", file_gc },
+  { "__tostring", file_tostring },
+  { NULL, NULL }
+};
+
+lua_apr_objtype lua_apr_file_type = {
+  "lua_apr_file*",
+  "file",
+  sizeof(lua_apr_file),
+  file_methods,
+  file_metamethods
+};
 
 /* vim: set ts=2 sw=2 et tw=79 fen fdm=marker : */
