@@ -3,7 +3,7 @@
  Documentation generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: October 26, 2010
+ Last Change: December 29, 2010
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -49,6 +49,7 @@ local function stripcomment(s)
 end
 
 local shareddocs = {
+  -- file:read() {{{1
   ['file:read'] = [[
 _This function implements the interface of the [file:read()] [fread] function described in the Lua 5.1 reference manual. Here is the description from the reference manual:_
 
@@ -61,15 +62,15 @@ The available formats are:
  - `'*l'`: reads the next line (skipping the end of line), returning nil on end of input (this is the default format)
  - `number`: reads a string with up to this number of characters, returning nil on end of input. If number is zero, it reads nothing and returns an empty string, or nil on end of input
    
-[fread]: http://www.lua.org/manual/5.1/manual.html#pdf-file:read
-]],
+[fread]: http://www.lua.org/manual/5.1/manual.html#pdf-file:read ]],
+  -- file:write() {{{1
   ['file:write'] = [[
 _This function implements the interface of the [file:write()] [fwrite] function described in the Lua 5.1 reference manual. Here is the description from the reference manual:_
 
 Write the value of each argument to @file. The arguments must be strings or numbers. To write other values, use `tostring()` or `string.format()` before this function.
 
-[fwrite]: http://www.lua.org/manual/5.1/manual.html#pdf-file:write
-]],
+[fwrite]: http://www.lua.org/manual/5.1/manual.html#pdf-file:write ]],
+  -- file:lines() {{{1
   ['file:lines'] = [[
 _This function implements the interface of the [file:lines()] [flines] function described in the Lua 5.1 reference manual. Here is the description from the reference manual:_
 
@@ -79,16 +80,17 @@ Return an iterator function that, each time it is called, returns a new line rea
 
 will iterate over all lines. This function does not close the @file when the loop ends.
 
-[flines]: http://www.lua.org/manual/5.1/manual.html#pdf-file:lines
-]]
+[flines]: http://www.lua.org/manual/5.1/manual.html#pdf-file:lines ]],
+-- }}}1
 }
 
 local function mungedesc(signature, description)
   local sname = description:match "This function implements the interface of Lua's `([^`]+)%(%)` function."
   if sname and shareddocs[sname] then
-    local oldobjname = '@' .. sname:match '^(%w+)'
-    local newobjname = '@' .. signature:match '^%s*(%w+)'
-    description = shareddocs[sname]:gsub(oldobjname, newobjname)
+    local oldtype = sname:match '^(%w+)'
+    local newtype = signature:match '^%s*(%w+)'
+    local firstline, otherlines = shareddocs[sname]:match '^(.-)\n\n(.+)$'
+    description = firstline .. '\n\n' .. otherlines:gsub(oldtype, newtype)
   end
   return description
 end
