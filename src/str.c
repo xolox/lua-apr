@@ -1,7 +1,7 @@
 /* String routines module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 22, 2010
+ * Last Change: December 29, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -68,7 +68,16 @@ int lua_apr_strnatcasecmp(lua_State *L)
 /* apr.strfsize(number) -> readable {{{1
  *
  * Format a binary size number to a four character compacted human readable
- * string.
+ * string (like those shown by the UNIX command `ls --human-readable`):
+ *
+ *     > = apr.strfsize(1024)
+ *     '1.0K'
+ *     > = apr.strfsize(1024 ^ 2)
+ *     '1.0M'
+ *     > = apr.strfsize(1024 ^ 3)
+ *     '1.0G'
+ *
+ * Note: It seems that `apr.strfsize()` doesn't support terabyte range sizes.
  */
 
 int lua_apr_strfsize(lua_State *L)
