@@ -1,7 +1,7 @@
 /* Process handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: December 28, 2010
+ * Last Change: December 29, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -673,11 +673,12 @@ int proc_exec(lua_State *L)
  *
  *  - `'exit'`: Process exited normally
  *  - `'signal'`: Process exited due to a signal
- *  - `'signal/core'`: Process exited and dumped a core file
+ *  - `'signal/core'`: Process exited and dumped [a core file] [wp:coredump]
  *
  * The third return value is the exit code of the process. If an error occurs a
  * nil followed by an error message is returned.
  *
+ * [wp:coredump]: http://en.wikipedia.org/wiki/Core_dump
  */
 
 int proc_wait(lua_State *L)

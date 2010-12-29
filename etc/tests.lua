@@ -577,7 +577,7 @@ local apr_v, apu_v = assert(apr.version_get())
 assert(apr_v:find '^%d+%.%d+%.%d+$')
 assert(apu_v:find '^%d+%.%d+%.%d+$')
 
--- Process handling module (proc.c) {{{1
+-- Process handling module (proc.c, io_pipe.c) {{{1
 message "Testing process handling module ..\n"
 
 local function scriptpath(name)
@@ -620,6 +620,43 @@ if apr.proc_fork then
     assert(readfile(forked_file) == forked_text)
   end
 end
+
+-- Test apr.namedpipe_create(). {{{2
+
+local namedpipe = os.tmpname()
+local namedmsg = "Hello world over a named pipe!"
+local status, errmsg = apr.namedpipe_create(namedpipe)
+if not (errmsg and errmsg:find 'not .- implemented') then
+  local child = assert(apr.proc_create(arg[-1]))
+  assert(child:cmdtype_set('shellcmd/env'))
+  assert(child:exec(scriptpath 'test-namedpipe.lua', namedpipe, namedmsg))
+  local handle = assert(apr.file_open(namedpipe, 'r'))
+  assert(namedmsg == handle:read())
+  assert(handle:close())
+end
+
+--[[
+
+TODO Investigate escaping problem in apr_proc_create() ?!
+
+I originally used the following message above:
+
+  local namedmsg = "Hello world over a named pipe! :-)"
+
+Which caused the following error message:
+  
+  /bin/sh: Syntax error: ")" unexpected
+
+Using strace as follows I can see the escaping is lost:
+
+  $ strace -vfe trace=execve -s 250 lua etc/tests.lua 
+  [pid 30868] execve("/bin/sh", ["/bin/sh", "-c", "lua etc/test-namedpipe.lua /tmp/lua-apr-tempfile-66 Hello world over a named pipe! :-)"], [...]) = 0
+
+After removing the smiley the syntax errors disappeared but the words in
+"namedmsg" are received as individual arguments by the test-namedpipe.lua
+script :-\
+
+--]]
 
 -- Network I/O handling module (io_net.c) {{{1
 message "Testing network I/O handling module ..\n"

@@ -59,16 +59,11 @@ The makefile creates a debug build by default. Use `NMAKE /f Makefile.win RELEAS
 
 ## Status
 
-The following modules have just been implemented but haven't seen a lot of use and need automated tests:
-
- * [Process handling](http://peterodding.com/code/lua/apr/docs/#process_handling)
- * [Network I/O handling](http://peterodding.com/code/lua/apr/docs/#network_i_o_handling)
- * [DBM routines](http://peterodding.com/code/lua/apr/docs/#dbm_routines)
-
-The following functionality has not been implemented yet but is on the todo list (highest to lowest priority):
+The following functionality has not been implemented yet but is on the to-do list (highest to lowest priority):
 
  * [**Date parsing**](http://apr.apache.org/docs/apr/trunk/group___a_p_r___util___date.html)
  * [**I18N translation library**](http://apr.apache.org/docs/apr/trunk/group___a_p_r___x_l_a_t_e.html)
+ * Incremental [MD5](http://apr.apache.org/docs/apr/trunk/group___a_p_r___m_d5.html) and [SHA1](http://apr.apache.org/docs/apr/trunk/apr__sha1_8h.html) hashing (once this exists [apr.md5()](http://peterodding.com/code/lua/apr/docs/#apr.md5) and [apr.sha1()](http://peterodding.com/code/lua/apr/docs/#apr.sha1) can be implemented on top of it)
  * If I ever find the time it might be useful to bind the [**relational database API**](http://apr.apache.org/docs/apr-util/trunk/group___a_p_r___util___d_b_d.html) which provides access to common relational database servers/engines such as [MySQL](http://en.wikipedia.org/wiki/MySQL), [SQLite](http://en.wikipedia.org/wiki/SQLite) and [PostgreSQL](http://en.wikipedia.org/wiki/PostgreSQL).
 
 ## Contact
