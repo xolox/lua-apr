@@ -1,7 +1,7 @@
 /* Network I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: December 23, 2010
+ * Last Change: December 29, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -453,6 +453,9 @@ static int socket_timeout_set(lua_State *L)
  *  - `'sndbuf'`: set the send buffer size
  *  - `'rcvbuf'`: set the receive buffer size
  *  - `'disconnected'`: query the disconnected state of the socket (currently only used on Windows)
+ *
+ * The `'sndbuf'` and `'rcvbuf'` options have integer values, all other options
+ * have a boolean value.
  */
 
 static int socket_opt_get(lua_State *L)
@@ -466,7 +469,10 @@ static int socket_opt_get(lua_State *L)
   status = apr_socket_opt_get(object->handle, option, &value);
   if (status != APR_SUCCESS)
     return push_error_status(L, status);
-  lua_pushinteger(L, value);
+  else if (option == APR_SO_SNDBUF || option == APR_SO_RCVBUF)
+    lua_pushinteger(L, value);
+  else
+    lua_pushboolean(L, value);
   return 1;
 }
 

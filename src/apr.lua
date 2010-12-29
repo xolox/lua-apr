@@ -3,10 +3,10 @@
  Lua source code for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: December 28, 2010
+ Last Change: December 29, 2010
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
- Version: 0.9.15
+ Version: 0.9.16
 
  This Lua script is executed on require("apr"), loads the binary module using
  require("apr.core"), defines several library functions implemented on top of
@@ -15,7 +15,7 @@
 --]]
 
 local apr = require 'apr.core'
-apr._VERSION = '0.9.15'
+apr._VERSION = '0.9.16'
 
 -- apr.filepath_which(program [, find_all]) -> pathname {{{1
 -- 
