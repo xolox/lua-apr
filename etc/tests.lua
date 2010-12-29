@@ -3,7 +3,7 @@
  Test suite for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: December 28, 2010
+ Last Change: December 29, 2010
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -580,12 +580,16 @@ assert(apu_v:find '^%d+%.%d+%.%d+$')
 -- Process handling module (proc.c) {{{1
 message "Testing process handling module ..\n"
 
+local function scriptpath(name)
+  return assert(apr.filepath_merge(apr.filepath_parent(arg[0]), name))
+end
+
 local function newchild(cmdtype, script, env)
   local child = assert(apr.proc_create(arg[-1]))
   assert(child:cmdtype_set(cmdtype))
   if env then child:env_set(env) end
   assert(child:io_set('child-block', 'parent-block', 'parent-block'))
-  assert(child:exec(apr.filepath_merge(apr.filepath_parent(arg[0]), script)))
+  assert(child:exec(scriptpath(script)))
   return child, assert(child:in_get()), assert(child:out_get()), assert(child:err_get())
 end
 
@@ -615,6 +619,27 @@ if apr.proc_fork then
     for i = 1, 10 do if (apr.stat(forked_file, 'size') or 0) > 0 then break end apr.sleep(1) end
     assert(readfile(forked_file) == forked_text)
   end
+end
+
+-- Network I/O handling module (io_net.c) {{{1
+message "Testing network I/O handling module ..\n"
+
+-- Test apr.hostname_get(), apr.host_to_addr() and apr.addr_to_host().
+local hostname = assert(apr.hostname_get())
+local address = assert(apr.host_to_addr(hostname))
+assert(apr.addr_to_host(address))
+
+-- Test socket:bind(), socket:listen() and socket:accept().
+local server = assert(apr.proc_create(arg[-1]))
+local port = 12345
+assert(server:cmdtype_set 'shellcmd/env')
+assert(server:exec(scriptpath 'test-server.lua', port))
+apr.sleep(5)
+local client = assert(apr.socket_create())
+assert(client:connect('localhost', port))
+for _, msg in ipairs { 'First line', 'Second line', 'Third line' } do
+  assert(client:write(msg, '\n'))
+  assert(client:read() == msg:upper())
 end
 
 -- String module (str.c) {{{1
