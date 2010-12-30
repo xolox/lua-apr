@@ -1,7 +1,7 @@
 /* Directory manipulation module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 23, 2010
+ * Last Change: December 30, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -273,40 +273,13 @@ int lua_apr_dir_open(lua_State *L)
   return 1;
 }
 
-/* directory:entries([property, ...]) -> iterator, directory handle {{{1
- *
- * This method returns a function that iterates over the (remaining) directory
- * entries and returns the requested properties for each entry. The property
- * names and value types are documented under `apr.stat()`.
- */
-
-int dir_entries(lua_State *L)
-{
-  lua_apr_stat_context *context;
-
-  /* Check for a valid, open directory. */
-  checkdir(L, 1, 1);
-
-  /* Copy the stat() arguments to a userdatum. */
-  context = lua_newuserdata(L, sizeof(*context));
-  context->firstarg = 2; /* after directory handle */
-  context->lastarg = lua_gettop(L) - 1; /* before stat context */
-  check_stat_request(L, context);
-
-  /* Return the iterator function and directory object. */
-  lua_pushcclosure(L, dir_read, 1);
-  lua_pushvalue(L, 1);
-
-  return 2;
-}
-
 /* directory:read([property, ...]) -> value, ... {{{1
  *
  * Return the requested properties for the next directory entry. The
  * property names and value types are documented under `apr.stat()`.
  */
 
-int dir_read(lua_State *L)
+static int dir_read(lua_State *L)
 {
   apr_status_t status;
   lua_apr_dir *directory;
@@ -344,7 +317,7 @@ int dir_read(lua_State *L)
  * Rewind the directory handle to start from the first entry.
  */
 
-int dir_rewind(lua_State *L)
+static int dir_rewind(lua_State *L)
 {
   lua_apr_dir *directory;
   apr_status_t status;
@@ -355,12 +328,39 @@ int dir_rewind(lua_State *L)
   return push_status(L, status);
 }
 
+/* directory:entries([property, ...]) -> iterator, directory handle {{{1
+ *
+ * This method returns a function that iterates over the (remaining) directory
+ * entries and returns the requested properties for each entry. The property
+ * names and value types are documented under `apr.stat()`.
+ */
+
+static int dir_entries(lua_State *L)
+{
+  lua_apr_stat_context *context;
+
+  /* Check for a valid, open directory. */
+  checkdir(L, 1, 1);
+
+  /* Copy the stat() arguments to a userdatum. */
+  context = lua_newuserdata(L, sizeof(*context));
+  context->firstarg = 2; /* after directory handle */
+  context->lastarg = lua_gettop(L) - 1; /* before stat context */
+  check_stat_request(L, context);
+
+  /* Return the iterator function and directory object. */
+  lua_pushcclosure(L, dir_read, 1);
+  lua_pushvalue(L, 1);
+
+  return 2;
+}
+
 /* directory:close() -> status {{{1
  *
  * Close the directory handle.
  */
 
-int dir_close(lua_State *L)
+static int dir_close(lua_State *L)
 {
   lua_apr_dir *directory;
   apr_status_t status;
@@ -374,7 +374,7 @@ int dir_close(lua_State *L)
 
 /* directory:__tostring() {{{1 */
 
-int dir_tostring(lua_State *L)
+static int dir_tostring(lua_State *L)
 {
   lua_apr_dir *directory;
   const char *prefix;
@@ -388,7 +388,7 @@ int dir_tostring(lua_State *L)
 
 /* directory:__gc() {{{1 */
 
-int dir_gc(lua_State *L)
+static int dir_gc(lua_State *L)
 {
   lua_apr_dir *object;
 
@@ -402,5 +402,29 @@ int dir_gc(lua_State *L)
 
   return 0;
 }
+
+/* }}}1 */
+
+static luaL_Reg dir_methods[] = {
+  { "close", dir_close },
+  { "entries", dir_entries },
+  { "read", dir_read },
+  { "rewind", dir_rewind },
+  { NULL, NULL }
+};
+
+static luaL_Reg dir_metamethods[] = {
+  { "__gc", dir_gc },
+  { "__tostring", dir_tostring },
+  { NULL, NULL }
+};
+
+lua_apr_objtype lua_apr_dir_type = {
+  "lua_apr_dir*",
+  "directory",
+  sizeof(lua_apr_dir),
+  dir_methods,
+  dir_metamethods
+};
 
 /* vim: set ts=2 sw=2 et tw=79 fen fdm=marker : */

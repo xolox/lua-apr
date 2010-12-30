@@ -1,7 +1,7 @@
 /* Header file for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: December 29, 2010
+ * Last Change: December 30, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -235,13 +235,6 @@ int lua_apr_dir_make_recursive(lua_State*);
 int lua_apr_dir_remove(lua_State*);
 int lua_apr_dir_remove_recursive(lua_State*);
 int lua_apr_dir_open(lua_State*);
-int dir_close(lua_State*);
-int dir_entries(lua_State*);
-int dir_read(lua_State*);
-int dir_remove(lua_State*);
-int dir_rewind(lua_State*);
-int dir_gc(lua_State*);
-int dir_tostring(lua_State*);
 
 /* io_file.c */
 int lua_apr_file_link(lua_State*);

@@ -1,7 +1,7 @@
 /* Initialization and miscellaneous routines for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: December 29, 2010
+ * Last Change: December 30, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -371,30 +371,6 @@ int get_metatable(lua_State *L, lua_apr_objtype *T)
 }
 
 /* Global type structures used inside the binding. {{{1 */
-
-/* lua_apr_dir_type {{{2 */
-
-static luaL_Reg dir_methods[] = {
-  { "close", dir_close },
-  { "entries", dir_entries },
-  { "read", dir_read },
-  { "rewind", dir_rewind },
-  { NULL, NULL }
-};
-
-static luaL_Reg dir_metamethods[] = {
-  { "__gc", dir_gc },
-  { "__tostring", dir_tostring },
-  { NULL, NULL }
-};
-
-lua_apr_objtype lua_apr_dir_type = {
-  "lua_apr_dir*",
-  "directory",
-  sizeof(lua_apr_dir),
-  dir_methods,
-  dir_metamethods
-};
 
 /* lua_apr_proc_type {{{2 */
 
