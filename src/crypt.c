@@ -1,7 +1,7 @@
 /* Cryptography routines module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 23, 2010
+ * Last Change: December 30, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -17,15 +17,23 @@
  *
  * If that doesn't look useful consider the following scenario: The Lua authors
  * have just finished a new release of Lua and are about to publish the source
- * code on <http://lua.org>. Before they publish the `.tar.gz` archive they
- * first calculate its MD5 and SHA1 hash. Then they publish the archive and
- * hashes on the [downloads page] [lua_downloads]. When a user downloads the
- * archive they can verify whether it was corrupted or manipulated since it was
+ * code on <http://lua.org>. Before they publish the [tarball] [tar] they first
+ * calculate its MD5 and SHA1 hashes. They then publish the archive and hashes
+ * on the [downloads page] [lua_downloads]. When a user downloads the tarball
+ * they can verify whether it was corrupted or manipulated since it was
  * published on <http://lua.org> by comparing the published hash against the
- * hash of the archive they just downloaded.
+ * hash of the tarball they just downloaded:
+ *
+ *     > handle = io.open('lua-5.1.4.tar.gz', 'rb')
+ *     > data = handle:read('*a'); handle:close()
+ *     > = apr.md5(data) == 'd0870f2de55d59c1c8419f36e8fac150'
+ *     true
+ *     > = apr.sha1(data) == '2b11c8e60306efb7f0734b747588f57995493db7'
+ *     true
  *
  * [md5]: http://en.wikipedia.org/wiki/MD5
  * [sha1]: http://en.wikipedia.org/wiki/SHA1
+ * [tar]: http://en.wikipedia.org/wiki/Tar_%28file_format%29
  * [lua_downloads]: http://www.lua.org/ftp/
  */
 
