@@ -794,6 +794,7 @@ static luaL_Reg proc_methods[] = {
   { "detach_set" , proc_detach_set },
   { "error_check_set", proc_error_check_set },
   { "user_set", proc_user_set },
+  { "group_set", proc_group_set },
   { "env_set", proc_env_set },
   { "dir_set", proc_dir_set },
   { "io_set", proc_io_set },
