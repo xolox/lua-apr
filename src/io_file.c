@@ -1,7 +1,7 @@
 /* File I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: December 29, 2010
+ * Last Change: December 30, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -757,7 +757,7 @@ int push_file_error(lua_State *L, lua_apr_file *file, apr_status_t status) /* {{
     lua_pushfstring(L, "%s: %s", file->path, message);
   else
     lua_pushstring(L, message);
-  lua_pushinteger(L, status);
+  status_to_name(L, status);
   return 3;
 }
 

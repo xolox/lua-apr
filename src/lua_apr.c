@@ -305,7 +305,7 @@ int push_error_status(lua_State *L, apr_status_t status)
 {
   lua_pushnil(L);
   status_to_message(L, status);
-  lua_pushinteger(L, status);
+  status_to_name(L, status);
   return 3;
 }
 

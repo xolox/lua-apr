@@ -19,7 +19,7 @@ BINARY_MODULE = core.so
 
 # Names of source code files to compile & link.
 SOURCES = src/base64.c src/buffer.c src/crypt.c src/dbm.c src/env.c \
-		  src/filepath.c src/fnmatch.c src/io_dir.c src/io_file.c \
+		  src/errno.c src/filepath.c src/fnmatch.c src/io_dir.c src/io_file.c \
 		  src/io_net.c src/io_pipe.c src/lua_apr.c src/permissions.c \
 		  src/proc.c src/refpool.c src/stat.c src/str.c src/time.c \
 		  src/uri.c src/user.c src/uuid.c
@@ -52,6 +52,9 @@ $(BINARY_MODULE): $(OBJECTS)
 
 $(OBJECTS): %.o: %.c src/lua_apr.h
 	$(CC) -Wall -c $(CFLAGS) -fPIC $< -o $@
+
+src/errno.c: etc/errors.lua
+	lua etc/errors.lua > src/errno.c.new && mv src/errno.c.new src/errno.c
 
 install: $(BINARY_MODULE)
 	@mkdir -p $(LUA_SHAREDIR)

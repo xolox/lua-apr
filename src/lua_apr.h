@@ -36,7 +36,7 @@
 #define LUA_APR_DBG(MSG, ...) \
   do { \
     if (DEBUG_TEST) { \
-      fprintf(stderr, " *** " MSG, __VA_ARGS__); \
+      fprintf(stderr, " *** " MSG "\n", __VA_ARGS__); \
       fflush(stderr); \
     } \
   } while (0)
@@ -213,6 +213,9 @@ int lua_apr_dbm_getnames(lua_State*);
 int lua_apr_env_get(lua_State*);
 int lua_apr_env_set(lua_State*);
 int lua_apr_env_delete(lua_State*);
+
+/* errno.c */
+void status_to_name(lua_State*, apr_status_t);
 
 /* filepath.c */
 int lua_apr_filepath_root(lua_State*);

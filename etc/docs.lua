@@ -11,7 +11,7 @@
 
 local SOURCES = [[ base64.c crypt.c dbm.c env.c filepath.c fnmatch.c io_dir.c
   io_file.c io_net.c io_pipe.c lua_apr.c proc.c stat.c str.c time.c uri.c
-  user.c uuid.c apr.lua permissions.c ]]
+  user.c uuid.c apr.lua permissions.c errno.c ]]
 
 local modules = {}
 local sorted_modules = {}
