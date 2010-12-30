@@ -1,17 +1,20 @@
 --[[
 
- This is the LuaRocks `rockspec' for version 0.6 of the Lua/APR binding.
+ This is the LuaRocks `rockspec' for version 0.9 of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: September 26, 2010
+ Last Change: December 31, 2010
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
 --]]
 
 package = 'Lua-APR'
-version = '0.6-1'
-source = { url = 'http://github.com/downloads/xolox/lua-apr/lua-apr-0.6-1.zip' }
+version = '0.9.23-1'
+source = {
+  url = 'http://peterodding.com/code/lua/apr/downloads/lua-apr-0.9.23-1.zip',
+  md5 = '35f2b966d478f97794a08e5ad6149c46',
+}
 description = {
   summary = 'Apache Portable Runtime binding for Lua',
   detailed = [[
@@ -42,7 +45,7 @@ build = {
     LUA_LIBDIR = '$(LIBDIR)',
     LUA_SHAREDIR = '$(LUADIR)',
     CFLAGS = '$(CFLAGS) -I$(LUA_INCDIR) -I$(APR_INCDIR)/apr-1.0 -I$(APU_INCDIR)/apr-1.0',
-    LFLAGS = '$(LFLAGS) -L$(APR_LIBDIR) -L$(APU_LIBDIR) -llua5.1 -lapr-1 -laprutil-1',
+    LFLAGS = '$(LFLAGS) -L$(APR_LIBDIR) -L$(APU_LIBDIR) -lapr-1 -laprutil-1',
   },
   platforms = {
     linux = {

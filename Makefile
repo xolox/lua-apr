@@ -1,7 +1,7 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: December 30, 2010
+# Last Change: December 31, 2010
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -84,15 +84,16 @@ install_deps:
 		lua5.1 liblua5.1-0 liblua5.1-0-dev libreadline-dev \
 		liblua5.1-markdown0
 
-ZIPNAME = lua-apr-0.9.6-1
+ZIPNAME = lua-apr-0.9.23-1
 
 package: docs
 	@echo Packaging sources
 	@rm -f $(ZIPNAME).zip
-	@mkdir -p $(ZIPNAME)/doc $(ZIPNAME)/etc $(ZIPNAME)/src
+	@mkdir -p $(ZIPNAME)/doc $(ZIPNAME)/etc $(ZIPNAME)/src $(ZIPNAME)/examples
 	@cp -a src/lua_apr.h $(SOURCES) $(SOURCE_MODULE) $(ZIPNAME)/src
-	@cp -a etc/docs.lua etc/tests.lua $(ZIPNAME)/etc
-	@cp Makefile Makefile.win NOTES.md README.md $(ZIPNAME)
+	@cp -a etc/docs.lua etc/errors.lua etc/tests.lua etc/test-*.lua $(ZIPNAME)/etc
+	@cp -a examples/download.lua examples/webserver.lua $(ZIPNAME)/examples
+	@cp Makefile Makefile.win make.cmd NOTES.md README.md $(ZIPNAME)
 	@cp docs.html $(ZIPNAME)/doc/apr.html
 	@zip $(ZIPNAME).zip -r $(ZIPNAME)
 	@rm -R $(ZIPNAME)
