@@ -36,6 +36,7 @@ function apr.filepath_which(program, find_all)
   for _, directory in ipairs(split(apr.env_get 'PATH')) do
     local candidate = apr.filepath_merge(directory, program)
     if apr.stat(candidate, 'type') == 'file' then
+      -- TODO if not is_windows check executable bits
       if not find_all then return candidate end
       results[#results + 1] = candidate
     end
