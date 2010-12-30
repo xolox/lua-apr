@@ -707,10 +707,7 @@ static int proc_wait(lua_State *L)
     case APR_PROC_SIGNAL_CORE: lua_pushliteral(L, "signal/core"); break;
   }
 
-  if (APR_STATUS_IS_ENOTIMPL(status))
-    lua_pushinteger(L, why == APR_PROC_EXIT ? EXIT_SUCCESS : EXIT_FAILURE);
-  else
-    lua_pushinteger(L, code);
+  lua_pushinteger(L, code);
 
   return 3;
 }
