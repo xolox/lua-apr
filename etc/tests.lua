@@ -3,26 +3,17 @@
  Test suite for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: December 29, 2010
+ Last Change: December 30, 2010
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
-
- This Lua script is just a bunch of assert() calls but if you run it using
- `Shake' it also passes as a decent test suite. On Debian and Ubuntu you can
- install this tool by executing:
-
-   sudo apt-get install shake
-
- For more information about `Shake' see http://shake.luaforge.net/
 
 --]]
 
 local apr = assert(require 'apr')
-local _real_assert_ = _G.assert --> hack around `Shake'.
 
 -- TODO Cleanup and extend the tests for `filepath.c'.
 -- TODO Add tests for file:seek() (tricky to get right!)
--- TODO Add tests for apr.dir() and apr.glob()!
+-- TODO Add tests for apr.glob()!
 
 -- Test infrastructure {{{1
 
@@ -38,7 +29,7 @@ end
 
 do
   local tmpnum = 1
-  local tmpdir = _real_assert_(apr.temp_dir_get())
+  local tmpdir = assert(apr.temp_dir_get())
   function os.tmpname()
     local name = 'lua-apr-tempfile-' .. tmpnum
     local file = apr.filepath_merge(tmpdir, name)
@@ -796,8 +787,7 @@ message "Testing user/group identification ..\n"
 -- First check whether apr.user_get() works or returns an error.
 assert(apr.user_get())
 
--- XXX Shake's version of `assert' doesn't preserve multiple return values :-|
-local user, group = _real_assert_(apr.user_get())
+local user, group = assert(apr.user_get())
 
 -- Get the name of the current user.
 assert(user)
@@ -824,9 +814,8 @@ message "Testing universally unique identifiers ..\n"
 local set = {}
 assert(pcall(function()
   for i = 1, 32000 do
-    uuid = _real_assert_(apr.uuid_get())
-    -- Don't use Shake's assert() here so the test count doesn't get inflated.
-    _real_assert_(not set[uuid], 'duplicate UUID!')
+    uuid = assert(apr.uuid_get())
+    assert(not set[uuid], 'duplicate UUID!')
     set[uuid] = true
   end
 end))

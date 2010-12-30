@@ -47,7 +47,7 @@ If you don't have LuaRocks installed the following shell commands should help yo
     $ cd lua-apr
     $ sudo make install_deps # installs build & runtime dependencies for Debian/Ubuntu
     $ sudo make install # installs apr.lua and apr/core.so in /usr/local
-    $ make test # runs the test suite (using Shake if available)
+    $ make test # runs the test suite
 
 The makefile creates a debug build by default. Use `sudo make install RELEASE=1` to create a release build instead. Just be sure to run `make clean` when switching between debug/release mode to avoid linking incompatible object files.
 
