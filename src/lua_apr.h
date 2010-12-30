@@ -103,17 +103,11 @@ typedef struct lua_apr_dir {
 /* Type definitions used to call APR functions through function pointers.
  * NB: Omitting __stdcall here on Windows causes nasty stack corruption! */
 
-#ifdef WIN32
-# define LUA_APR_CC __stdcall
-#else
-# define LUA_APR_CC
-#endif
-
-typedef apr_status_t (LUA_APR_CC *lua_apr_buf_rf)(void*, char*, apr_size_t*);
-typedef apr_status_t (LUA_APR_CC *lua_apr_buf_wf)(void*, const char*, apr_size_t*);
-typedef apr_status_t (LUA_APR_CC *lua_apr_buf_ff)(void*);
-typedef apr_status_t (LUA_APR_CC *lua_apr_openpipe_f)(apr_file_t**, apr_pool_t*);
-typedef apr_status_t (LUA_APR_CC *lua_apr_setpipe_f)(apr_procattr_t*, apr_file_t*, apr_file_t*);
+typedef apr_status_t (APR_THREAD_FUNC *lua_apr_buf_rf)(void*, char*, apr_size_t*);
+typedef apr_status_t (APR_THREAD_FUNC *lua_apr_buf_wf)(void*, const char*, apr_size_t*);
+typedef apr_status_t (APR_THREAD_FUNC *lua_apr_buf_ff)(void*);
+typedef apr_status_t (APR_THREAD_FUNC *lua_apr_openpipe_f)(apr_file_t**, apr_pool_t*);
+typedef apr_status_t (APR_THREAD_FUNC *lua_apr_setpipe_f)(apr_procattr_t*, apr_file_t*, apr_file_t*);
 
 /* Structures for internal I/O buffers. */
 
