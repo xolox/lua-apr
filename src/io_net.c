@@ -161,7 +161,7 @@ int lua_apr_hostname_get(lua_State *L)
   char hostname[APRMAXHOSTLEN + 1];
   apr_status_t status;
   apr_pool_t *pool;
-  
+
   pool = to_pool(L);
   status = apr_gethostname(hostname, count(hostname), pool);
   if (status != APR_SUCCESS)
@@ -176,6 +176,9 @@ int lua_apr_hostname_get(lua_State *L)
  * Resolve a host name to an IP-address. On success the IP-address is returned
  * as a string, otherwise a nil followed by an error message is returned. The
  * optional @family argument is documented under `apr.socket_create()`.
+ *
+ *     > = apr.host_to_addr 'www.lua.org'
+ *     '89.238.129.35'
  */
 
 int lua_apr_host_to_addr(lua_State *L)
@@ -202,10 +205,15 @@ int lua_apr_host_to_addr(lua_State *L)
 
 /* apr.addr_to_host(ip_address [, family]) -> hostname {{{1
  *
- * Look up the host name from an IP-address. On success the host name is
- * returned as a string, otherwise a nil followed by an error message is
- * returned. The optional @family argument is documented under
- * `apr.socket_create()`.
+ * Look up the host name from an IP-address (also known as a reverse [DNS]
+ * [dns] lookup). On success the host name is returned as a string, otherwise a
+ * nil followed by an error message is returned. The optional @family argument
+ * is documented under `apr.socket_create()`.
+ *
+ *     > = apr.addr_to_host '89.238.129.35'
+ *     'flounder.pepperfish.net'
+ *
+ * [dns]: http://en.wikipedia.org/wiki/Domain_Name_System
  */
 
 int lua_apr_addr_to_host(lua_State *L)
@@ -260,8 +268,9 @@ static int socket_connect(lua_State *L)
  *
  * Bind the socket to the given @host string and @port number. On success true
  * is returned, otherwise a nil followed by an error message is returned. The
- * special @host value `*` can be used to select the default 'any' address. For
- * example if you want to create a web server you can start with the following:
+ * special @host value `'*'` can be used to select the default 'any' address.
+ * For example if you want to create a web server you can start with the
+ * following:
  *
  *     -- Basic single threaded server
  *     server = assert(apr.socket_create())
