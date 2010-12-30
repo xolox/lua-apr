@@ -371,8 +371,8 @@ assert(prot:find '^[-r][-w][-xSs][-r][-w][-xSs][-r][-w][-xTt]$')
 -- Test apr.file_perms_set().  {{{2
 local tempname = assert(os.tmpname())
 writefile(tempname, 'something')
-local status, errmsg = apr.file_perms_set(tempname, 'rw-rw----')
-if not (errmsg and errmsg:find 'not .- implemented') then
+local status, errmsg, errcode = apr.file_perms_set(tempname, 'rw-rw----')
+if errcode ~= 'ENOTIMPL' then
   assert(apr.stat(tempname, 'protection') == 'rw-rw----')
   assert(apr.file_perms_set(tempname, 'ug=r,o='))
   assert(apr.stat(tempname, 'protection') == 'r--r-----')
@@ -401,8 +401,8 @@ assert(apr.file_mtime_set(copy2, mtime))
 assert(apr.stat(copy2, 'mtime') == mtime)
 
 -- Test apr.file_attrs_set(). {{{2
-local status, errmsg = apr.file_perms_set(copy2, 'ug=rw,o=')
-if not (errmsg and errmsg:find 'not .- implemented') then
+local status, errmsg, errcode = apr.file_perms_set(copy2, 'ug=rw,o=')
+if errcode ~= 'ENOTIMPL' then
   assert(apr.stat(copy2, 'protection'):find '^.w..w....$')
   assert(apr.file_attrs_set(copy2, { readonly=true }))
   assert(apr.stat(copy2, 'protection'):find '^.[^w]..[^w]....$')
@@ -616,8 +616,8 @@ end
 
 local namedpipe = os.tmpname()
 local namedmsg = "Hello world over a named pipe!"
-local status, errmsg = apr.namedpipe_create(namedpipe)
-if not (errmsg and errmsg:find 'not .- implemented') then
+local status, errmsg, errcode = apr.namedpipe_create(namedpipe)
+if errcode ~= 'ENOTIMPL' then
   local child = assert(apr.proc_create(arg[-1]))
   assert(child:cmdtype_set('shellcmd/env'))
   assert(child:exec(scriptpath 'test-namedpipe.lua', namedpipe, namedmsg))
