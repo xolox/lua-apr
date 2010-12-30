@@ -370,43 +370,4 @@ int get_metatable(lua_State *L, lua_apr_objtype *T)
   return 1;
 }
 
-/* Global type structures used inside the binding. {{{1 */
-
-/* lua_apr_proc_type {{{2 */
-
-static luaL_Reg proc_methods[] = {
-  { "cmdtype_set", proc_cmdtype_set },
-  { "addrspace_set", proc_addrspace_set },
-  { "detach_set" , proc_detach_set },
-  { "error_check_set", proc_error_check_set },
-  { "user_set", proc_user_set },
-  { "env_set", proc_env_set },
-  { "dir_set", proc_dir_set },
-  { "io_set", proc_io_set },
-  { "in_get", proc_in_get },
-  { "out_get", proc_out_get },
-  { "err_get", proc_err_get },
-  { "in_set", proc_in_set },
-  { "out_set", proc_out_set },
-  { "err_set", proc_err_set },
-  { "exec", proc_exec },
-  { "wait", proc_wait },
-  { "kill", proc_kill },
-  { NULL, NULL },
-};
-
-static luaL_Reg proc_metamethods[] = {
-  { "__gc", proc_gc },
-  { "__tostring", proc_tostring },
-  { NULL, NULL }
-};
-
-lua_apr_objtype lua_apr_proc_type = {
-  "lua_apr_proc*",
-  "process",
-  sizeof(lua_apr_proc),
-  proc_methods,
-  proc_metamethods
-};
-
 /* vim: set ts=2 sw=2 et tw=79 fen fdm=marker : */

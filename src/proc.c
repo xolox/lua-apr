@@ -1,7 +1,7 @@
 /* Process handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: December 29, 2010
+ * Last Change: December 30, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -224,7 +224,7 @@ int lua_apr_proc_fork(lua_State *L)
  * other platforms.
  */
 
-int proc_addrspace_set(lua_State *L)
+static int proc_addrspace_set(lua_State *L)
 {
   apr_int32_t separate;
   apr_status_t status;
@@ -246,7 +246,7 @@ int proc_addrspace_set(lua_State *L)
  * true this method _requires_ a password.
  */
 
-int proc_user_set(lua_State *L)
+static int proc_user_set(lua_State *L)
 {
   const char *username, *password;
   apr_status_t status;
@@ -267,10 +267,10 @@ int proc_user_set(lua_State *L)
 /* process:group_set(groupname) -> status {{{1
  *
  * Set the group under which the child process will run. On success true is
- * returned, otherwise a nil followed by an error message is returned. 
+ * returned, otherwise a nil followed by an error message is returned.
  */
 
-int proc_group_set(lua_State *L)
+static int proc_group_set(lua_State *L)
 {
   apr_status_t status;
   const char *groupname;
@@ -296,7 +296,7 @@ int proc_group_set(lua_State *L)
  *  - `'program/env/path'`: Find program in `$PATH`, replicating our environment
  */
 
-int proc_cmdtype_set(lua_State *L)
+static int proc_cmdtype_set(lua_State *L)
 {
   const char *options[] = {
     "shellcmd", "shellcmd/env",
@@ -331,7 +331,7 @@ int proc_cmdtype_set(lua_State *L)
  * `process:cmdtype_set()` method).
  */
 
-int proc_env_set(lua_State *L)
+static int proc_env_set(lua_State *L)
 {
   const char *format, *message, *name, *value;
   size_t i, count;
@@ -380,7 +380,7 @@ int proc_env_set(lua_State *L)
  * current directory see the `apr.filepath_get()` function.
  */
 
-int proc_dir_set(lua_State *L)
+static int proc_dir_set(lua_State *L)
 {
   apr_status_t status;
   const char *path;
@@ -400,7 +400,7 @@ int proc_dir_set(lua_State *L)
  * is no.
  */
 
-int proc_detach_set(lua_State *L)
+static int proc_detach_set(lua_State *L)
 {
   apr_status_t status;
   apr_int32_t detach;
@@ -426,7 +426,7 @@ int proc_detach_set(lua_State *L)
  * [fork]: http://linux.die.net/man/2/fork
  */
 
-int proc_error_check_set(lua_State *L)
+static int proc_error_check_set(lua_State *L)
 {
   apr_status_t status;
   apr_int32_t error_check;
@@ -475,7 +475,7 @@ int proc_error_check_set(lua_State *L)
  *     > p:wait(true)
  */
 
-int proc_io_set(lua_State *L)
+static int proc_io_set(lua_State *L)
 {
   const char *options[] = {
     "none", "full-block", "full-nonblock",
@@ -531,7 +531,7 @@ int proc_io_set(lua_State *L)
  * [stdin]: http://en.wikipedia.org/wiki/Standard_streams#Standard_input_.28stdin.29
  */
 
-int proc_in_set(lua_State *L)
+static int proc_in_set(lua_State *L)
 {
   return set_pipe(L, "in_child", "in_parent",
       (lua_apr_setpipe_f)apr_procattr_child_in_set);
@@ -548,7 +548,7 @@ int proc_in_set(lua_State *L)
  * [stdout]: http://en.wikipedia.org/wiki/Standard_streams#Standard_output_.28stdout.29
  */
 
-int proc_out_set(lua_State *L)
+static int proc_out_set(lua_State *L)
 {
   return set_pipe(L, "out_child", "out_parent",
       (lua_apr_setpipe_f)apr_procattr_child_out_set);
@@ -565,7 +565,7 @@ int proc_out_set(lua_State *L)
  * [stderr]: http://en.wikipedia.org/wiki/Standard_streams#Standard_error_.28stderr.29
  */
 
-int proc_err_set(lua_State *L)
+static int proc_err_set(lua_State *L)
 {
   return set_pipe(L, "err_child", "err_parent",
       (lua_apr_setpipe_f)apr_procattr_child_err_set);
@@ -576,7 +576,7 @@ int proc_err_set(lua_State *L)
  * Get the parent end of the standard input pipe (a writable pipe).
  */
 
-int proc_in_get(lua_State *L)
+static int proc_in_get(lua_State *L)
 {
   lua_apr_proc *process = proc_check(L, 1);
   return get_pipe(L, process->handle.in, "in_parent");
@@ -587,7 +587,7 @@ int proc_in_get(lua_State *L)
  * Get the parent end of the standard output pipe (a readable pipe).
  */
 
-int proc_out_get(lua_State *L)
+static int proc_out_get(lua_State *L)
 {
   lua_apr_proc *process = proc_check(L, 1);
   return get_pipe(L, process->handle.out, "out_parent");
@@ -598,7 +598,7 @@ int proc_out_get(lua_State *L)
  * Get the parent end of the standard error pipe (a readable pipe).
  */
 
-int proc_err_get(lua_State *L)
+static int proc_err_get(lua_State *L)
 {
   lua_apr_proc *process = proc_check(L, 1);
   return get_pipe(L, process->handle.err, "err_parent");
@@ -617,7 +617,7 @@ int proc_err_get(lua_State *L)
  * table and pass this table as the only argument to `process:exec()`.
  */
 
-int proc_exec(lua_State *L)
+static int proc_exec(lua_State *L)
 {
   apr_status_t status;
   lua_apr_proc *process;
@@ -681,7 +681,7 @@ int proc_exec(lua_State *L)
  * [wp:coredump]: http://en.wikipedia.org/wiki/Core_dump
  */
 
-int proc_wait(lua_State *L)
+static int proc_wait(lua_State *L)
 {
   apr_status_t status;
   apr_exit_why_e why;
@@ -733,7 +733,7 @@ int proc_wait(lua_State *L)
  * [sigterm]: http://en.wikipedia.org/wiki/SIGTERM
  */
 
-int proc_kill(lua_State *L)
+static int proc_kill(lua_State *L)
 {
   const char *options[] = {
     "never", "always", "timeout", "wait", "once", NULL,
@@ -757,7 +757,7 @@ int proc_kill(lua_State *L)
 
 /* process:__tostring() {{{1 */
 
-int proc_tostring(lua_State *L)
+static int proc_tostring(lua_State *L)
 {
   lua_apr_proc *process = proc_check(L, 1);
   lua_pushfstring(L, "%s (%p)", lua_apr_proc_type.typename, process);
@@ -766,7 +766,7 @@ int proc_tostring(lua_State *L)
 
 /* process:__gc() {{{1 */
 
-int proc_gc(lua_State *L)
+static int proc_gc(lua_State *L)
 {
   lua_apr_proc *process = proc_check(L, 1);
   lua_settop(L, 1);
@@ -785,3 +785,42 @@ int proc_gc(lua_State *L)
   }
   return 0;
 }
+
+/* }}}1 */
+
+static luaL_Reg proc_methods[] = {
+  { "cmdtype_set", proc_cmdtype_set },
+  { "addrspace_set", proc_addrspace_set },
+  { "detach_set" , proc_detach_set },
+  { "error_check_set", proc_error_check_set },
+  { "user_set", proc_user_set },
+  { "env_set", proc_env_set },
+  { "dir_set", proc_dir_set },
+  { "io_set", proc_io_set },
+  { "in_get", proc_in_get },
+  { "out_get", proc_out_get },
+  { "err_get", proc_err_get },
+  { "in_set", proc_in_set },
+  { "out_set", proc_out_set },
+  { "err_set", proc_err_set },
+  { "exec", proc_exec },
+  { "wait", proc_wait },
+  { "kill", proc_kill },
+  { NULL, NULL },
+};
+
+static luaL_Reg proc_metamethods[] = {
+  { "__gc", proc_gc },
+  { "__tostring", proc_tostring },
+  { NULL, NULL }
+};
+
+lua_apr_objtype lua_apr_proc_type = {
+  "lua_apr_proc*",
+  "process",
+  sizeof(lua_apr_proc),
+  proc_methods,
+  proc_metamethods
+};
+
+/* vim: set ts=2 sw=2 et tw=79 fen fdm=marker : */

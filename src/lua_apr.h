@@ -273,26 +273,6 @@ apr_fileperms_t check_permissions(lua_State*, int, int);
 int lua_apr_proc_create(lua_State*);
 int lua_apr_proc_detach(lua_State*);
 int lua_apr_proc_fork(lua_State*);
-int proc_addrspace_set(lua_State*);
-int proc_user_set(lua_State*);
-int proc_group_set(lua_State*);
-int proc_cmdtype_set(lua_State*);
-int proc_env_set(lua_State*);
-int proc_dir_set(lua_State*);
-int proc_detach_set(lua_State*);
-int proc_error_check_set(lua_State*);
-int proc_io_set(lua_State*);
-int proc_in_set(lua_State*);
-int proc_out_set(lua_State*);
-int proc_err_set(lua_State*);
-int proc_in_get(lua_State*);
-int proc_out_get(lua_State*);
-int proc_err_get(lua_State*);
-int proc_exec(lua_State*);
-int proc_wait(lua_State*);
-int proc_kill(lua_State*);
-int proc_tostring(lua_State*);
-int proc_gc(lua_State*);
 
 /* refpool.c */
 lua_apr_pool *refpool_alloc(lua_State*);
