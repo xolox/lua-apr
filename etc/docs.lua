@@ -208,7 +208,7 @@ local function preprocess(text)
             else
               target = 'http://www.lua.org/manual/5.1/manual.html#pdf-' .. funcname
             end
-            return ('[%s()](%s)'):format(funcname, target)
+            return ('[%s()](%s)'):format(funcname:gsub('_', '\\_'), target)
           end))
   end
   return table.concat(output, '\n\n')
