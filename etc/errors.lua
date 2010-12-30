@@ -110,7 +110,7 @@ io.write([[
  *  - `'EPATHWILD'`: the given path contained wildcards
  *  - `'ESYMNOTFOUND'`: could not find the requested symbol
  *  - `'EPROC_UNKNOWN'`: the given process was not recognized by APR
- *  - `'ENOTENOUGHENTROPY'`: APR could not gather enough [entropy] [wp:entropy] to continue
+ *  - `'ENOTENOUGHENTROPY'`: APR could not gather enough [entropy] [entropy] to continue
  *  - `'TIMEUP'`: the operation did not finish before the timeout
  *  - `'INCOMPLETE'`: the operation was incomplete although some processing was performed and the results are partially valid
  *  - `'EOF'`: APR has encountered the end of the file
@@ -144,7 +144,10 @@ io.write([[
  *  - `'ENOTEMPTY'`: directory not empty
  *  - `'EAFNOSUPPORT'`: address family not supported
  *
- * [wp:entropy]: http://en.wikipedia.org/wiki/Entropy_%28computing%29
+ * Note that the error descriptions above were copied verbatim from [apr_errno.h] [errno].
+ *
+ * [entropy]: http://en.wikipedia.org/wiki/Entropy_%28computing%29
+ * [errno]: http://apr.apache.org/docs/apr/trunk/group___a_p_r___error.html
  */
 
 #include "lua_apr.h"
