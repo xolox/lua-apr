@@ -84,6 +84,8 @@ will iterate over all lines. This function does not close the @file when the loo
 -- }}}1
 }
 
+-- Parse documentation comments in C and Lua source code files. {{{1
+
 local function mungedesc(signature, description)
   local sname = description:match "This function implements the interface of Lua's `([^`]+)%(%)` function."
   if sname and shareddocs[sname] then
@@ -98,11 +100,9 @@ end
 for filename in SOURCES:gmatch '%S+' do
   local handle = assert(io.open('src/' .. filename))
   local source = assert(handle:read('*all')):gsub('\r\n', '\n')
-  if filename:find '%.c$' then
-    -- Don't extract documentation from ignored C source code.
-    source = source:gsub('\n#if 0.-\n#endif', '')
-  end
   handle:close()
+  -- Don't extract documentation from ignored C source code.
+  if filename:find '%.c$' then source = source:gsub('\n#if 0.-\n#endif', '') end
   local header = stripcomment(source:match '^/%*(.-)%*/' or '')
   local modulename = header:match '^([^\n]-) module'
   if not modulename then
@@ -139,6 +139,25 @@ for filename in SOURCES:gmatch '%S+' do
     end
   end
 end
+
+-- Extract test coverage statistics from gcov. {{{1
+
+local gcov = assert(io.popen 'cd src && gcov -f *.c 2>/dev/null')
+local cfun
+local coverage = {}
+local count = 0
+for line in gcov:lines() do
+  local test = line:match "^Function '(.-)'$"
+  if test then
+    cfun = test
+  elseif cfun then
+    coverage[cfun] = tonumber(line:match "^Lines executed:%s*(%d+%.?%d*)%% of %d+$")
+    count = count + 1
+    cfun = nil
+  end
+end
+
+-- Convert documentation comments to Markdown hypertext. {{{1
 
 local blocks = { trim([[
 
@@ -228,13 +247,19 @@ blocks:add('%s', table.concat(items, '\n'))
 local function dumpentries(functions)
   for _, entry in ipairs(functions) do
     local signature = entry.signature:gsub('%->', '→')
-    local funcname = signature:match '^[%w_.:]+'
-    if funcname then
-      local anchor = toanchor(funcname)
-      blocks:add('### <a name="%s" href="#%s">`%s`</a>', anchor, anchor, signature)
-    else
-      blocks:add('### `%s`', signature)
+    local funcname = assert(signature:match '^[%w_.:]+')
+    local anchor = toanchor(funcname)
+    local covkey = funcname:gsub('%W', '_')
+                           :gsub('^directory_', 'dir_')
+                           :gsub('^process_', 'proc_')
+    if not coverage[covkey] then covkey = 'lua_' .. covkey end
+    local tc = coverage[covkey] or ''
+    if tc ~= '' then
+      local template = '<span style="float: right; font-size: small; color: %s; opacity: 0.5">test coverage: %s</span>'
+      local color = tc >= 75 and '#006600' or tc >= 50 and '#FFCC00' or '#CC0000'
+      tc = string.format(template, color, tc == 0 and 'none' or string.format('%i%%', tc))
     end
+    blocks:add('### %s <a name="%s" href="#%s">`%s`</a>', tc, anchor, anchor, signature)
     blocks:add('%s', preprocess(entry.description))
   end
 end
