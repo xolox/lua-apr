@@ -3,7 +3,7 @@
  Documentation generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: December 29, 2010
+ Last Change: December 30, 2010
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -220,6 +220,8 @@ local items = {}
 for _, module in ipairs(sorted_modules) do
   items[#items + 1] = (' - [%s](#%s)'):format(module.name, toanchor(module.name))
 end
+local misc_title = 'Miscellaneous functions'
+items[#items + 1] = (' - [%s](#%s)'):format(misc_title, toanchor(misc_title))
 
 blocks:add('%s', table.concat(items, '\n'))
 
@@ -251,7 +253,7 @@ for _, module in ipairs(sorted_modules) do
 end
 
 if next(misc_module.functions) then
-  blocks:add('## Miscellaneous functions')
+  blocks:add('## <a name="' .. toanchor(misc_title) .. '">' .. misc_title .. '</a>')
   dumpentries(misc_module.functions)
 end
 
