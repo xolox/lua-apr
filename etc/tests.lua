@@ -592,11 +592,14 @@ assert(stdout:read() == testmsg:lower())
 assert(stderr:read() == testmsg:upper())
 
 -- Test child environment manipulation. {{{2
-local child = newchild('program', 'test-child-env.lua', { LUA_APR_MAGIC_ENV_KEY = apr._VERSION })
+local child = newchild('shellcmd', 'test-child-env.lua', {
+  LUA_APR_MAGIC_ENV_KEY = apr._VERSION,
+  SystemRoot = apr.env_get 'SystemRoot', -- needed on Windows XP, without it code = -1072365564 below
+})
 local done, why, code = assert(child:wait(true))
 assert(done == true)
 assert(why == 'exit')
-assert(code == 255 or code == 42)
+assert(code == 42)
 
 -- Test apr.proc_fork() when supported. {{{2
 if apr.proc_fork then
