@@ -1,7 +1,7 @@
 /* Network I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: December 29, 2010
+ * Last Change: December 30, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -550,8 +550,10 @@ static int socket_tostring(lua_State *L)
   lua_apr_socket *socket;
 
   socket = socket_check(L, 1, 0);
-  lua_pushfstring(L, "%s Lua/APR socket object",
-      socket->handle != NULL ? "Open" : "Closed");
+  if (socket->handle != NULL)
+    lua_pushfstring(L, "socket (%p)", socket->handle);
+  else
+    lua_pushstring(L, "socket (closed)");
 
   return 1;
 }

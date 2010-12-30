@@ -377,11 +377,12 @@ static int dir_close(lua_State *L)
 static int dir_tostring(lua_State *L)
 {
   lua_apr_dir *directory;
-  const char *prefix;
 
   directory = checkdir(L, 1, 0);
-  prefix = directory->handle == NULL ? "closed " : "";
-  lua_pushfstring(L, "%sdirectory (%s)", prefix, directory->filepath);
+  if (directory->handle != NULL)
+    lua_pushfstring(L, "directory (%p)", directory->handle);
+  else
+    lua_pushstring(L, "directory (closed)");
 
   return 1; 
 }

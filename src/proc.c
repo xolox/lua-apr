@@ -756,8 +756,11 @@ static int proc_kill(lua_State *L)
 
 static int proc_tostring(lua_State *L)
 {
-  lua_apr_proc *process = proc_check(L, 1);
-  lua_pushfstring(L, "%s (%p)", lua_apr_proc_type.typename, process);
+  lua_apr_proc *process;
+  
+  process = proc_check(L, 1);
+  lua_pushfstring(L, "process (%p)", process);
+
   return 1;
 }
 

@@ -97,7 +97,10 @@ assert(dbm:delete(dbmkey))
 print(dbm:fetch(dbmkey))
 assert(not dbm:fetch(dbmkey))
 assert(not dbm:firstkey())
+-- Test tostring(dbm).
+assert(tostring(dbm):find '^dbm %([x%x]+%)$')
 assert(dbm:close())
+assert(tostring(dbm):find '^dbm %(closed%)$')
 
 -- Environment manipulation module (env.c) {{{1
 message "Testing environment manipulation ..\n"
@@ -318,7 +321,10 @@ for name in dir:entries 'name' do entries[#entries+1] = name end
 assert(dir:rewind())
 local rewinded = {}
 for name in dir:entries 'name' do rewinded[#rewinded+1] = name end
+-- Test tostring(directory)
+assert(tostring(dir):find '^directory %([x%x]+%)$')
 assert(dir:close())
+assert(tostring(dir):find '^directory %(closed%)$')
 table.sort(nonascii)
 table.sort(entries)
 table.sort(rewinded)
@@ -425,6 +431,11 @@ for line in testdata:gmatch '[^\n]+' do
   assert(line == otherline)
 end
 assert(#lines == 0)
+
+-- Test tostring(file). {{{2
+assert(tostring(handle):find '^file %([x%x]+%)$')
+assert(handle:close())
+assert(tostring(handle):find '^file %(closed%)$')
 
 -- Test file:read(), file:write() and file:seek() {{{2
 
@@ -594,6 +605,9 @@ assert(stdin:write(testmsg)); assert(stdin:close())
 assert(stdout:read() == testmsg:lower())
 assert(stderr:read() == testmsg:upper())
 
+-- Test tostring(process). {{{2
+assert(tostring(child):find '^process %([x%x]+%)$')
+
 -- Test child environment manipulation. {{{2
 local child = newchild('shellcmd', 'test-child-env.lua', {
   LUA_APR_MAGIC_ENV_KEY = apr._VERSION,
@@ -675,6 +689,10 @@ for _, msg in ipairs { 'First line', 'Second line', 'Third line' } do
   assert(client:write(msg, '\n'))
   assert(client:read() == msg:upper())
 end
+-- Test tostring(socket).
+assert(tostring(client):find '^socket %([x%x]+%)$')
+assert(client:close())
+assert(tostring(client):find '^socket %(closed%)$')
 
 -- String module (str.c) {{{1
 message "Testing string module ..\n"

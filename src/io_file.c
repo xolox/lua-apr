@@ -672,11 +672,14 @@ static int file_close(lua_State *L)
 
 static int file_tostring(lua_State *L)
 {
-  lua_apr_file *file = file_check(L, 1, 0);
+  lua_apr_file *file;
+
+  file = file_check(L, 1, 0);
   if (file->handle != NULL)
-    lua_pushfstring(L, "%s (%p)", lua_apr_file_type.typename, file);
+    lua_pushfstring(L, "file (%p)", file->handle);
   else
-    lua_pushfstring(L, "%s (closed)", lua_apr_file_type.typename);
+    lua_pushstring(L, "file (closed)");
+
   return 1;
 }
 
