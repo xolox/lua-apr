@@ -147,7 +147,7 @@ io.write([[
  * Note that the error descriptions above were copied verbatim from [apr_errno.h] [errno].
  *
  * [entropy]: http://en.wikipedia.org/wiki/Entropy_%28computing%29
- * [errno]: http://apr.apache.org/docs/apr/trunk/group___a_p_r___error.html
+ * [errno]: http://svn.apache.org/viewvc/apr/apr/trunk/include/apr_errno.h?view=markup
  */
 
 #include "lua_apr.h"

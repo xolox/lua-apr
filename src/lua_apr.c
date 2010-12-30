@@ -39,6 +39,10 @@ int luaopen_apr_core(lua_State *L)
     { "password_validate", lua_apr_password_validate },
     { "sha1", lua_apr_sha1 },
 
+    /* date.c -- date parsing. */
+    { "date_parse_http", lua_apr_date_parse_http },
+    { "date_parse_rfc", lua_apr_date_parse_rfc },
+
     /* dbm.c -- dbm routines. */
     { "dbm_open", lua_apr_dbm_open },
     { "dbm_getnames", lua_apr_dbm_getnames },

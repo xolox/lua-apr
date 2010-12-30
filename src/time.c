@@ -1,7 +1,7 @@
 /* Time routines module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: December 28, 2010
+ * Last Change: December 30, 2010
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -27,12 +27,6 @@
 #include <apr_date.h>
 
 /* Internal functions {{{1 */
-
-#define time_get(L, idx) \
-  ((apr_time_t) (lua_tonumber(L, idx) * APR_USEC_PER_SEC))
-
-#define time_put(L, time) \
-  lua_pushnumber(L, (lua_Number)time / APR_USEC_PER_SEC)
 
 static const struct {
   const char *name;

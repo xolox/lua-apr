@@ -77,6 +77,12 @@
 #define push_error_memory(L) \
   push_error_message((L), (error_message_memory))
 
+#define time_get(L, idx) \
+  ((apr_time_t) (lua_tonumber(L, idx) * APR_USEC_PER_SEC))
+
+#define time_put(L, time) \
+  lua_pushnumber(L, (lua_Number)time / APR_USEC_PER_SEC)
+
 /* Type definitions. {{{1 */
 
 /* Context structure for stat() calls. */
@@ -204,6 +210,10 @@ int lua_apr_md5_encode(lua_State*);
 int lua_apr_sha1(lua_State*);
 int lua_apr_password_validate(lua_State*);
 int lua_apr_password_get(lua_State*);
+
+/* date.c */
+int lua_apr_date_parse_http(lua_State*);
+int lua_apr_date_parse_rfc(lua_State*);
 
 /* dbm.c */
 int lua_apr_dbm_open(lua_State*);

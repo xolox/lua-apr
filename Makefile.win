@@ -39,11 +39,12 @@ LFLAGS = $(LFLAGS) /debug
 !ENDIF
 
 # Names of compiled object files.
-OBJECTS = src\base64.obj src\buffer.obj src\crypt.obj src\dbm.obj src\env.obj \
-		  src\errno.obj src\filepath.obj src\fnmatch.obj src\io_dir.obj \
-		  src\io_file.obj src\io_net.obj src\io_pipe.obj src\lua_apr.obj \
-		  src\permissions.obj src\proc.obj src\refpool.obj src\stat.obj \
-		  src\str.obj src\time.obj src\uri.obj src\user.obj src\uuid.obj
+OBJECTS = src\base64.obj src\buffer.obj src\crypt.obj src\date.obj \
+		  src\dbm.obj src\env.obj src\errno.obj src\filepath.obj \
+		  src\fnmatch.obj src\io_dir.obj src\io_file.obj src\io_net.obj \
+		  src\io_pipe.obj src\lua_apr.obj src\permissions.obj src\proc.obj \
+		  src\refpool.obj src\stat.obj src\str.obj src\time.obj src\uri.obj \
+		  src\user.obj src\uuid.obj
 
 # Build rules.
 
