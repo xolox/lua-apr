@@ -10,34 +10,32 @@
 ]]
 
 local SOURCES = [[ base64.c crypt.c dbm.c date.c env.c filepath.c fnmatch.c
-  io_dir.c io_file.c io_net.c io_pipe.c lua_apr.c proc.c stat.c str.c time.c
-  uri.c user.c uuid.c apr.lua permissions.c errno.c ]]
+  io_dir.c io_file.c io_net.c io_pipe.c proc.c str.c time.c uri.c user.c
+  uuid.c apr.lua lua_apr.c permissions.c errno.c ../examples/download.lua
+  ../examples/webserver.lua ]]
 
 local modules = {}
 local sorted_modules = {}
-local misc_module = {functions={}}
+
+local function trim(s)
+  return s:match '^%s*(.-)%s*$'
+end
 
 local function getmodule(name, file, header)
-  if not name then
-    return misc_module
-  else
-    local key = name:lower()
-    local value = modules[key]
-    if not value then
-      value = {name=name, file=file, header=header, functions={}}
-      modules[key] = value
-      table.insert(sorted_modules, value)
-    end
-    return value
+  local key = name:lower()
+  local value = modules[key]
+  if not value then
+    local metadata, newheader = (header  .. '\n\n'):match '\n\n(.-)\n\n(.-)$' -- strip metadata
+    header = (newheader or ''):find '%S' and trim(newheader) or nil
+    value = {name=name, file=file, header=header, functions={}}
+    modules[key] = value
+    table.insert(sorted_modules, value)
   end
+  return value
 end
 
 local function message(string, ...)
   io.stderr:write(string:format(...), '\n')
-end
-
-local function trim(s)
-  return s:match '^%s*(.-)%s*$'
 end
 
 local function stripfoldmarker(s)
@@ -101,15 +99,15 @@ for filename in SOURCES:gmatch '%S+' do
   local handle = assert(io.open('src/' .. filename))
   local source = assert(handle:read('*all')):gsub('\r\n', '\n')
   handle:close()
-  -- Don't extract documentation from ignored C source code.
-  if filename:find '%.c$' then source = source:gsub('\n#if 0.-\n#endif', '') end
-  local header = stripcomment(source:match '^/%*(.-)%*/' or '')
-  local modulename = header:match '^([^\n]-) module'
-  if not modulename then
-    message("%s: Failed to determine module name!", filename)
-  end
-  local module = getmodule(modulename, filename, header)
   if filename:find '%.c$' then
+    -- Don't extract documentation from ignored C source code.
+    source = source:gsub('\n#if 0.-\n#endif', '')
+    local header = stripcomment(source:match '^/%*(.-)%*/' or '')
+    local modulename = header:match '^([^\n]-) module'
+    if not modulename then
+      message("%s: Failed to determine module name!", filename)
+    end
+    local module = getmodule(modulename, filename, header)
     local pattern = '\n/%*([^\n]-%->.-)%*/\n\n%w[^\n]- ([%w_]+)%([^\n]-%)\n(%b{})'
     for docblock, funcname, funcbody in source:gmatch(pattern) do
       local signature, description = docblock:match '^([^\n]- %-> [^\n]+)(\n.-)$'
@@ -126,7 +124,7 @@ for filename in SOURCES:gmatch '%S+' do
           binarysafe = binarysafe })
       end
     end
-  else
+  elseif not filename:find '[\\/]examples[\\/]' then
     local pattern = '\n(\n%-%- apr%.[%w_]+%(.-\n%-%-[^\n]*)\n\nfunction (apr%.[%w_]+)%('
     for docblock, funcname in source:gmatch(pattern) do
       docblock = trim(docblock:gsub('\n%-%- ?', '\n'))
@@ -141,6 +139,11 @@ for filename in SOURCES:gmatch '%S+' do
           description = text or description })
       end
     end
+  else
+    local header, modulename, example = source:match '^%-%-%[%[%s+(([^\n]+).-)%]%]\n(.-)$'
+    modulename = trim(modulename)
+    header = trim(header:gsub('\n  ', '\n'))
+    getmodule(modulename, filename, header).example = trim(example)
   end
 end
 
@@ -238,15 +241,11 @@ local function preprocess(text)
   return table.concat(output, '\n\n')
 end
 
-blocks:add '## List of modules'
-
+blocks:add '## Table of contents'
 local items = {}
 for _, module in ipairs(sorted_modules) do
   items[#items + 1] = (' - [%s](#%s)'):format(module.name, toanchor(module.name))
 end
-local misc_title = 'Miscellaneous functions'
-items[#items + 1] = (' - [%s](#%s)'):format(misc_title, toanchor(misc_title))
-
 blocks:add('%s', table.concat(items, '\n'))
 
 local bsignore = {
@@ -280,22 +279,18 @@ local function dumpentries(functions)
   end
 end
 
+local function htmlencode(s)
+  return (s:gsub('&', '&amp;')
+           :gsub('<', '&lt;')
+           :gsub('>', '&gt;'))
+end
+
 for _, module in ipairs(sorted_modules) do
   local a = toanchor(module.name)
   blocks:add('## <a name="%s" href="#%s">%s</a>', a, a, module.name)
-  local intro = module.header
-  if intro then
-    intro = intro:match '\n\n.-\n\n(.-)$'
-    if (intro or ''):find '%S' then
-      blocks:add('%s', preprocess(intro))
-    end
-  end
+  if module.header then blocks:add('%s', preprocess(module.header)) end
+  if module.example then blocks:add('<pre><code>%s</code></pre>', htmlencode(module.example)) end
   dumpentries(module.functions)
-end
-
-if next(misc_module.functions) then
-  blocks:add('## <a name="' .. toanchor(misc_title) .. '">' .. misc_title .. '</a>')
-  dumpentries(misc_module.functions)
 end
 
 -- Join the blocks of Markdown source and write them to the 1st file.

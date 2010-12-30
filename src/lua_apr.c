@@ -1,4 +1,4 @@
-/* Initialization and miscellaneous routines for the Lua/APR binding.
+/* Miscellaneous functions module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
  * Last Change: December 30, 2010
