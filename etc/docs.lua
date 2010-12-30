@@ -110,16 +110,20 @@ for filename in SOURCES:gmatch '%S+' do
   end
   local module = getmodule(modulename, filename, header)
   if filename:find '%.c$' then
-    local pattern = '\n/%*([^\n]-%->.-)%*/\n\n%w[^\n]- ([%w_]+)%([^\n]-%)\n{'
-    for docblock, funcname in source:gmatch(pattern) do
+    local pattern = '\n/%*([^\n]-%->.-)%*/\n\n%w[^\n]- ([%w_]+)%([^\n]-%)\n(%b{})'
+    for docblock, funcname, funcbody in source:gmatch(pattern) do
       local signature, description = docblock:match '^([^\n]- %-> [^\n]+)(\n.-)$'
       if not signature then
         message("%s: Function %s doesn't have a signature?!", filename, funcname)
       else
         description = mungedesc(signature, description)
+        local by = funcbody:find 'luaL_checklstring' or funcbody:find 'datum_check' or funcbody:find 'lua_pushlstring'
+        local bn = funcbody:find 'luaL_checkstring' or funcbody:find 'lua_tostring'
+        local binarysafe; if by and not bn then binarysafe = true elseif bn then binarysafe = false end
         table.insert(module.functions, {
           signature = stripfoldmarker(signature),
-          description = stripcomment(description) })
+          description = stripcomment(description),
+          binarysafe = binarysafe })
       end
     end
   else
@@ -244,6 +248,14 @@ items[#items + 1] = (' - [%s](#%s)'):format(misc_title, toanchor(misc_title))
 
 blocks:add('%s', table.concat(items, '\n'))
 
+local bsignore = {
+  ['apr.strfsize'] = true,
+  ['apr.uri_port_of_scheme'] = true,
+  ['apr.uuid_format'] = true,
+  ['apr.uuid_get'] = true,
+  ['apr.uuid_parse'] = true,
+  ['file:lock'] = true,
+}
 local function dumpentries(functions)
   for _, entry in ipairs(functions) do
     local signature = entry.signature:gsub('%->', '→')
@@ -255,12 +267,15 @@ local function dumpentries(functions)
     if not coverage[covkey] then covkey = 'lua_' .. covkey end
     local tc = coverage[covkey] or ''
     if tc ~= '' then
-      local template = '<span style="float: right; font-size: small; color: %s; opacity: 0.5">test coverage: %s</span>'
+      local template = '<span style="float: right; font-size: small; color: %s; opacity: 0.5">test coverage: %s<br></span>'
       local color = tc >= 75 and '#006600' or tc >= 50 and '#FFCC00' or '#CC0000'
       tc = string.format(template, color, tc == 0 and 'none' or string.format('%i%%', tc))
     end
     blocks:add('### %s <a name="%s" href="#%s">`%s`</a>', tc, anchor, anchor, signature)
     blocks:add('%s', preprocess(entry.description))
+    if entry.binarysafe ~= nil and not bsignore[funcname] then
+      blocks:add('*This function %s binary safe.*', entry.binarysafe and 'is' or 'is not')
+    end
   end
 end
 
