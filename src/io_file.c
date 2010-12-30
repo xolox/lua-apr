@@ -17,7 +17,6 @@ static int push_file_status(lua_State*, lua_apr_file*, apr_status_t);
 static int push_file_error(lua_State*, lua_apr_file*, apr_status_t);
 
 /* TODO Bind functions missing from io_file.c
- *  - apr_file_perms_set()
  *  - apr_file_inherit_set()
  *  - apr_file_inherit_unset()
  *  - apr_file_mktemp()
@@ -207,15 +206,14 @@ int lua_apr_file_attrs_set(lua_State *L)
   return push_status(L, status);
 }
 
-/* apr.file_perms_set(path, permissions) {{{1
+/* apr.file_perms_set(path, permissions) -> status {{{1
  *
  * Set the permissions of the file specified by @path. On success true is
  * returned, otherwise a nil followed by an error message is returned.
  *
  * Warning: Some platforms may not be able to apply all of the available
- * permission bits.
- *
- * TODO: Document error codes and make their values available somewhere.
+ * permission bits, in this case a third value `'INCOMPLETE'` is returned (see
+ * error handling).
  */
 
 int lua_apr_file_perms_set(lua_State *L)
