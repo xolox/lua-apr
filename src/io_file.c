@@ -17,9 +17,6 @@ static int push_file_status(lua_State*, lua_apr_file*, apr_status_t);
 static int push_file_error(lua_State*, lua_apr_file*, apr_status_t);
 
 /* TODO Bind functions missing from io_file.c
- *  - apr_file_inherit_set()
- *  - apr_file_inherit_unset()
- *  - apr_file_mktemp()
  *  - apr_file_pipe_create_ex()
  *  - apr_file_sync()
  *  - apr_file_datasync()
@@ -649,6 +646,45 @@ static int pipe_timeout_set(lua_State *L)
   return push_file_status(L, pipe, status);
 }
 
+/* file:inherit_set() -> status {{{1
+ *
+ * Set a file to be inherited by child processes. By default, file descriptors
+ * will not be inherited by child processes created by `apr.proc_create()`.
+ *
+ * At the time of writing this [seems to only apply to UNIX] [inherit] where
+ * APR will close all open file handles after performing a [fork()] [fork]
+ * unless you explicitly set your files to be inheritable.
+ *
+ * [inherit]: http://marc.info/?l=apache-httpd-dev&m=104361635329125&w=2
+ */
+
+static int file_inherit_set(lua_State *L)
+{
+  apr_status_t status;
+  lua_apr_file *file;
+
+  file = file_check(L, 1, 1);
+  status = apr_file_inherit_set(file->handle);
+
+  return push_file_status(L, file, status);
+}
+
+/* file:inherit_unset() -> status {{{1
+ *
+ * Unset a file from being inherited by child processes.
+ */
+
+static int file_inherit_unset(lua_State *L)
+{
+  apr_status_t status;
+  lua_apr_file *file;
+
+  file = file_check(L, 1, 1);
+  status = apr_file_inherit_unset(file->handle);
+
+  return push_file_status(L, file, status);
+}
+
 /* file:close() -> status {{{1
  *
  * Close @file. On success true is returned, otherwise a nil followed by an
@@ -776,6 +812,8 @@ static luaL_Reg file_methods[] = {
   { "write", file_write },
   { "timeout_get", pipe_timeout_get },
   { "timeout_set", pipe_timeout_set },
+  { "inherit_set", file_inherit_set },
+  { "inherit_unset", file_inherit_unset },
   { NULL, NULL }
 };
 
