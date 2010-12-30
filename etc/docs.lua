@@ -263,6 +263,8 @@ local output = assert(io.open(arg[1], 'w'))
 assert(output:write(mkd_source))
 assert(output:close())
 
+-- Convert Markdown to HTML and apply page template. {{{1
+
 -- Generate and write the HTML output to the 2nd file. This isn't actually used
 -- on http://peterodding.com/code/lua/apr/docs/ but does enable immediate
 -- feedback when updating the documentation.
@@ -276,9 +278,8 @@ assert(output:write([[
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <style type="text/css">
     body { font-family: sans-serif; padding: 1em 30% 10em 1em; cursor: default; }
-    #breadcrumbs, .anchor:link, .anchor:visited { color: #EEE; }
-    a:link, a:visited, #breadcrumbs a:link, #breadcrumbs a:visited, .anchor:hover, h2 a:link, h2 a:visited, h3 a:link, h3 a:visited { color: #000080; }
-    a:hover, a:active, .anchor:active { color: #F00; }
+    a:link, a:visited { color: #000080; }
+    a:hover, a:active { color: #F00; }
     pre, code, tt { font-family: Monaco, Consolas, monospace; }
     pre, code { border: 1px solid #CCC; background: #F0F0F0; }
     pre code, h1 code, h2 code, h3 code, h4 code, h5 code, h6 code { border: none; background: none; }
@@ -286,17 +287,10 @@ assert(output:write([[
     code { padding: .05em .2em; }
     pre code { padding: none; }
     p, li { text-align: justify; line-height: 1.75em; }
-    p img { display: block; margin-left: 2em; }
-    h1 { margin: 0; padding: 0 30% 0 0; }
+    h1 { margin: 0; padding: 0 30% 0 0; color: #AAA; text-shadow: #000 1px 1px 0; }
     h2, h3 { border-bottom: 2px solid #F6F6F6; margin: 2em 0 0 0; padding-left: 0.5em; }
-    h1 { color: #AAA; text-shadow: #000 1px 1px 0; }
     h2 a:link, h2 a:visited, h3 a:link, h3 a:visited { padding: .2em; text-decoration: none; color: inherit; }
     h2 a:hover, h3 a:hover { color: #F00; }
-    hr { height: 0; border: none; border: 1px solid #F6F6F6; }
-    #breadcrumbs { font-weight: bold; }
-    #breadcrumbs a:link, #breadcrumbs a:visited { opacity: 0.2; text-decoration: none; padding: .3em; }
-    .anchor { float: right; }
-    #last_updated { margin-top: 4em; color: #DDD; }
   </style>
  </head>
  <body>]], require 'markdown' (mkd_source), [[
