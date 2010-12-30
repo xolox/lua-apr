@@ -568,6 +568,9 @@ local apr_v, apu_v = assert(apr.version_get())
 assert(apr_v:find '^%d+%.%d+%.%d+$')
 assert(apu_v:find '^%d+%.%d+%.%d+$')
 
+-- Test status_to_name() (indirectly).
+assert(select(3, apr.stat("I assume this won't exist")) == 'ENOENT')
+
 -- Process handling module (proc.c, io_pipe.c) {{{1
 message "Testing process handling module ..\n"
 
