@@ -604,17 +604,16 @@ static int proc_err_get(lua_State *L)
   return get_pipe(L, process->handle.err, "err_parent");
 }
 
-/* process:exec([arg1 [, arg2, ...]]) -> status {{{1
+/* process:exec(args) -> status {{{1
  *
  * Create the child process and execute a program or shell command inside it.
  * On success true is returned, otherwise a nil followed by an error message is
- * returned.
+ * returned. The strings in the array @args become the command line arguments
+ * to the child process. The [program name] [progname] for the child process
+ * defaults to the name passed into `apr.proc_create()`, but you can change it
+ * by setting `args[0]`.
  *
- * The arguments to this method become the command line arguments to the child
- * process. If an error occurs a nil followed by an error message is returned.
- *
- * If you need to pass a lot of arguments to a process you can put them in a
- * table and pass this table as the only argument to `process:exec()`.
+ * [progname]: http://en.wikipedia.org/wiki/BusyBox#Single_binary
  */
 
 static int proc_exec(lua_State *L)
@@ -624,37 +623,29 @@ static int proc_exec(lua_State *L)
   const char *p, **args;
   int i, nargs;
 
+  lua_settop(L, 2);
   process = proc_check(L, 1);
+  luaL_checktype(L, 2, LUA_TTABLE);
 
-  /* Build "args" array from string arguments or table with string values. */
-  if (lua_type(L, 2) == LUA_TTABLE) {
-    nargs = lua_objlen(L, 2);
-    args = apr_palloc(process->memory_pool, sizeof args[0] * (nargs + 2));
-    if (args == NULL)
-      return push_error_memory(L);
-    for (i = 1; i <= nargs; i++) {
-      lua_pushinteger(L, i);
-      lua_gettable(L, 2);
-      p = lua_tostring(L, -1);
-      if (p == NULL)
-        luaL_argcheck(L, 0, 2, lua_pushfstring(L, "invalid value at index %d", i));
-      /* TODO Should I worry about embedded NUL characters here?! */
-      args[i] = apr_pstrdup(process->memory_pool, p);
-      lua_pop(L, 1);
-    }
-  } else {
-    nargs = lua_gettop(L) - 1;
-    args = apr_palloc(process->memory_pool, sizeof args[0] * (nargs + 2));
-    if (args == NULL)
-      return push_error_memory(L);
-    for (i = 2; i <= nargs + 1; i++)
-      args[i - 1] = luaL_checkstring(L, i);
-  }
-
-  /* Fill in the program name and mark the end of the "args" array. */
-  /* TODO Allow users to override the program name? */
-  args[0] = apr_filepath_name_get(process->path);
+  /* Allocate the array of arguments. */
+  nargs = lua_objlen(L, 2);
+  args = apr_palloc(process->memory_pool, sizeof args[0] * (nargs + 2));
+  if (args == NULL)
+    return push_error_memory(L);
   args[nargs+1] = NULL;
+  /* Copy the arguments. */
+  for (i = 0; i <= nargs; i++) {
+    lua_pushinteger(L, i);
+    lua_gettable(L, 2);
+    p = lua_tostring(L, -1);
+    if (p != NULL) /* argument */
+      args[i] = apr_pstrdup(process->memory_pool, p);
+    else if (i == 0) /* program name */
+      args[i] = apr_filepath_name_get(process->path);
+    else /* invalid value */
+      luaL_argcheck(L, 0, 2, lua_pushfstring(L, "invalid value at index %d", i));
+    lua_pop(L, 1);
+  }
 
   /* Create the child process using the given command line arguments. */
   status = apr_proc_create(&process->handle, process->path, args, process->env, process->attr, process->memory_pool);

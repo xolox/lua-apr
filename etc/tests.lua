@@ -618,7 +618,7 @@ local function newchild(cmdtype, script, env)
   assert(child:cmdtype_set(cmdtype))
   if env then child:env_set(env) end
   assert(child:io_set('child-block', 'parent-block', 'parent-block'))
-  assert(child:exec(scriptpath(script)))
+  assert(child:exec { scriptpath(script) })
   return child, assert(child:in_get()), assert(child:out_get()), assert(child:err_get())
 end
 
@@ -664,7 +664,7 @@ local status, errmsg, errcode = apr.namedpipe_create(namedpipe)
 if errcode ~= 'ENOTIMPL' then
   local child = assert(apr.proc_create(arg[-1]))
   assert(child:cmdtype_set('shellcmd/env'))
-  assert(child:exec(scriptpath 'test-namedpipe.lua', namedpipe, namedmsg))
+  assert(child:exec { scriptpath 'test-namedpipe.lua', namedpipe, namedmsg })
   local handle = assert(apr.file_open(namedpipe, 'r'))
   assert(namedmsg == handle:read())
   assert(handle:close())
@@ -705,7 +705,7 @@ assert(apr.addr_to_host(address))
 local server = assert(apr.proc_create(arg[-1]))
 local port = 12345
 assert(server:cmdtype_set 'shellcmd/env')
-assert(server:exec(scriptpath 'test-server.lua', port))
+assert(server:exec { scriptpath 'test-server.lua', port })
 apr.sleep(5)
 local client = assert(apr.socket_create())
 assert(client:connect('localhost', port))
