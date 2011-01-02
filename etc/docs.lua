@@ -224,7 +224,7 @@ local function preprocess(text)
     output[#output + 1] = block:find '^    ' and block or (block
           :gsub('@permissions', '[permissions](#file_system_permissions)')
           :gsub('error handling', '[error handling](#error_handling)')
-          :gsub('(%s)@([%w_]+)', '%1`%2`')
+          :gsub('(%s)@([%w_]+)', '%1<tt>*%2*</tt>')
           :gsub('([%s])true([%s%p])', '%1<tt>*true*</tt>%2')
           :gsub('([%s%p])false([%s%p])', '%1<tt>*false*</tt>%2')
           :gsub('([%s%p])nil([%s%p])', '%1<tt>*nil*</tt>%2')
