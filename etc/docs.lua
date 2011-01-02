@@ -3,7 +3,7 @@
  Documentation generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: January 1, 2011
+ Last Change: January 2, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -289,7 +289,9 @@ for _, module in ipairs(sorted_modules) do
   local a = toanchor(module.name)
   blocks:add('## <a name="%s" href="#%s">%s</a>', a, a, module.name)
   if module.header then blocks:add('%s', preprocess(module.header)) end
-  if module.example then blocks:add('<pre><code>%s</code></pre>', htmlencode(module.example)) end
+  if module.example then
+    blocks:add('    %s', module.example:gsub('\n', '\n    '))
+  end
   dumpentries(module.functions)
 end
 
@@ -300,6 +302,9 @@ assert(output:write(mkd_source))
 assert(output:close())
 
 -- Convert Markdown to HTML and apply page template. {{{1
+
+local status, markdown = pcall(require, 'discount')
+if not status then markdown = require 'markdown' end
 
 -- Generate and write the HTML output to the 2nd file. This isn't actually used
 -- on http://peterodding.com/code/lua/apr/docs/ but does enable immediate
@@ -329,7 +334,7 @@ assert(output:write([[
     h2 a:hover, h3 a:hover { color: #F00; }
   </style>
  </head>
- <body>]], require 'markdown' (mkd_source), [[
+ <body>]], markdown(mkd_source), [[
  </body>
 </html>]]))
 assert(output:close())

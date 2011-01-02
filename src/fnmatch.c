@@ -1,7 +1,7 @@
 /* Filename matching module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: September 25, 2010
+ * Last Change: January 2, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -19,8 +19,8 @@
  *  - `*` matches zero or more characters (any character)
  *  - `\x` escapes the special meaning of the character `x`
  *  - `[set]` matches one character within set. A range of characters can be
- *            specified by separating the characters of the range with a
- *            <code>-</code> character
+ *    specified by separating the characters of the range with a
+ *    <code>-</code> character
  *  - `[^set]` matches the complement of set, where set is defined as above
  *
  * If the optional argument @ignorecase is true, characters are compared

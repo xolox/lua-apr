@@ -1,7 +1,7 @@
 /* File path manipulation module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: December 23, 2010
+ * Last Change: January 2, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -35,7 +35,7 @@ static apr_int32_t check_options(lua_State *L, int idx) /* {{{1 */
  *    If the root does not exist, a nil followed by an error message is
  *    returned
  *  - `'native'` uses the file system's native path format (e.g. path delimiters
- *    of `:` on MacOS9, <code>\</code> on Win32, etc.) in the resulting root
+ *    of `:` on MacOS9, <code>\\</code> on Win32, etc.) in the resulting root
  *
  * These options only influence the resulting root. The path after the root is
  * returned as is. If you want to convert a whole file path to its true case
@@ -144,7 +144,7 @@ int lua_apr_filepath_name(lua_State *L)
  *    resolving any aliases on Windows, and appends a trailing slash if the
  *    final element is a directory
  *  - `'native'` uses the file system's native path format (e.g. path delimiters
- *    of `:` on MacOS9, <code>\</code> on Win32, etc.)
+ *    of `:` on MacOS9, <code>\\</code> on Win32, etc.)
  *  - `'not-above-root'` fails if @path is above @root, e.g. if @root is
  *    `/foo/bar` and @path is `../baz`
  *  - `'not-absolute'` fails if the merged path is absolute

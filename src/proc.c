@@ -1,7 +1,7 @@
 /* Process handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: December 31, 2010
+ * Last Change: January 2, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -454,7 +454,7 @@ static int proc_error_check_set(lua_State *L)
  *  - `'parent-block'`: Create a pipe that only blocks on the parent's end
  *  - `'child-block'`: Create a pipe that only blocks on the child's end
  *
- * _Once the child process has been started_ with `process:exec()`, the pipes
+ * *Once the child process has been started* with `process:exec()`, the pipes
  * can be accessed with the methods `process:in_get()`, `process:out_get()`
  * and `process:err_get()`.
  *
@@ -668,12 +668,12 @@ static int proc_exec(lua_State *L)
  *
  *  - `'exit'`: Process exited normally
  *  - `'signal'`: Process exited due to a signal
- *  - `'signal/core'`: Process exited and dumped [a core file] [wp:coredump]
+ *  - `'signal/core'`: Process exited and dumped [a core file] [coredump]
  *
  * The third return value is the exit code of the process. If an error occurs a
  * nil followed by an error message is returned.
  *
- * [wp:coredump]: http://en.wikipedia.org/wiki/Core_dump
+ * [coredump]: http://en.wikipedia.org/wiki/Core_dump
  */
 
 static int proc_wait(lua_State *L)

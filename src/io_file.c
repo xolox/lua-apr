@@ -1,7 +1,7 @@
 /* File I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: December 30, 2010
+ * Last Change: January 2, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -327,7 +327,7 @@ int lua_apr_stat(lua_State *L)
  *  - `'r+'`: update mode, all previous data is preserved
  *  - `'w+'`: update mode, all previous data is erased
  *  - `'a+'`: append update mode, previous data is preserved, writing is only
- *          allowed at the end of file
+ *    allowed at the end of file
  *
  * The @mode string may also have a `b` at the end, which is needed in some
  * systems to open the file in binary mode. This string is exactly what is used
