@@ -1,7 +1,7 @@
 /* Base64 encoding module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: September 25, 2010
+ * Last Change: January 2, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -22,7 +22,18 @@
 /* apr.base64_encode(plain) -> coded {{{1
  *
  * Encode the string @plain using base64 encoding. On success the coded string
- * is returned, otherwise a nil followed by an error message is returned.
+ * is returned, otherwise a nil followed by an error message is returned. As an
+ * example, here is how to convert an image file into a [data: URL]
+ * [data_uris]:
+ *
+ *     > image = io.open 'lua-logo.png'
+ *     > encoded_data = apr.base64_encode(image:read '*a')
+ *     > data_url = 'data:image/png;base64,' .. encoded_data
+ *     > = '<img src="' .. url .. '" width=16 height=16 alt="Lua logo">'
+ *     <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAm5JREFUOMt9k01LW0EUhp+Z5CaxatSbljRioaQgmCIKoUo3XXRRF241tUuhIEgWIgRSKzhtNLZbKf0BulL6C1x234WgoS0otIoWP4Ji48ed3Dtd9CoSW18YBs45z8uZjyOokVKqGQgBzZZlHQshHM/zGqrVaiCRSGyOjOwmhXDngZgxjAUvwLm5uXC5XI5Ho9G98fHxQ2AXVNS3/QFQLBZjdXXuu7MzegCE4IO4CiulfoK6LSUTxvAcaPX9t4Vg0fMoSskbYxj14ysBgN7e3oRSahPepoUwn4FnQONFd11d8cZstvexbUderq0dKCk5iUTEL63lqCgWi3eklE4+fxYWghXg7tU7aWmJsLExRlNTGIC+voWD5eWtDqUcY9v2sXRdtyGfzx9JyataGKCtLXoJA7S3x2JSOhNKqf1yuXxPuq57DGAML/iHVld3WVpaA6BU2mNxce2yNhgMnkrLsgIw2wLEC4Wn1wyMgaGhT9j2ezo7P7K/fwIQB2VXq9VT6XleFIRXC05OPrncM5mHDAykGB19dLXEC4VCASml/A35I2CL/+jkRHN6qkkm7YvQFqhDx3GapNZa+59iIRAQZLM9DA93U6k4DA6miMVukU4n0NrDtusIhQIIwfyFt1BKtaVSqZ1MptQoBF+AJDdrwxjSs7NhEQwGHamU2iqVSg9AHRpDP7B+A7xuDP3GTB2dn5/X53K5ivQH6HuhUOgA9dUYuo3hNbAKaH+tGiMm/uamvk1PT99PpVI7AKJmEpPAtlLqzH9EPy8MwMzMTEJrHfh75Ix7zcA3abUsy9VaG8AGDgEHiNbX1+/lcrnK1fo/txYAMvuVJrYAAAAASUVORK5CYII=" width=16 height=16 alt="Lua logo">
+ *
+ * This is what the result looks like (might not work in older web browsers):
+ * <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAm5JREFUOMt9k01LW0EUhp+Z5CaxatSbljRioaQgmCIKoUo3XXRRF241tUuhIEgWIgRSKzhtNLZbKf0BulL6C1x234WgoS0otIoWP4Ji48ed3Dtd9CoSW18YBs45z8uZjyOokVKqGQgBzZZlHQshHM/zGqrVaiCRSGyOjOwmhXDngZgxjAUvwLm5uXC5XI5Ho9G98fHxQ2AXVNS3/QFQLBZjdXXuu7MzegCE4IO4CiulfoK6LSUTxvAcaPX9t4Vg0fMoSskbYxj14ysBgN7e3oRSahPepoUwn4FnQONFd11d8cZstvexbUderq0dKCk5iUTEL63lqCgWi3eklE4+fxYWghXg7tU7aWmJsLExRlNTGIC+voWD5eWtDqUcY9v2sXRdtyGfzx9JyataGKCtLXoJA7S3x2JSOhNKqf1yuXxPuq57DGAML/iHVld3WVpaA6BU2mNxce2yNhgMnkrLsgIw2wLEC4Wn1wyMgaGhT9j2ezo7P7K/fwIQB2VXq9VT6XleFIRXC05OPrncM5mHDAykGB19dLXEC4VCASml/A35I2CL/+jkRHN6qkkm7YvQFqhDx3GapNZa+59iIRAQZLM9DA93U6k4DA6miMVukU4n0NrDtusIhQIIwfyFt1BKtaVSqZ1MptQoBF+AJDdrwxjSs7NhEQwGHamU2iqVSg9AHRpDP7B+A7xuDP3GTB2dn5/X53K5ivQH6HuhUOgA9dUYuo3hNbAKaH+tGiMm/uamvk1PT99PpVI7AKJmEpPAtlLqzH9EPy8MwMzMTEJrHfh75Ix7zcA3abUsy9VaG8AGDgEHiNbX1+/lcrnK1fo/txYAMvuVJrYAAAAASUVORK5CYII=" width=16 height=16 alt="Lua logo">
  */
 
 int lua_apr_base64_encode(lua_State *L)
