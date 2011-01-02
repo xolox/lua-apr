@@ -255,6 +255,8 @@ local bsignore = {
   ['apr.uuid_get'] = true,
   ['apr.uuid_parse'] = true,
   ['file:lock'] = true,
+  ['md5_context:digest'] = true,
+  ['sha1_context:digest'] = true,
 }
 local function dumpentries(functions)
   for _, entry in ipairs(functions) do
@@ -291,6 +293,23 @@ for _, module in ipairs(sorted_modules) do
   if module.header then blocks:add('%s', preprocess(module.header)) end
   if module.example then
     blocks:add('    %s', module.example:gsub('\n', '\n    '))
+  end
+  if module.file == 'crypt.c' then
+    -- Custom sorting for the cryptography module.
+    local orderstr = [[ apr.md5 apr.md5_encode apr.password_validate
+        apr.password_get apr.md5_init md5_context:update md5_context:digest
+        md5_context:reset apr.sha1 apr.sha1_init sha1_context:update
+        sha1_context:digest sha1_context:reset ]]
+    local ordertbl = { n = 0 }
+    for f in orderstr:gmatch '%S+' do
+      ordertbl[f], ordertbl.n = ordertbl.n, ordertbl.n + 1
+    end
+    local function order(f)
+      return ordertbl[f.signature:match '^[%w_.:]+']
+    end
+    table.sort(module.functions, function(a, b)
+      return order(a) < order(b)
+    end)
   end
   dumpentries(module.functions)
 end

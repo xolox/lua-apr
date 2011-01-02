@@ -1,15 +1,15 @@
 /* Cryptography routines module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: December 30, 2010
+ * Last Change: January 2, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
  * These functions support the [MD5] [md5] and [SHA1] [sha1] cryptographic hash
  * functions. You can also use them to encrypt plain text passwords using a
- * salt, validate plain text passwords against their encrypted, salted digest
- * and read passwords from standard input while masking the characters typed
- * by the user.
+ * [salt] [salt], validate plain text passwords against their encrypted, salted
+ * digest and read passwords from standard input while masking the characters
+ * typed by the user.
  *
  * The MD5 and SHA1 functions can be used to hash binary data. This is useful
  * because the hash is only 16 or 32 bytes long, yet it still changes
@@ -33,7 +33,8 @@
  *
  * [md5]: http://en.wikipedia.org/wiki/MD5
  * [sha1]: http://en.wikipedia.org/wiki/SHA1
- * [tar]: http://en.wikipedia.org/wiki/Tar_%28file_format%29
+ * [salt]: http://en.wikipedia.org/wiki/Salt_(cryptography)
+ * [tar]: http://en.wikipedia.org/wiki/Tar_(file_format)
  * [lua_downloads]: http://www.lua.org/ftp/
  */
 
@@ -44,6 +45,22 @@
 
 /* Internal functions {{{1 */
 
+#define clear_mem(p, l) memset(p, 42, l)
+#define clear_stack(b) clear_mem(b, sizeof(b))
+
+typedef struct lua_apr_md5_ctx {
+  apr_md5_ctx_t context;
+  int finalized;
+} lua_apr_md5_ctx;
+
+typedef struct lua_apr_sha1_ctx {
+  apr_sha1_ctx_t context;
+  int finalized;
+} lua_apr_sha1_ctx;
+
+static lua_apr_objtype lua_apr_md5_type;
+static lua_apr_objtype lua_apr_sha1_type;
+
 static int format_digest(char *formatted, const unsigned char *digest, int length)
 {
   int i;
@@ -53,51 +70,29 @@ static int format_digest(char *formatted, const unsigned char *digest, int lengt
   return 1;
 }
 
-/* apr.md5(message [, binary]) -> digest {{{1
- *
- * Calculate the [MD5][md5] digest of the string @message. On success the
- * digest is returned as a string of 32 hexadecimal characters, or a string of
- * 16 bytes if @binary evaluates to true. Otherwise a nil followed by an error
- * message is returned.
- */
-
-int lua_apr_md5(lua_State *L)
+static lua_apr_md5_ctx *md5_check(lua_State *L, int idx, int valid)
 {
-  unsigned char digest[APR_MD5_DIGESTSIZE];
-  char formatted[APR_MD5_DIGESTSIZE*2 + 1];
-  const char *message;
-  apr_status_t status;
-  size_t length;
-  int binary;
-  int pushed;
+  lua_apr_md5_ctx *context;
+  context = check_object(L, idx, &lua_apr_md5_type);
+  if (valid && context->finalized)
+    luaL_error(L, "attempt to use a finalized MD5 context");
+  return context;
+}
 
-  message = luaL_checklstring(L, 1, &length);
-  binary = lua_toboolean(L, 2);
-  status = apr_md5(digest, message, (apr_size_t)length);
-
-  if (status != APR_SUCCESS) {
-    pushed = push_error_status(L, status);
-  } else if (binary) {
-    lua_pushlstring(L, (const char *)digest, count(digest));
-    pushed = 1;
-  } else if (format_digest(formatted, digest, count(digest))) {
-    lua_pushlstring(L, (const char *)formatted, count(formatted) - 1);
-    memset(formatted, 42, count(formatted));
-    pushed = 1;
-  } else {
-    pushed = push_error_message(L, "could not format MD5 digest");
-  }
-
-  memset(digest, 42, count(digest));
-
-  return pushed;
+static lua_apr_sha1_ctx *sha1_check(lua_State *L, int idx, int valid)
+{
+  lua_apr_sha1_ctx *context;
+  context = check_object(L, idx, &lua_apr_sha1_type);
+  if (valid && context->finalized)
+    luaL_error(L, "attempt to use a finalized SHA1 context");
+  return context;
 }
 
 /* apr.md5_encode(password, salt) -> digest {{{1
  *
- * Encode the string @password using the [MD5] [md5] algorithm and a @salt
- * string. On success the digest is returned. Otherwise a nil followed by an
- * error message is returned.
+ * Encode the string @password using the [MD5] [md5] algorithm and a [salt]
+ * [salt] string. On success the digest is returned. Otherwise a nil followed
+ * by an error message is returned.
  */
 
 int lua_apr_md5_encode(lua_State *L)
@@ -118,48 +113,7 @@ int lua_apr_md5_encode(lua_State *L)
     pushed = 1;
   }
 
-  memset(digest, 42, count(digest));
-
-  return pushed;
-}
-
-/* apr.sha1(message [, binary]) -> digest {{{1
- *
- * Calculate the [SHA1] [sha1] digest of the string @message. On success the
- * digest is returned as a string of 40 hexadecimal characters, or a string of
- * 20 bytes if @binary evaluates to true. Otherwise a nil followed by an error
- * message is returned.
- */
-
-int lua_apr_sha1(lua_State *L)
-{
-  unsigned char digest[APR_SHA1_DIGESTSIZE];
-  char formatted[APR_SHA1_DIGESTSIZE*2+1];
-  apr_sha1_ctx_t context;
-  const char *message;
-  size_t length;
-  int binary;
-  int pushed;
-
-  message = luaL_checklstring(L, 1, &length);
-  binary = lua_toboolean(L, 2);
-
-  apr_sha1_init(&context);
-  apr_sha1_update(&context, message, (unsigned int)length);
-  apr_sha1_final(digest, &context);
-
-  if (binary) {
-    lua_pushlstring(L, (const char *)digest, count(digest));
-    pushed = 1;
-  } else if (format_digest(formatted, digest, count(digest))) {
-    lua_pushlstring(L, formatted, count(formatted) - 1);
-    memset(formatted, 42, count(formatted));
-    pushed = 1;
-  } else {
-    pushed = push_error_message(L, "could not format SHA1 digest");
-  }
-
-  memset(digest, 42, count(digest));
+  clear_stack(digest);
 
   return pushed;
 }
@@ -208,7 +162,7 @@ int lua_apr_password_get(lua_State *L)
   int pushed;
 
   prompt = luaL_checkstring(L, 1);
-  password = malloc(length = 512);
+  password = lua_newuserdata(L, length = 512);
   if (password == NULL) {
     pushed = push_error_memory(L);
   } else {
@@ -221,10 +175,291 @@ int lua_apr_password_get(lua_State *L)
       pushed = 1;
     }
   }
-  memset(password, 42, length);
-  free(password);
+  clear_mem(password, length);
 
   return pushed;
 }
+
+/* apr.md5_init() -> md5_context {{{1
+ *
+ * Create and return an object that can be used to calculate [MD5] [md5]
+ * message digests in steps. If an error occurs a nil followed by an error
+ * message is returned. This can be useful when you want to calculate message
+ * digests of large inputs, for example files like [ISO images] [isoimg] and
+ * backups:
+ *
+ *     > function md5_file(path, binary)
+ *     >>  local handle = assert(io.open(path, 'rb'))
+ *     >>  local context = assert(apr.md5_init())
+ *     >>  while true do
+ *     >>    local block = handle:read(1024 * 1024)
+ *     >>    if not block then break end
+ *     >>    assert(context:update(block))
+ *     >>  end
+ *     >>  return context:digest(binary)
+ *     >> end
+ *     >
+ *     > md5_file 'ubuntu-10.04-desktop-i386.iso'
+ *     'd044a2a0c8103fc3e5b7e18b0f7de1c8'
+ *
+ * [isoimg]: http://en.wikipedia.org/wiki/ISO_image
+ */
+
+int lua_apr_md5_init(lua_State *L)
+{
+  apr_status_t status;
+  lua_apr_md5_ctx *object;
+
+  object = new_object(L, &lua_apr_md5_type);
+  if (object == NULL)
+    return push_error_memory(L);
+  status = apr_md5_init(&object->context);
+  if (status != APR_SUCCESS)
+    return push_error_status(L, status);
+
+  return 1;
+}
+
+/* md5_context:update(input) -> status {{{1
+ *
+ * Continue an [MD5] [md5] message digest operation by processing another
+ * message block and updating the context. On success true is returned,
+ * otherwise a nil followed by an error message is returned.
+ */
+
+static int md5_update(lua_State *L)
+{
+  apr_status_t status;
+  lua_apr_md5_ctx *object;
+  const char *input;
+  size_t length;
+
+  object = md5_check(L, 1, 1);
+  input = luaL_checklstring(L, 2, &length);
+  status = apr_md5_update(&object->context, input, length);
+
+  return push_status(L, status);
+}
+
+/* md5_context:digest([binary]) -> digest {{{1
+ *
+ * End an [MD5] [md5] message digest operation. On success the digest is
+ * returned as a string of 32 hexadecimal characters, or a string of 16 bytes
+ * if @binary evaluates to true. Otherwise a nil followed by an error message
+ * is returned.
+ *
+ * If you want to re-use the context object after calling this method
+ * see `md5_context:reset()`.
+ */
+
+static int md5_digest(lua_State *L)
+{
+  apr_status_t status;
+  lua_apr_md5_ctx *object;
+  unsigned char digest[APR_MD5_DIGESTSIZE];
+  char formatted[APR_MD5_DIGESTSIZE*2 + 1];
+  int binary, pushed = 1;
+
+  object = md5_check(L, 1, 1);
+  binary = lua_toboolean(L, 2);
+  status = apr_md5_final(digest, &object->context);
+  if (status != APR_SUCCESS) {
+    pushed = push_error_status(L, status);
+  } else if (binary) {
+    lua_pushlstring(L, (const char *)digest, count(digest));
+  } else if (format_digest(formatted, digest, count(digest))) {
+    lua_pushlstring(L, (const char *)formatted, count(formatted) - 1);
+    clear_stack(formatted);
+  } else {
+    pushed = push_error_message(L, "could not format MD5 digest");
+  }
+  clear_stack(digest);
+  object->finalized = 1;
+
+  return pushed;
+}
+
+/* md5_context:reset() -> status {{{1
+ *
+ * Use this method to reset the context after calling `md5_context:digest()`.
+ * This enables you to re-use the same context to perform another message
+ * digest calculation. On success true is returned, otherwise a nil followed by
+ * an error message is returned.
+ */
+
+static int md5_reset(lua_State *L)
+{
+  apr_status_t status;
+  lua_apr_md5_ctx *object;
+
+  object = md5_check(L, 1, 0);
+  status = apr_md5_init(&object->context);
+  if (status == APR_SUCCESS)
+    object->finalized = 0;
+
+  return push_status(L, status);
+}
+
+/* md5_context:__tostring() {{{1 */
+
+static int md5_tostring(lua_State *L)
+{
+  lua_apr_md5_ctx *object;
+
+  object = md5_check(L, 1, 0);
+  if (!object->finalized)
+    lua_pushfstring(L, "MD5 context (%p)", object);
+  else
+    lua_pushstring(L, "MD5 context (closed)");
+
+  return 1;
+}
+
+/* apr.sha1_init() -> sha1_context {{{1
+ *
+ * Create and return an object that can be used to calculate [SHA1] [sha1]
+ * message digests in steps. See also the example for `apr.md5_init()`.
+ */
+
+int lua_apr_sha1_init(lua_State *L)
+{
+  lua_apr_sha1_ctx *object;
+
+  object = new_object(L, &lua_apr_sha1_type);
+  if (object == NULL)
+    return push_error_memory(L);
+  apr_sha1_init(&object->context);
+
+  return 1;
+}
+
+/* sha1_context:update(input) -> status {{{1
+ *
+ * Continue an [SHA1] [sha1] message digest operation by processing another
+ * message block and updating the context.
+ */
+
+static int sha1_update(lua_State *L)
+{
+  lua_apr_sha1_ctx *object;
+  const char *input;
+  size_t length;
+
+  object = sha1_check(L, 1, 1);
+  input = luaL_checklstring(L, 2, &length);
+  apr_sha1_update(&object->context, input, length);
+
+  return push_status(L, APR_SUCCESS);
+}
+
+/* sha1_context:digest([binary]) -> digest {{{1
+ *
+ * End an [SHA1] [sha1] message digest operation. On success the digest is
+ * returned as a string of 40 hexadecimal characters, or a string of 20 bytes
+ * if @binary evaluates to true. Otherwise a nil followed by an error message
+ * is returned.
+ *
+ * If you want to re-use the context object after calling this method
+ * see `sha1_context:reset()`.
+ */
+
+static int sha1_digest(lua_State *L)
+{
+  lua_apr_sha1_ctx *object;
+  unsigned char digest[APR_SHA1_DIGESTSIZE];
+  char formatted[APR_SHA1_DIGESTSIZE*2 + 1];
+  int binary, pushed = 1;
+
+  object = sha1_check(L, 1, 1);
+  binary = lua_toboolean(L, 2);
+  apr_sha1_final(digest, &object->context);
+  if (binary) {
+    lua_pushlstring(L, (const char *)digest, count(digest));
+  } else if (format_digest(formatted, digest, count(digest))) {
+    lua_pushlstring(L, (const char *)formatted, count(formatted) - 1);
+    clear_stack(formatted);
+  } else {
+    pushed = push_error_message(L, "could not format SHA1 digest");
+  }
+  clear_stack(digest);
+  object->finalized = 1;
+
+  return pushed;
+}
+
+/* sha1_context:reset() -> status {{{1
+ *
+ * Use this method to reset the context after calling `sha1_context:digest()`.
+ * This enables you to re-use the same context to perform another message
+ * digest calculation.
+ */
+
+static int sha1_reset(lua_State *L)
+{
+  lua_apr_sha1_ctx *object;
+
+  object = sha1_check(L, 1, 0);
+  apr_sha1_init(&object->context);
+  object->finalized = 0;
+
+  return push_status(L, APR_SUCCESS);
+}
+
+/* sha1_context:__tostring() {{{1 */
+
+static int sha1_tostring(lua_State *L)
+{
+  lua_apr_sha1_ctx *object;
+
+  object = sha1_check(L, 1, 0);
+  if (!object->finalized)
+    lua_pushfstring(L, "SHA1 context (%p)", object);
+  else
+    lua_pushstring(L, "SHA1 context (closed)");
+
+  return 1;
+}
+
+/* }}}1 */
+
+static luaL_reg md5_methods[] = {
+  { "reset", md5_reset },
+  { "update", md5_update },
+  { "digest", md5_digest },
+  { NULL, NULL },
+};
+
+static luaL_reg md5_metamethods[] = {
+  { "__tostring", md5_tostring },
+  { NULL, NULL },
+};
+
+static lua_apr_objtype lua_apr_md5_type = {
+  "lua_apr_md5_ctx*",
+  "MD5 context",
+  sizeof(lua_apr_md5_ctx),
+  md5_methods,
+  md5_metamethods
+};
+
+static luaL_reg sha1_methods[] = {
+  { "reset", sha1_reset },
+  { "update", sha1_update },
+  { "digest", sha1_digest },
+  { NULL, NULL },
+};
+
+static luaL_reg sha1_metamethods[] = {
+  { "__tostring", sha1_tostring },
+  { NULL, NULL },
+};
+
+static lua_apr_objtype lua_apr_sha1_type = {
+  "lua_apr_sha1_ctx*",
+  "SHA1 context",
+  sizeof(lua_apr_sha1_ctx),
+  sha1_methods,
+  sha1_metamethods
+};
 
 /* vim: set ts=2 sw=2 et tw=79 fen fdm=marker : */

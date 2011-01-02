@@ -1,7 +1,7 @@
 /* Miscellaneous functions module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: January 1, 2011
+ * Last Change: January 2, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -33,11 +33,11 @@ int luaopen_apr_core(lua_State *L)
     { "base64_decode", lua_apr_base64_decode },
 
     /* crypt.c -- cryptographic functions. */
-    { "md5", lua_apr_md5 },
+    { "md5_init", lua_apr_md5_init },
     { "md5_encode", lua_apr_md5_encode },
     { "password_get", lua_apr_password_get },
     { "password_validate", lua_apr_password_validate },
-    { "sha1", lua_apr_sha1 },
+    { "sha1_init", lua_apr_sha1_init },
 
     /* date.c -- date parsing. */
     { "date_parse_http", lua_apr_date_parse_http },

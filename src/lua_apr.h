@@ -1,7 +1,7 @@
 /* Header file for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: January 1, 2011
+ * Last Change: January 2, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -199,9 +199,9 @@ apr_status_t flush_buffer(lua_State*, lua_apr_writebuf*, int);
 void free_buffer(lua_State*, lua_apr_buffer*);
 
 /* crypt.c */
-int lua_apr_md5(lua_State*);
+int lua_apr_md5_init(lua_State*);
 int lua_apr_md5_encode(lua_State*);
-int lua_apr_sha1(lua_State*);
+int lua_apr_sha1_init(lua_State*);
 int lua_apr_password_validate(lua_State*);
 int lua_apr_password_get(lua_State*);
 

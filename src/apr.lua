@@ -6,7 +6,7 @@
  Last Change: January 2, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
- Version: 0.9.25
+ Version: 0.9.26
 
  This Lua script is executed on require("apr"), loads the binary module using
  require("apr.core"), defines several library functions implemented on top of
@@ -15,7 +15,53 @@
 --]]
 
 local apr = require 'apr.core'
-apr._VERSION = '0.9.25'
+apr._VERSION = '0.9.26'
+
+-- apr.md5(input [, binary]) -> digest {{{1
+--
+-- Calculate the [MD5] [md5] message digest of the string @input. On success
+-- the digest is returned as a string of 32 hexadecimal characters, or a string
+-- of 16 bytes if @binary evaluates to true. Otherwise a nil followed by an
+-- error message is returned.
+--
+-- Part of the "Cryptography routines" module.
+
+function apr.md5(input, binary)
+  assert(type(input) == 'string', "bad argument #1 to apr.md5() (string expected)")
+  local context, digest, status, errmsg, errcode
+  context, errmsg, errcode = apr.md5_init()
+  if context then
+    status, errmsg, errcode = context:update(input)
+    if status then
+      digest, errmsg, errcode = context:digest(binary)
+      if digest then return digest end
+    end
+  end
+  return nil, errmsg, errcode
+end
+
+-- apr.sha1(input [, binary]) -> digest {{{1
+--
+-- Calculate the [SHA1] [sha1] message digest of the string @input. On success
+-- the digest is returned as a string of 40 hexadecimal characters, or a string
+-- of 20 bytes if @binary evaluates to true. Otherwise a nil followed by an
+-- error message is returned.
+--
+-- Part of the "Cryptography routines" module.
+
+function apr.sha1(input, binary)
+  assert(type(input) == 'string', "bad argument #1 to apr.sha1() (string expected)")
+  local context, digest, status, errmsg, errcode
+  context, errmsg, errcode = apr.sha1_init()
+  if context then
+    status, errmsg, errcode = context:update(input)
+    if status then
+      digest, errmsg, errcode = context:digest(binary)
+      if digest then return digest end
+    end
+  end
+  return nil, errmsg, errcode
+end
 
 -- apr.filepath_which(program [, find_all]) -> pathname {{{1
 -- 
