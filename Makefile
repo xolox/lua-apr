@@ -1,7 +1,7 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: January 1, 2011
+# Last Change: January 2, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -72,6 +72,7 @@ test:
 
 coverage: test
 	[ -d etc/coverage ] || mkdir etc/coverage
+	rm -f src/errno.gcda src/errno.gcno
 	lcov -d . -b . --capture --output-file etc/coverage/lua-apr.info
 	genhtml -o etc/coverage etc/coverage/lua-apr.info
 
