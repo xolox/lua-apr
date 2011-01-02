@@ -1,7 +1,7 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: December 31, 2010
+# Last Change: January 1, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -22,7 +22,7 @@ SOURCES = src/base64.c src/buffer.c src/crypt.c src/date.c src/dbm.c \
 		  src/env.c src/errno.c src/filepath.c src/fnmatch.c src/io_dir.c \
 		  src/io_file.c src/io_net.c src/io_pipe.c src/lua_apr.c \
 		  src/permissions.c src/proc.c src/refpool.c src/stat.c src/str.c \
-		  src/time.c src/uri.c src/user.c src/uuid.c
+		  src/time.c src/uri.c src/user.c src/uuid.c src/xlate.c
 
 # Names of compiled object files.
 OBJECTS = $(patsubst %.c,%.o,$(SOURCES))

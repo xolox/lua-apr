@@ -1,7 +1,7 @@
 /* Header file for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: December 30, 2010
+ * Last Change: January 1, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -320,5 +320,8 @@ int push_groupname(lua_State*, apr_pool_t*, apr_gid_t);
 int lua_apr_uuid_get(lua_State*);
 int lua_apr_uuid_format(lua_State*);
 int lua_apr_uuid_parse(lua_State*);
+
+/* xlate.c */
+int lua_apr_xlate(lua_State*);
 
 /* vim: set ts=2 sw=2 et tw=79 fen fdm=marker : */

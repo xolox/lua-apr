@@ -1,7 +1,7 @@
 /* Miscellaneous functions module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: December 30, 2010
+ * Last Change: January 1, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -134,6 +134,9 @@ int luaopen_apr_core(lua_State *L)
     { "uuid_get", lua_apr_uuid_get },
     { "uuid_format", lua_apr_uuid_format },
     { "uuid_parse", lua_apr_uuid_parse },
+
+    /* xlate.c -- character encoding translation. */
+    { "xlate", lua_apr_xlate },
 
     { NULL, NULL }
   };
