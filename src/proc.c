@@ -159,7 +159,7 @@ int lua_apr_proc_create(lua_State *L)
  * true is returned, otherwise a nil followed by an error message is
  * returned.
  *
- * [daemons]: http://en.wikipedia.org/wiki/Daemon_%28computer_software%29
+ * [daemons]: http://en.wikipedia.org/wiki/Daemon_(computer_software)
  */
 
 int lua_apr_proc_detach(lua_State *L)
@@ -200,7 +200,7 @@ int lua_apr_proc_detach(lua_State *L)
  * As the above example implies the `apr.proc_fork()` function will only be
  * defined when forking is supported on the current platform.
  *
- * [fork]: http://en.wikipedia.org/wiki/Fork_%28operating_system%29
+ * [fork]: http://en.wikipedia.org/wiki/Fork_(operating_system)
  */
 
 int lua_apr_proc_fork(lua_State *L)

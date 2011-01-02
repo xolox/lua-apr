@@ -205,7 +205,7 @@ int lua_apr_filepath_merge(lua_State *L)
  * program names are resolved to absolute pathnames (see
  * `apr.filepath_which()`).
  *
- * [path_var]: http://en.wikipedia.org/wiki/PATH_%28variable%29
+ * [path_var]: http://en.wikipedia.org/wiki/PATH_(variable)
  */
 
 int lua_apr_filepath_list_split(lua_State *L)

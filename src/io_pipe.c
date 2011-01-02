@@ -1,11 +1,11 @@
 /* Pipe I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: December 29, 2010
+ * Last Change: January 2, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
- * Lua/APR represents [pipes] [wp:pipeline] as files just like Lua's standard
+ * Lua/APR represents [pipes] [pipeline] as files just like Lua's standard
  * library function `io.popen()` does because it works fairly well, however
  * there are some differences between files and pipes which impact the API:
  *
@@ -19,7 +19,7 @@
  * and access it using `apr.file_open()` and APR won't know or even care that
  * you're reading/writing a pipe instead of a file.
  *
- * [wp:pipeline]: http://en.wikipedia.org/wiki/Pipeline_%28Unix%29
+ * [pipeline]: http://en.wikipedia.org/wiki/Pipeline_(Unix)
  */
 
 #include "lua_apr.h"

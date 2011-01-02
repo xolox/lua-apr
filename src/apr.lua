@@ -24,6 +24,8 @@ apr._VERSION = '0.9.26'
 -- of 16 bytes if @binary evaluates to true. Otherwise a nil followed by an
 -- error message is returned.
 --
+-- *This function is binary safe.*
+--
 -- Part of the "Cryptography routines" module.
 
 function apr.md5(input, binary)
@@ -46,6 +48,8 @@ end
 -- the digest is returned as a string of 40 hexadecimal characters, or a string
 -- of 20 bytes if @binary evaluates to true. Otherwise a nil followed by an
 -- error message is returned.
+--
+-- *This function is binary safe.*
 --
 -- Part of the "Cryptography routines" module.
 
@@ -106,7 +110,9 @@ end
 -- extracted filename pattern. The `apr.fnmatch()` function is used for
 -- filename matching so the documentation there applies.
 --
--- Part of the "File path manipulation" module.
+-- *This function is not binary safe.*
+--
+-- Part of the "Filename matching" module.
 
 function apr.glob(pattern, ignorecase)
   local fnmatch = apr.fnmatch
