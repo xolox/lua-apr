@@ -1,7 +1,7 @@
 /* Directory manipulation module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: December 30, 2010
+ * Last Change: January 3, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -275,8 +275,10 @@ int lua_apr_dir_open(lua_State *L)
 
 /* directory:read([property, ...]) -> value, ... {{{1
  *
- * Return the requested properties for the next directory entry. The
- * property names and value types are documented under `apr.stat()`.
+ * Return the requested properties for the next directory entry. On success the
+ * requested properties are returned, otherwise a nil followed by an error
+ * message is returned. This function implements the same interface as
+ * `apr.stat()`.
  */
 
 static int dir_read(lua_State *L)
@@ -284,18 +286,21 @@ static int dir_read(lua_State *L)
   apr_status_t status;
   lua_apr_dir *directory;
   lua_apr_stat_context *context, backup_ctx;
+  int raise_errors;
 
   directory = checkdir(L, 1, 1);
 
   if (lua_isuserdata(L, lua_upvalueindex(1))) {
     /* Iterator for directory:entries()  */
     context = lua_touserdata(L, lua_upvalueindex(1));
+    raise_errors = 1;
   } else {
     /* Standalone call to directory:read() */
     backup_ctx.firstarg = 2;
     backup_ctx.lastarg = lua_gettop(L);
     check_stat_request(L, &backup_ctx);
     context = &backup_ctx;
+    raise_errors = 0;
   }
 
   for (;;) {
@@ -306,15 +311,18 @@ static int dir_read(lua_State *L)
         return push_stat_results(L, context, directory->filepath);
     } else if (APR_STATUS_IS_ENOENT(status)) {
       return 0;
-    } else {
+    } else if (raise_errors) {
       return raise_error_status(L, status);
+    } else {
+      return push_error_status(L, status);
     }
   }
 }
 
 /* directory:rewind() -> status {{{1
  *
- * Rewind the directory handle to start from the first entry.
+ * Rewind the directory handle to start from the first entry. On success true
+ * is returned, otherwise a nil followed by an error message is returned.
  */
 
 static int dir_rewind(lua_State *L)
@@ -330,9 +338,37 @@ static int dir_rewind(lua_State *L)
 
 /* directory:entries([property, ...]) -> iterator, directory handle {{{1
  *
- * This method returns a function that iterates over the (remaining) directory
- * entries and returns the requested properties for each entry. The property
- * names and value types are documented under `apr.stat()`.
+ * Return a function that iterates over the (remaining) directory entries and
+ * returns the requested properties for each entry. If you don't request any
+ * properties, a table with the available properties will be returned for each
+ * directory entry:
+ *
+ *     > directory = apr.dir_open 'examples'
+ *     > for info in directory:entries() do print(info) end
+ *     {
+ *       type = 'file', name = 'webserver.lua',
+ *       user = 'peter', group = 'peter', protection = 'rw-r--r--',
+ *       size = 2789, csize = 4096, inode = 12455648, dev = 64514, nlink = 1,
+ *       path = '/home/peter/Development/Lua/APR/examples/webserver.lua',
+ *       mtime = 1293753884.3382, atime = 1293994993.3855, ctime = 1293753884.3382,
+ *     }
+ *     {
+ *      type = 'file', name = 'download.lua',
+ *      user = 'peter' group = 'peter', protection = 'rw-r--r--',
+ *      size = 2580, csize = 4096, inode = 12455598, dev = 64514, nlink = 1,
+ *      path = '/home/peter/Development/Lua/APR/examples/download.lua',
+ *      mtime = 1293753884.3382, atime = 1293994993.3855, ctime = 1293753884.3382,
+ *     }
+ *
+ * This function implements the same interface as `apr.stat()` with one
+ * exception: If you pass property names to `directory:entries()` that are not
+ * available they will be returned as false instead of nil because of a
+ * technical limitation in the [Lua iterator protocol] [iterators]:
+ *
+ * > "On each iteration, the iterator function is called to
+ * > produce a new value, stopping when this new value is nil."
+ *
+ * [iterators]: http://www.lua.org/manual/5.1/manual.html#2.4.5
  */
 
 static int dir_entries(lua_State *L)
@@ -357,7 +393,8 @@ static int dir_entries(lua_State *L)
 
 /* directory:close() -> status {{{1
  *
- * Close the directory handle.
+ * Close the directory handle. On success true is returned, otherwise a nil
+ * followed by an error message is returned.
  */
 
 static int dir_close(lua_State *L)
