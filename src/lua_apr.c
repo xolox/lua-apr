@@ -1,12 +1,13 @@
 /* Miscellaneous functions module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: January 2, 2011
+ * Last Change: January 8, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
 
 #include "lua_apr.h"
+#include <apr_portable.h>
 
 /* Used to make sure that APR is only initialized once. */
 static int apr_was_initialized = 0;
@@ -26,6 +27,8 @@ int luaopen_apr_core(lua_State *L)
     /* lua_apr.c -- the "main" file. */
     { "platform_get", lua_apr_platform_get },
     { "version_get", lua_apr_version_get },
+    { "os_default_encoding", lua_apr_os_default_encoding },
+    { "os_locale_encoding", lua_apr_os_locale_encoding },
     { "type", lua_apr_type },
 
     /* base64.c -- base64 encoding/decoding. */
@@ -223,6 +226,30 @@ int lua_apr_version_get(lua_State *L)
   lua_pushstring(L, apr_version_string());
   lua_pushstring(L, apu_version_string());
   return 2;
+}
+
+/* apr.os_default_encoding() -> name {{{1
+ *
+ * Get the name of the system default character set as a string.
+ */
+
+int lua_apr_os_default_encoding(lua_State *L)
+{
+  lua_pushstring(L, apr_os_default_encoding(to_pool(L)));
+  return 1;
+}
+
+/* apr.os_locale_encoding() -> name {{{1
+ *
+ * Get the name of the current locale character set as a string. If the current
+ * locale's data cannot be retrieved on this system, the name of the system
+ * default character set is returned instead.
+ */
+
+int lua_apr_os_locale_encoding(lua_State *L)
+{
+  lua_pushstring(L, apr_os_locale_encoding(to_pool(L)));
+  return 1;
 }
 
 /* apr.type(object) -> name {{{1

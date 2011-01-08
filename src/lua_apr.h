@@ -1,7 +1,7 @@
 /* Header file for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: January 2, 2011
+ * Last Change: January 8, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -175,6 +175,8 @@ extern lua_apr_objtype lua_apr_socket_type;
 /* lua_apr.c */
 int lua_apr_platform_get(lua_State*);
 int lua_apr_version_get(lua_State*);
+int lua_apr_os_default_encoding(lua_State*);
+int lua_apr_os_locale_encoding(lua_State*);
 int lua_apr_type(lua_State*);
 apr_pool_t *to_pool(lua_State*);
 int status_to_message(lua_State*, apr_status_t);

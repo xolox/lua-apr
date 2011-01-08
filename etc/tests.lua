@@ -3,7 +3,7 @@
  Test suite for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: January 2, 2011
+ Last Change: January 8, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -621,6 +621,12 @@ assert(apu_v:find '^%d+%.%d+%.%d+$')
 
 -- Test status_to_name() (indirectly).
 assert(select(3, apr.stat("I assume this won't exist")) == 'ENOENT')
+
+-- Test apr.os_default/locale_encoding()
+local default = apr.os_default_encoding()
+local locale = apr.os_locale_encoding()
+assert(type(default) == 'string' and default:find '%S')
+assert(type(locale) == 'string' and locale:find '%S')
 
 -- Process handling module (proc.c, io_pipe.c) {{{1
 message "Testing process handling module ..\n"
