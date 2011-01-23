@@ -1,7 +1,7 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: January 21, 2011
+# Last Change: January 23, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -85,7 +85,7 @@ install_deps:
 		lua5.1 liblua5.1-0 liblua5.1-0-dev libreadline-dev \
 		liblua5.1-markdown0
 
-ZIPNAME = lua-apr-0.9.23-1
+ZIPNAME = lua-apr-0.10-1
 
 package: docs
 	@echo Packaging sources

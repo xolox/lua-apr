@@ -24,13 +24,13 @@ The [Lua/APR binding](http://peterodding.com/code/lua/apr/) aims to bring most o
 
 ## How to download, build & install the module
 
-There are [Windows binaries](http://github.com/downloads/xolox/lua-apr/lua-apr-0.9.3-win32.zip) available that have been tested with [Lua for Windows](http://code.google.com/p/luaforwindows/) v5.1.4-40. You can also build the Lua/APR binding yourself. Here are your options:
+There are [Windows binaries](http://github.com/downloads/xolox/lua-apr/lua-apr-0.10-win32.zip) available that have been tested with [Lua for Windows](http://code.google.com/p/luaforwindows/) v5.1.4-40. You can also build the Lua/APR binding yourself. Here are your options:
 
 ### Build on UNIX using LuaRocks
 
 The easiest way to download, build & install the Lua/APR binding is to use [LuaRocks](http://luarocks.org/):
 
-    $ luarocks install http://peterodding.com/code/lua/apr/downloads/lua-apr-0.9.23-1.rockspec
+    $ luarocks install http://peterodding.com/code/lua/apr/downloads/lua-apr-0.10-1.rockspec
 
 If you have git installed you can also download and install the latest sources using the following command:
 
@@ -43,9 +43,9 @@ If you don't have LuaRocks installed the following shell commands should help yo
     $ if which git; then # Get the latest sources using `git'?
     $   git clone git://github.com/xolox/lua-apr.git
     $ else # Or get the most recently released archive using `wget'.
-    $   wget http://peterodding.com/code/lua/apr/downloads/lua-apr-0.9.23-1.zip
-    $   unzip lua-apr-0.9.23-1.zip
-    $   mv lua-apr-0.9.23-1 lua-apr
+    $   wget http://peterodding.com/code/lua/apr/downloads/lua-apr-0.10-1.zip
+    $   unzip lua-apr-0.10-1.zip
+    $   mv lua-apr-0.10-1 lua-apr
     $ fi
     $ cd lua-apr
     $ sudo make install_deps # installs build & runtime dependencies for Debian/Ubuntu
@@ -64,7 +64,6 @@ The makefile creates a debug build by default. Use `NMAKE /f Makefile.win RELEAS
 
 The following functionality has not been implemented yet but is on the to-do list (highest to lowest priority):
 
- * **Multi threading** that's simple but provides the needed primitives for more complicated systems
  * **Encrypted network communication** (unfortunately this isn't provided by APR so `io_net.c` could get messy…)
  * [**Relational database API**](http://apr.apache.org/docs/apr-util/trunk/group___a_p_r___util___d_b_d.html) which provides access to common database servers/engines such as [MySQL](http://en.wikipedia.org/wiki/MySQL), [PostgreSQL](http://en.wikipedia.org/wiki/PostgreSQL) and [SQLite](http://en.wikipedia.org/wiki/SQLite)
 
