@@ -1,7 +1,7 @@
 /* Miscellaneous functions module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: January 8, 2011
+ * Last Change: January 21, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -116,6 +116,12 @@ int luaopen_apr_core(lua_State *L)
     { "strnatcasecmp", lua_apr_strnatcasecmp },
     { "strfsize", lua_apr_strfsize },
     { "tokenize_to_argv", lua_apr_tokenize_to_argv },
+
+    /* thread.c -- multi threading */
+#   if APR_HAS_THREADS
+    { "thread_create", lua_apr_thread_create },
+    { "thread_yield", lua_apr_thread_yield },
+#   endif
 
     /* time.c -- time management */
     { "sleep", lua_apr_sleep },

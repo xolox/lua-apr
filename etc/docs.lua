@@ -3,15 +3,15 @@
  Documentation generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: January 2, 2011
+ Last Change: January 21, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
 ]]
 
 local SOURCES = [[ base64.c crypt.c date.c dbm.c env.c filepath.c fnmatch.c
-  io_dir.c io_file.c io_net.c io_pipe.c proc.c str.c time.c uri.c user.c
-  uuid.c xlate.c apr.lua lua_apr.c permissions.c errno.c
+  io_dir.c io_file.c io_net.c io_pipe.c proc.c str.c thread.c time.c uri.c
+  user.c uuid.c xlate.c apr.lua lua_apr.c permissions.c errno.c
   ../examples/download.lua ../examples/webserver.lua ]]
 
 local modules = {}

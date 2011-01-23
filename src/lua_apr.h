@@ -1,7 +1,7 @@
 /* Header file for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: January 8, 2011
+ * Last Change: January 21, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -167,6 +167,7 @@ typedef struct lua_apr_objtype {
 extern lua_apr_objtype lua_apr_dbm_type;
 extern lua_apr_objtype lua_apr_dir_type;
 extern lua_apr_objtype lua_apr_file_type;
+extern lua_apr_objtype lua_apr_thread_type;
 extern lua_apr_objtype lua_apr_proc_type;
 extern lua_apr_objtype lua_apr_socket_type;
 
@@ -297,6 +298,10 @@ int lua_apr_strnatcmp(lua_State*);
 int lua_apr_strnatcasecmp(lua_State*);
 int lua_apr_strfsize(lua_State*);
 int lua_apr_tokenize_to_argv(lua_State*);
+
+/* thread.c */
+int lua_apr_thread_create(lua_State*);
+int lua_apr_thread_yield(lua_State*);
 
 /* time.c */
 int lua_apr_sleep(lua_State*);
