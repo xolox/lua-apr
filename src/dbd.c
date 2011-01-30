@@ -480,12 +480,12 @@ int lua_apr_dbd(lua_State *L)
  *    'sock', 'flags' 'fldsz', 'group' and 'reconnect' keys, each followed by
  *    an equal sign and a value. Such key/value pairs can be delimited by
  *    space, CR, LF, tab, semicolon, vertical bar or comma. For now, 'flags'
- *    can only recognize CLIENT_FOUND_ROWS (check MySQL manual for details).
+ *    can only recognize `CLIENT_FOUND_ROWS` (check MySQL manual for details).
  *    The value associated with 'fldsz' determines maximum amount of memory (in
  *    bytes) for each of the fields in the result set of prepared statements.
  *    By default, this value is 1 MB. The value associated with 'group'
  *    determines which group from configuration file to use (see
- *    MYSQL_READ_DEFAULT_GROUP option of [mysql_options()] [mysql_options] in
+ *    `MYSQL_READ_DEFAULT_GROUP` option of [mysql_options()] [mysql_options] in
  *    MySQL manual). Reconnect is set to 1 by default (i.e. true)
  *
  *  - __FreeTDS:__ @params can have 'username', 'password', 'appname',
