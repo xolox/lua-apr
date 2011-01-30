@@ -85,7 +85,7 @@ install_deps:
 		lua5.1 liblua5.1-0 liblua5.1-0-dev libreadline-dev \
 		liblua5.1-markdown0
 
-ZIPNAME = lua-apr-0.10-1
+ZIPNAME = lua-apr-0.11-1
 
 package: docs
 	@echo Packaging sources
