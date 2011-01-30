@@ -1,7 +1,7 @@
 /* Header file for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: January 21, 2011
+ * Last Change: January 30, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -170,6 +170,9 @@ extern lua_apr_objtype lua_apr_file_type;
 extern lua_apr_objtype lua_apr_thread_type;
 extern lua_apr_objtype lua_apr_proc_type;
 extern lua_apr_objtype lua_apr_socket_type;
+extern lua_apr_objtype lua_apr_dbd_type;
+extern lua_apr_objtype lua_apr_dbr_type;
+extern lua_apr_objtype lua_apr_dbp_type;
 
 /* Prototypes. {{{1 */
 
@@ -185,6 +188,7 @@ int push_status(lua_State*, apr_status_t);
 int push_error_status(lua_State*, apr_status_t);
 void *new_object(lua_State*, lua_apr_objtype*);
 void getdefaultenv(lua_State*);
+int getobjenv(lua_State*, int);
 void *check_object(lua_State*, int, lua_apr_objtype*);
 int get_metatable(lua_State*, lua_apr_objtype*);
 
@@ -211,6 +215,9 @@ int lua_apr_password_get(lua_State*);
 /* date.c */
 int lua_apr_date_parse_http(lua_State*);
 int lua_apr_date_parse_rfc(lua_State*);
+
+/* dbd.c */
+int lua_apr_dbd(lua_State*);
 
 /* dbm.c */
 int lua_apr_dbm_open(lua_State*);

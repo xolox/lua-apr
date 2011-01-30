@@ -1,7 +1,7 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: January 23, 2011
+# Last Change: January 30, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -18,7 +18,7 @@ SOURCE_MODULE = src/apr.lua
 BINARY_MODULE = core.so
 
 # Names of source code files to compile & link.
-SOURCES = src/base64.c src/buffer.c src/crypt.c src/date.c src/dbm.c \
+SOURCES = src/base64.c src/buffer.c src/crypt.c src/date.c src/dbd.c src/dbm.c \
 		  src/env.c src/errno.c src/filepath.c src/fnmatch.c src/io_dir.c \
 		  src/io_file.c src/io_net.c src/io_pipe.c src/lua_apr.c \
 		  src/permissions.c src/proc.c src/refpool.c src/stat.c src/str.c \
@@ -70,10 +70,10 @@ uninstall:
 test:
 	@lua etc/tests.lua
 
-coverage: test
+coverage:
 	[ -d etc/coverage ] || mkdir etc/coverage
 	rm -f src/errno.gcda src/errno.gcno
-	lcov -d . -b . --capture --output-file etc/coverage/lua-apr.info
+	lcov -d src -b . --capture --output-file etc/coverage/lua-apr.info
 	genhtml -o etc/coverage etc/coverage/lua-apr.info
 
 docs: etc/docs.lua $(SOURCE_MODULE) $(SOURCES)
@@ -104,6 +104,7 @@ package: docs
 clean:
 	@rm -Rf $(BINARY_MODULE) $(OBJECTS) etc/coverage
 	@which lcov && lcov -z -d .
+	@rm -f src/*.gcov src/*.gcno
 
 .PHONY: install uninstall test docs install_deps clean
 

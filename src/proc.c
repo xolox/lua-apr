@@ -1,7 +1,7 @@
 /* Process handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: January 2, 2011
+ * Last Change: January 29, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -46,31 +46,13 @@ static lua_apr_proc *proc_check(lua_State *L, int i)
   return check_object(L, i, &lua_apr_proc_type);
 }
 
-/* getuenv(L) -- get/create environment table for userdata {{{2 */
-
-static int getuenv(lua_State *L)
-{
-  lua_getfenv(L, 1); /* get current environment table */
-  getdefaultenv(L); /* get default environment table */
-  if (!lua_equal(L, -1, -2)) {
-    lua_pop(L, 1);
-    return 1;
-  } else {
-    lua_pop(L, 2);
-    lua_newtable(L); /* create environment table */
-    lua_pushvalue(L, -1); /* copy reference to table */
-    lua_setfenv(L, 1); /* install environment table */
-    return 0;
-  }
-}
-
 /* get_pipe(L, file, key) -- return standard input/output/error pipe {{{2 */
 
 static int get_pipe(lua_State *L, apr_file_t *handle, const char *key)
 {
   lua_apr_file *file;
 
-  if (getuenv(L)) {
+  if (getobjenv(L, 1)) {
     lua_getfield(L, -1, key); /* get cached pipe object */
     if (lua_type(L, -1) == LUA_TUSERDATA)
       return 1; /* return cached pipe object */
@@ -102,7 +84,7 @@ static int set_pipe(lua_State *L, const char *ck, const char *pk, lua_apr_setpip
     parent = file_check(L, 3, 1)->handle;
 
   /* Make sure pipe(s) aren't garbage collected while process is alive! */
-  getuenv(L); /* process, child_pipe, parent_pipe, environment */
+  getobjenv(L, 1); /* process, child_pipe, parent_pipe, environment */
   lua_insert(L, 1); /* environment, process, child_pipe, parent_pipe */
   lua_setfield(L, 1, pk); /* environment, process, child_pipe */
   lua_setfield(L, 1, ck); /* environment, process */

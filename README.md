@@ -5,6 +5,7 @@ The [Lua/APR binding](http://peterodding.com/code/lua/apr/) aims to bring most o
  * [Base64 encoding](http://peterodding.com/code/lua/apr/docs/#base64_encoding)
  * [Cryptography routines](http://peterodding.com/code/lua/apr/docs/#cryptography_routines)
  * [Date parsing](http://peterodding.com/code/lua/apr/docs/#date_parsing)
+ * [Relational database drivers](http://peterodding.com/code/lua/apr/docs/#relational_database_drivers)
  * [DBM routines](http://peterodding.com/code/lua/apr/docs/#dbm_routines)
  * [Environment manipulation](http://peterodding.com/code/lua/apr/docs/#environment_manipulation)
  * [File path manipulation](http://peterodding.com/code/lua/apr/docs/#file_path_manipulation)
@@ -65,7 +66,6 @@ The makefile creates a debug build by default. Use `NMAKE /f Makefile.win RELEAS
 The following functionality has not been implemented yet but is on the to-do list (highest to lowest priority):
 
  * **Encrypted network communication** (unfortunately this isn't provided by APR so `io_net.c` could get messy…)
- * [**Relational database API**](http://apr.apache.org/docs/apr-util/trunk/group___a_p_r___util___d_b_d.html) which provides access to common database servers/engines such as [MySQL](http://en.wikipedia.org/wiki/MySQL), [PostgreSQL](http://en.wikipedia.org/wiki/PostgreSQL) and [SQLite](http://en.wikipedia.org/wiki/SQLite)
 
 ## Contact
 

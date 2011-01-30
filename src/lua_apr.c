@@ -1,7 +1,7 @@
 /* Miscellaneous functions module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: January 21, 2011
+ * Last Change: January 30, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -45,6 +45,9 @@ int luaopen_apr_core(lua_State *L)
     /* date.c -- date parsing. */
     { "date_parse_http", lua_apr_date_parse_http },
     { "date_parse_rfc", lua_apr_date_parse_rfc },
+
+    /* dbd.c -- database module. */
+    { "dbd", lua_apr_dbd },
 
     /* dbm.c -- dbm routines. */
     { "dbm_open", lua_apr_dbm_open },
@@ -260,9 +263,18 @@ int lua_apr_os_locale_encoding(lua_State *L)
 
 /* apr.type(object) -> name {{{1
  *
- * Return the type of a userdata value as a string. If @object is of a known
- * type one of the strings `'file'`, `'directory'`, `'socket'`, `'process'` or
- * `'dbm'` will be returned, otherwise nothing is returned.
+ * Return the type of a userdata object created by the Lua/APR binding. If
+ * @object is of a known type one of the following strings will be returned,
+ * otherwise nothing is returned:
+ *
+ *  - `'file'`
+ *  - `'directory'`
+ *  - `'socket'`
+ *  - `'process'`
+ *  - `'dbm'`
+ *  - `'database driver'`
+ *  - `'prepared statement'`
+ *  - `'result set'`
  */
 
 int lua_apr_type(lua_State *L)
@@ -272,7 +284,10 @@ int lua_apr_type(lua_State *L)
     &lua_apr_dir_type,
     &lua_apr_socket_type,
     &lua_apr_proc_type,
-    &lua_apr_dbm_type
+    &lua_apr_dbm_type,
+    &lua_apr_dbd_type,
+    &lua_apr_dbr_type,
+    &lua_apr_dbp_type
   };
   int i;
 
@@ -366,7 +381,9 @@ void *new_object(lua_State *L, lua_apr_objtype *T)
   return object;
 }
 
-void getdefaultenv(lua_State *L) /* {{{1 */
+/* getdefaultenv() returns the default userdata environment. {{{1 */
+
+void getdefaultenv(lua_State *L)
 {
   const char *key = "Lua/APR default environment for userdata";
 
@@ -376,6 +393,24 @@ void getdefaultenv(lua_State *L) /* {{{1 */
     lua_newtable(L);
     lua_pushvalue(L, -1);
     lua_setfield(L, LUA_REGISTRYINDEX, key);
+  }
+}
+
+/* getobjenv() returns the given object's environment. {{{1 */
+
+int getobjenv(lua_State *L, int idx)
+{
+  lua_getfenv(L, idx); /* get current environment table */
+  getdefaultenv(L); /* get default environment table */
+  if (!lua_equal(L, -1, -2)) {
+    lua_pop(L, 1);
+    return 1;
+  } else {
+    lua_pop(L, 2);
+    lua_newtable(L); /* create environment table */
+    lua_pushvalue(L, -1); /* copy reference to table */
+    lua_setfenv(L, idx); /* install environment table */
+    return 0;
   }
 }
 

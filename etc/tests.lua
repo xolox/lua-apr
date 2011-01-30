@@ -3,7 +3,7 @@
  Test suite for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: January 23, 2011
+ Last Change: January 30, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -17,14 +17,30 @@ local apr = assert(require 'apr')
 
 -- Test infrastructure {{{1
 
+local fmt = string.format
+
 local function message(s, ...)
-  io.stderr:write('\r', s:format(...))
+  io.stderr:write('\r', fmt(s, ...))
   io.stderr:flush()
 end
 
 local function warning(s, ...)
-  io.stderr:write("\nWarning: ", s:format(...))
+  io.stderr:write("\nWarning: ", fmt(s, ...))
   io.stderr:flush()
+end
+
+local function scriptpath(name)
+  return assert(apr.filepath_merge(apr.filepath_parent(arg[0]), name))
+end
+
+local function wait_for(signalfile, timeout)
+  local starttime = apr.time_now()
+  while apr.time_now() - starttime < 30 do
+    apr.sleep(0.25)
+    if apr.stat(signalfile, 'type') == 'file' then
+      return true
+    end
+  end
 end
 
 do
@@ -112,6 +128,23 @@ end
 local date = 'Sun, 06 Nov 1994 08:49:37 GMT'
 assert(apr.time_format('rfc822', apr.date_parse_http(date)) == date)
 
+-- Relational database module (dbd.c) {{{1
+message "Testing relational database module ..\n"
+
+-- See DBD module documentation for why this hack is here.
+local libs = { '/usr/lib/libapr-1.so', '/usr/lib/libaprutil-1.so' }
+if apr.env_get 'LD_PRELOAD' == nil
+    and apr.stat(libs[1], 'type') == 'file'
+    and apr.stat(libs[2], 'type') == 'file' then
+  assert(apr.env_set('LD_PRELOAD', apr.filepath_list_merge(libs)))
+end
+
+local child = assert(apr.proc_create(arg[-1]))
+local signalfile = os.tmpname()
+assert(child:cmdtype_set 'shellcmd/env')
+assert(child:exec { scriptpath 'test-dbd.lua', signalfile })
+assert(wait_for(signalfile, 30), 'Relational database module tests failed!')
+
 -- DBM routines module (dbm.c) {{{1
 message "Testing DBM module ..\n"
 
@@ -134,7 +167,6 @@ assert(not file2 or apr.stat(file2, 'type') == 'file')
 dbm = assert(apr.dbm_open(dbmfile, 'w'))
 checkdbm()
 assert(dbm:delete(dbmkey))
-print(dbm:fetch(dbmkey))
 assert(not dbm:fetch(dbmkey))
 assert(not dbm:firstkey())
 -- Test tostring(dbm).
@@ -483,7 +515,7 @@ local maxmultiplier = 20
 for testsize = 1, maxmultiplier do
 
   local testdata = testdata:rep(testsize)
-  message("Testing file I/O on a file of %i bytes (step %i/%i)..\n", #testdata, testsize, maxmultiplier)
+  -- message("Testing file I/O on a file of %i bytes (step %i/%i)..\n", #testdata, testsize, maxmultiplier)
   local testlines = {}
   for l in testdata:gmatch '[^\r\n]*' do
     table.insert(testlines, l)
@@ -499,11 +531,11 @@ for testsize = 1, maxmultiplier do
   local escapes = { ['\r'] = '\\r', ['\n'] = '\\n', ['"'] = '\\"', ['\0'] = '\\0' }
   local function formatvalue(v)
     if type(v) == 'number' then
-      local s = string.format('%.99f', v)
+      local s = fmt('%.99f', v)
       return s:find '%.' and (s:gsub('0+$', '0')) or s
     elseif type(v) == 'string' then
       return '"' .. v:gsub('[\r\n"%z]', escapes) .. '"'
-      -- XXX return ('%q'):format(v)
+      -- XXX return fmt('%q', v)
     else
       return tostring(v)
     end
@@ -631,10 +663,6 @@ assert(type(locale) == 'string' and locale:find '%S')
 -- Process handling module (proc.c, io_pipe.c) {{{1
 message "Testing process handling module ..\n"
 
-local function scriptpath(name)
-  return assert(apr.filepath_merge(apr.filepath_parent(arg[0]), name))
-end
-
 local function newchild(cmdtype, script, env)
   local child = assert(apr.proc_create(arg[-1]))
   assert(child:cmdtype_set(cmdtype))
@@ -672,11 +700,10 @@ if apr.proc_fork then
   local process, context = assert(apr.proc_fork())
   local forked_file, forked_text = assert(os.tmpname()), 'hello from forked child!'
   if context == 'child' then
-    io.output(forked_file)
-    io.write(forked_text, '\n')
+    writefile(forked_file, forked_text)
     os.exit(0)
-  elseif context == 'child' then
-    for i = 1, 10 do if (apr.stat(forked_file, 'size') or 0) > 0 then break end apr.sleep(1) end
+  elseif context == 'parent' then
+    assert(wait_for(forked_file, 10), "Forked child failed to create file?!")
     assert(readfile(forked_file) == forked_text)
   end
 end
@@ -729,9 +756,11 @@ assert(apr.addr_to_host(address))
 -- Test socket:bind(), socket:listen() and socket:accept().
 local server = assert(apr.proc_create(arg[-1]))
 local port = 12345
+local signalfile = os.tmpname()
+local scriptfile = scriptpath 'test-server.lua'
 assert(server:cmdtype_set 'shellcmd/env')
-assert(server:exec { scriptpath 'test-server.lua', port })
-apr.sleep(5)
+assert(server:exec { scriptfile, port, signalfile })
+assert(wait_for(signalfile, 15), "Failed to initialize " .. scriptfile)
 local client = assert(apr.socket_create())
 assert(client:connect('localhost', port))
 for _, msg in ipairs { 'First line', 'Second line', 'Third line' } do
@@ -854,8 +883,10 @@ assert(apr.time_format('rfc822', 1000000000) == 'Sun, 09 Sep 2001 01:46:40 GMT')
 assert(apr.time_format('%Y-%m', 1000000000) == '2001-09')
 
 -- Test apr.sleep() :-)
-local before = apr.time_now(); apr.sleep(1); local after = apr.time_now()
-assert((after - before) >= 1)
+local before = apr.time_now()
+apr.sleep(0.25)
+local after = apr.time_now()
+assert(fmt('%.2f', after - before):find '^0%.2[456]$')
 
 -- URI parsing module (uri.c) {{{1
 message "Testing URI parsing ..\n"

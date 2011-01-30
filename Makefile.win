@@ -1,7 +1,7 @@
 # This is the Windows makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: January 21, 2011
+# Last Change: January 28, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -40,7 +40,7 @@ LFLAGS = $(LFLAGS) /debug
 
 # Names of compiled object files.
 OBJECTS = src\base64.obj src\buffer.obj src\crypt.obj src\date.obj \
-		  src\dbm.obj src\env.obj src\errno.obj src\filepath.obj \
+		  src\dbd.obj src\dbm.obj src\env.obj src\errno.obj src\filepath.obj \
 		  src\fnmatch.obj src\io_dir.obj src\io_file.obj src\io_net.obj \
 		  src\io_pipe.obj src\lua_apr.obj src\permissions.obj src\proc.obj \
 		  src\refpool.obj src\stat.obj src\str.obj src\thread.obj \

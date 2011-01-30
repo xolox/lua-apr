@@ -3,20 +3,21 @@
  Documentation generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: January 21, 2011
+ Last Change: January 30, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
 ]]
 
-local SOURCES = [[ base64.c crypt.c date.c dbm.c env.c filepath.c fnmatch.c
-  io_dir.c io_file.c io_net.c io_pipe.c proc.c str.c thread.c time.c uri.c
-  user.c uuid.c xlate.c apr.lua lua_apr.c permissions.c errno.c
+local SOURCES = [[ base64.c crypt.c date.c dbd.c dbm.c env.c filepath.c
+  fnmatch.c io_dir.c io_file.c io_net.c io_pipe.c proc.c str.c thread.c time.c
+  uri.c user.c uuid.c xlate.c apr.lua lua_apr.c permissions.c errno.c
   ../examples/download.lua ../examples/webserver.lua ]]
 
 local modules = {}
 local sorted_modules = {}
 
+local fmt = string.format
 local function trim(s)
   return s:match '^%s*(.-)%s*$'
 end
@@ -35,7 +36,7 @@ local function getmodule(name, file, header)
 end
 
 local function message(string, ...)
-  io.stderr:write(string:format(...), '\n')
+  io.stderr:write(fmt(...), '\n')
 end
 
 local function stripfoldmarker(s)
@@ -81,6 +82,35 @@ will iterate over all lines. This function does not close the @file when the loo
 [flines]: http://www.lua.org/manual/5.1/manual.html#pdf-file:lines ]],
 -- }}}1
 }
+
+-- Extract test coverage statistics from gcov. {{{1
+
+-- XXX The gcov invocation below used to work fine with multiple source code
+-- files (gcov -f *.c) but at some point it broke?! Therefor I've now resorted
+-- to running gcov once for each C source code file.
+
+local coverage = {}
+for filename in SOURCES:gmatch '%S+' do
+  if filename:find '%.c$' and filename ~= 'errno.c' then
+    local gcov = assert(io.popen('gcov -o src -nf ' .. filename))
+    local cfun
+    local count = 0
+    for line in gcov:lines() do
+      local test = line:match "^Function '(.-)'$"
+      if test then
+        cfun = test
+      elseif cfun then
+        local value = tonumber(line:match "^Lines executed:%s*(%d+%.?%d*)%% of %d+$")
+        if value then
+          coverage[cfun] = value
+          count = count + 1
+          cfun = nil
+        end
+      end
+    end
+    assert(gcov:close())
+  end
+end
 
 -- Parse documentation comments in C and Lua source code files. {{{1
 
@@ -147,23 +177,6 @@ for filename in SOURCES:gmatch '%S+' do
   end
 end
 
--- Extract test coverage statistics from gcov. {{{1
-
-local gcov = assert(io.popen 'cd src && gcov -f *.c 2>/dev/null')
-local cfun
-local coverage = {}
-local count = 0
-for line in gcov:lines() do
-  local test = line:match "^Function '(.-)'$"
-  if test then
-    cfun = test
-  elseif cfun then
-    coverage[cfun] = tonumber(line:match "^Lines executed:%s*(%d+%.?%d*)%% of %d+$")
-    count = count + 1
-    cfun = nil
-  end
-end
-
 -- Convert documentation comments to Markdown hypertext. {{{1
 
 local blocks = { trim([[
@@ -193,12 +206,36 @@ for the Lua/APR binding. Some notes about this documentation:
 
 ]]) }
 
-function blocks:add(string, ...)
-  self[#self+1] = string:format(...)
+function blocks:add(template, ...)
+  self[#self+1] = fmt(template, ...)
 end
 
 local function toanchor(s)
-  return s:lower():gsub('[^a-z0-9_.:]+', '_')
+  s = s:lower()
+  return s:gsub('[^a-z0-9_.:]+', '_')
+end
+
+local function sig2pubfun(s)
+  if s:find '^#result_set' then
+    return 'result_set:__len'
+  else
+    return s:match '^[%w_.:]+'
+  end
+end
+
+local function sig2privfun(s)
+  if s:find '^#' then
+    return s:gsub('^#result_set.-$', 'dbr_len')
+  else
+    s = s:match '^[%w_.:]+'
+    s = s:gsub('%W', '_')
+    s = s:gsub('^directory_', 'dir_')
+    s = s:gsub('^process_', 'proc_')
+    s = s:gsub('^driver_', 'dbd_')
+    s = s:gsub('^prepared_statement_', 'dbp_')
+    s = s:gsub('^result_set_', 'dbr_')
+    return s
+  end
 end
 
 local function gsplit(string, pattern, capture_delimiters)
@@ -235,7 +272,7 @@ local function preprocess(text)
             else
               target = 'http://www.lua.org/manual/5.1/manual.html#pdf-' .. funcname
             end
-            return ('[%s()](%s)'):format(funcname:gsub('_', '\\_'), target)
+            return fmt('[%s()](%s)', funcname:gsub('_', '\\_'), target)
           end))
   end
   return table.concat(output, '\n\n')
@@ -244,11 +281,18 @@ end
 blocks:add '## Table of contents'
 local items = {}
 for _, module in ipairs(sorted_modules) do
-  items[#items + 1] = (' - [%s](#%s)'):format(module.name, toanchor(module.name))
+  items[#items + 1] = fmt(' - [%s](#%s)', module.name, toanchor(module.name))
+  for _, entry in ipairs(module.functions) do
+    local signature = entry.signature:match '^#?[%w.:_]+'
+    if not signature:find '#' then signature = signature .. '()' end
+    local anchor = toanchor(sig2pubfun(signature))
+    items[#items + 1] = fmt('   - <a href="#%s" style="text-decoration:none">%s</a>', anchor, signature)
+  end
 end
 blocks:add('%s', table.concat(items, '\n'))
 
 local bsignore = {
+  ['apr.dbd'] = true,
   ['apr.strfsize'] = true,
   ['apr.uri_port_of_scheme'] = true,
   ['apr.uuid_format'] = true,
@@ -261,17 +305,15 @@ local bsignore = {
 local function dumpentries(functions)
   for _, entry in ipairs(functions) do
     local signature = entry.signature:gsub('%->', '→')
-    local funcname = assert(signature:match '^[%w_.:]+')
+    local funcname = sig2pubfun(signature)
     local anchor = toanchor(funcname)
-    local covkey = funcname:gsub('%W', '_')
-                           :gsub('^directory_', 'dir_')
-                           :gsub('^process_', 'proc_')
+    local covkey = sig2privfun(signature)
     if not coverage[covkey] then covkey = 'lua_' .. covkey end
     local tc = coverage[covkey] or ''
     if tc ~= '' then
       local template = '<span style="float: right; font-size: small; color: %s; opacity: 0.5">test coverage: %s<br></span>'
-      local color = tc >= 75 and '#006600' or tc >= 50 and '#FFCC00' or '#CC0000'
-      tc = string.format(template, color, tc == 0 and 'none' or string.format('%i%%', tc))
+      local color = tc >= 75 and 'green' or tc >= 50 and 'orange' or 'red'
+      tc = fmt(template, color, tc == 0 and 'none' or fmt('%i%%', tc))
     end
     blocks:add('### %s <a name="%s" href="#%s">`%s`</a>', tc, anchor, anchor, signature)
     blocks:add('%s', preprocess(entry.description))
@@ -288,12 +330,14 @@ local function htmlencode(s)
 end
 
 for _, module in ipairs(sorted_modules) do
+
   local a = toanchor(module.name)
   blocks:add('## <a name="%s" href="#%s">%s</a>', a, a, module.name)
   if module.header then blocks:add('%s', preprocess(module.header)) end
   if module.example then
     blocks:add('    %s', module.example:gsub('\n', '\n    '))
   end
+
   if module.file == 'crypt.c' then
     -- Custom sorting for the cryptography module.
     local orderstr = [[ apr.md5 apr.md5_encode apr.password_validate
@@ -311,7 +355,9 @@ for _, module in ipairs(sorted_modules) do
       return order(a) < order(b)
     end)
   end
+
   dumpentries(module.functions)
+
 end
 
 -- Join the blocks of Markdown source and write them to the 1st file.
