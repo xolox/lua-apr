@@ -22,6 +22,7 @@ The [Lua/APR binding](http://peterodding.com/code/lua/apr/) aims to bring most o
  * [User/group identification](http://peterodding.com/code/lua/apr/docs/#user_group_identification)
  * [Universally unique identifiers](http://peterodding.com/code/lua/apr/docs/#universally_unique_identifiers)
  * [Character encoding translation](http://peterodding.com/code/lua/apr/docs/#character_encoding_translation)
+ * [XML parsing](http://peterodding.com/code/lua/apr/docs/#xml_parsing)
 
 ## How to download, build & install the module
 

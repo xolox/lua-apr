@@ -1,7 +1,7 @@
 /* Header file for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: January 30, 2011
+ * Last Change: February 8, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -51,6 +51,10 @@
 /* FIXME Pushing onto the stack might not work in this scenario? */
 #define error_message_memory "memory allocation error"
 
+/* Size of error message buffers on stack. */
+#define LUA_APR_MSGSIZE 512
+
+/* The initial size of I/O buffers. */
 #define LUA_APR_BUFSIZE 1024
 
 #define count(array) \
@@ -164,15 +168,18 @@ typedef struct lua_apr_objtype {
 } lua_apr_objtype;
 
 /* External type definitions. */
-extern lua_apr_objtype lua_apr_dbm_type;
-extern lua_apr_objtype lua_apr_dir_type;
 extern lua_apr_objtype lua_apr_file_type;
+extern lua_apr_objtype lua_apr_dir_type;
+extern lua_apr_objtype lua_apr_socket_type;
 extern lua_apr_objtype lua_apr_thread_type;
 extern lua_apr_objtype lua_apr_proc_type;
-extern lua_apr_objtype lua_apr_socket_type;
+extern lua_apr_objtype lua_apr_dbm_type;
 extern lua_apr_objtype lua_apr_dbd_type;
 extern lua_apr_objtype lua_apr_dbr_type;
 extern lua_apr_objtype lua_apr_dbp_type;
+extern lua_apr_objtype lua_apr_md5_type;
+extern lua_apr_objtype lua_apr_sha1_type;
+extern lua_apr_objtype lua_apr_xml_type;
 
 /* Prototypes. {{{1 */
 
@@ -337,5 +344,8 @@ int lua_apr_uuid_parse(lua_State*);
 
 /* xlate.c */
 int lua_apr_xlate(lua_State*);
+
+/* xml.c */
+int lua_apr_xml(lua_State*);
 
 /* vim: set ts=2 sw=2 et tw=79 fen fdm=marker : */

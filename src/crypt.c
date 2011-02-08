@@ -1,7 +1,7 @@
 /* Cryptography routines module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: January 2, 2011
+ * Last Change: February 8, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -57,9 +57,6 @@ typedef struct lua_apr_sha1_ctx {
   apr_sha1_ctx_t context;
   int finalized;
 } lua_apr_sha1_ctx;
-
-static lua_apr_objtype lua_apr_md5_type;
-static lua_apr_objtype lua_apr_sha1_type;
 
 static int format_digest(char *formatted, const unsigned char *digest, int length)
 {
@@ -308,9 +305,9 @@ static int md5_tostring(lua_State *L)
 
   object = md5_check(L, 1, 0);
   if (!object->finalized)
-    lua_pushfstring(L, "MD5 context (%p)", object);
+    lua_pushfstring(L, "%s (%p)", lua_apr_md5_type.friendlyname, object);
   else
-    lua_pushstring(L, "MD5 context (closed)");
+    lua_pushfstring(L, "%s (closed)", lua_apr_md5_type.friendlyname);
 
   return 1;
 }
@@ -413,9 +410,9 @@ static int sha1_tostring(lua_State *L)
 
   object = sha1_check(L, 1, 0);
   if (!object->finalized)
-    lua_pushfstring(L, "SHA1 context (%p)", object);
+    lua_pushfstring(L, "%s (%p)", lua_apr_sha1_type.friendlyname, object);
   else
-    lua_pushstring(L, "SHA1 context (closed)");
+    lua_pushfstring(L, "%s (closed)", lua_apr_sha1_type.friendlyname);
 
   return 1;
 }
@@ -434,9 +431,9 @@ static luaL_reg md5_metamethods[] = {
   { NULL, NULL },
 };
 
-static lua_apr_objtype lua_apr_md5_type = {
+lua_apr_objtype lua_apr_md5_type = {
   "lua_apr_md5_ctx*",
-  "MD5 context",
+  "md5 context",
   sizeof(lua_apr_md5_ctx),
   md5_methods,
   md5_metamethods
@@ -454,9 +451,9 @@ static luaL_reg sha1_metamethods[] = {
   { NULL, NULL },
 };
 
-static lua_apr_objtype lua_apr_sha1_type = {
+lua_apr_objtype lua_apr_sha1_type = {
   "lua_apr_sha1_ctx*",
-  "SHA1 context",
+  "sha1 context",
   sizeof(lua_apr_sha1_ctx),
   sha1_methods,
   sha1_metamethods

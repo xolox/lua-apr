@@ -1,7 +1,7 @@
 /* Miscellaneous functions module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: January 30, 2011
+ * Last Change: February 8, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -150,6 +150,9 @@ int luaopen_apr_core(lua_State *L)
     /* xlate.c -- character encoding translation. */
     { "xlate", lua_apr_xlate },
 
+    /* xml.c -- XML parsing. */
+    { "xml", lua_apr_xml },
+
     { NULL, NULL }
   };
 
@@ -270,11 +273,15 @@ int lua_apr_os_locale_encoding(lua_State *L)
  *  - `'file'`
  *  - `'directory'`
  *  - `'socket'`
+ *  - `'thread'`
  *  - `'process'`
  *  - `'dbm'`
  *  - `'database driver'`
  *  - `'prepared statement'`
  *  - `'result set'`
+ *  - `'md5 context'`
+ *  - `'sha1 context'`
+ *  - `'xml parser'`
  */
 
 int lua_apr_type(lua_State *L)
@@ -283,11 +290,15 @@ int lua_apr_type(lua_State *L)
     &lua_apr_file_type,
     &lua_apr_dir_type,
     &lua_apr_socket_type,
+    &lua_apr_thread_type,
     &lua_apr_proc_type,
     &lua_apr_dbm_type,
     &lua_apr_dbd_type,
     &lua_apr_dbr_type,
-    &lua_apr_dbp_type
+    &lua_apr_dbp_type,
+    &lua_apr_md5_type,
+    &lua_apr_sha1_type,
+    &lua_apr_xml_type
   };
   int i;
 
@@ -336,7 +347,7 @@ apr_pool_t *to_pool(lua_State *L)
 
 int status_to_message(lua_State *L, apr_status_t status)
 {
-  char message[512];
+  char message[LUA_APR_MSGSIZE];
   apr_strerror(status, message, count(message));
   lua_pushstring(L, message);
   return 1;

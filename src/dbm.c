@@ -1,7 +1,7 @@
 /* DBM routines module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: December 30, 2010
+ * Last Change: February 8, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -317,9 +317,9 @@ int dbm_tostring(lua_State *L)
 
   dbm = dbm_check(L, 1, 0);
   if (dbm->handle != NULL)
-    lua_pushfstring(L, "dbm (%p)", dbm->handle);
+    lua_pushfstring(L, "%s (%p)", lua_apr_dbm_type.friendlyname, dbm->handle);
   else
-    lua_pushstring(L, "dbm (closed)");
+    lua_pushfstring(L, "%s (closed)", lua_apr_dbm_type.friendlyname);
 
   return 1;
 }

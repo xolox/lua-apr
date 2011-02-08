@@ -3,7 +3,7 @@
  * Authors:
  *  - zhiguo zhao <zhaozg@gmail.com>
  *  - Peter Odding <peter@peterodding.com>
- * Last Change: January 30, 2011
+ * Last Change: February 8, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -1028,7 +1028,10 @@ static int dbd_tostring(lua_State *L)
   lua_apr_dbd_object *object;
 
   object = check_dbd(L, 1, 0, 0);
-  lua_pushfstring(L, "%s (%p)", lua_apr_dbd_type.friendlyname, object);
+  if (object->handle != NULL)
+    lua_pushfstring(L, "%s (%p)", lua_apr_dbd_type.friendlyname, object);
+  else
+    lua_pushfstring(L, "%s (closed)", lua_apr_dbd_type.friendlyname);
 
   return 1;
 }

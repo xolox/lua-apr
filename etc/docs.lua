@@ -3,7 +3,7 @@
  Documentation generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: January 30, 2011
+ Last Change: February 5, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -11,7 +11,7 @@
 
 local SOURCES = [[ base64.c crypt.c date.c dbd.c dbm.c env.c filepath.c
   fnmatch.c io_dir.c io_file.c io_net.c io_pipe.c proc.c str.c thread.c time.c
-  uri.c user.c uuid.c xlate.c apr.lua lua_apr.c permissions.c errno.c
+  uri.c user.c uuid.c xlate.c xml.c apr.lua lua_apr.c permissions.c errno.c
   ../examples/download.lua ../examples/webserver.lua ]]
 
 local modules = {}
@@ -146,7 +146,7 @@ for filename in SOURCES:gmatch '%S+' do
       else
         description = mungedesc(signature, description)
         local by = funcbody:find 'luaL_checklstring' or funcbody:find 'datum_check' or funcbody:find 'lua_pushlstring'
-        local bn = funcbody:find 'luaL_checkstring' or funcbody:find 'lua_tostring'
+        local bn = funcbody:find 'luaL_checkstring' or funcbody:find 'lua_tostring' or funcbody:find 'luaL_optstring'
         local binarysafe; if by and not bn then binarysafe = true elseif bn then binarysafe = false end
         table.insert(module.functions, {
           signature = stripfoldmarker(signature),
@@ -234,6 +234,7 @@ local function sig2privfun(s)
     s = s:gsub('^driver_', 'dbd_')
     s = s:gsub('^prepared_statement_', 'dbp_')
     s = s:gsub('^result_set_', 'dbr_')
+    s = s:gsub('^xml_parser_', 'xml_')
     return s
   end
 end
@@ -301,6 +302,7 @@ local bsignore = {
   ['file:lock'] = true,
   ['md5_context:digest'] = true,
   ['sha1_context:digest'] = true,
+  ['xml_parser:convert'] = true,
 }
 local function dumpentries(functions)
   for _, entry in ipairs(functions) do

@@ -1,7 +1,7 @@
 /* Directory manipulation module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: January 3, 2011
+ * Last Change: February 8, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -417,9 +417,9 @@ static int dir_tostring(lua_State *L)
 
   directory = checkdir(L, 1, 0);
   if (directory->handle != NULL)
-    lua_pushfstring(L, "directory (%p)", directory->handle);
+    lua_pushfstring(L, "%s (%p)", lua_apr_dir_type.friendlyname, directory->handle);
   else
-    lua_pushstring(L, "directory (closed)");
+    lua_pushfstring(L, "%s (closed)", lua_apr_dir_type.friendlyname);
 
   return 1; 
 }

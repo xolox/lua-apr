@@ -1,7 +1,7 @@
 /* Multi threading module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: January 23, 2011
+ * Last Change: February 8, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -273,7 +273,9 @@ static int thread_status(lua_State *L)
 static int thread_tostring(lua_State *L)
 {
   lua_apr_thread *object = check_thread(L, 1);
-  lua_pushfstring(L, "thread (%s)", status_names[object->status]);
+  lua_pushfstring(L, "%s (%s)",
+      lua_apr_thread_type.friendlyname,
+      status_names[object->status]);
   return 1;
 }
 

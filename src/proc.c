@@ -1,7 +1,7 @@
 /* Process handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: January 29, 2011
+ * Last Change: February 8, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -736,7 +736,7 @@ static int proc_tostring(lua_State *L)
   lua_apr_proc *process;
   
   process = proc_check(L, 1);
-  lua_pushfstring(L, "process (%p)", process);
+  lua_pushfstring(L, "%s (%p)", lua_apr_proc_type.friendlyname, process);
 
   return 1;
 }
