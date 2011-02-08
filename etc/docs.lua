@@ -3,7 +3,7 @@
  Documentation generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: February 5, 2011
+ Last Change: February 8, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -280,17 +280,33 @@ local function preprocess(text)
 end
 
 blocks:add '## Table of contents'
-local items = {}
+local lines = { '<dl>' }
+local misc_entries = {}
 for _, module in ipairs(sorted_modules) do
-  items[#items + 1] = fmt(' - [%s](#%s)', module.name, toanchor(module.name))
-  for _, entry in ipairs(module.functions) do
-    local signature = entry.signature:match '^#?[%w.:_]+'
-    if not signature:find '#' then signature = signature .. '()' end
-    local anchor = toanchor(sig2pubfun(signature))
-    items[#items + 1] = fmt('   - <a href="#%s" style="text-decoration:none">%s</a>', anchor, signature)
+  if not module.functions[1] then
+    table.insert(misc_entries, module)
+  else
+    lines[#lines + 1] = fmt('<dt style="margin: 1em 0; font-weight: bold"><a href="#%s">%s</a></dt>', toanchor(module.name), module.name)
+    lines[#lines + 1] = '<dd><ul>'
+    for _, entry in ipairs(module.functions) do
+      local signature = entry.signature:match '^#?[%w.:_]+'
+      local anchor = toanchor(sig2pubfun(signature))
+      if not signature:find '#' then signature = signature .. '()' end
+      lines[#lines + 1] = fmt('<li style="float: left; width: 16em"><a href="#%s" style="text-decoration:none">%s</a></li>', anchor, signature)
+    end
+    lines[#lines + 1] = '</ul><br style="clear: both"></dd>'
+    -- lines[#lines + 1] = ''
+    -- blocks:add('%s', table.concat(lines, '\n'))
   end
 end
-blocks:add('%s', table.concat(items, '\n'))
+lines[#lines + 1] = '<dt style="padding: 1em 0; font-weight: bold">Miscellaneous sections</dt>'
+lines[#lines + 1] = '<dd><ul>'
+for _, module in ipairs(misc_entries) do
+  lines[#lines + 1] = fmt('<li><a href="#%s">%s</a></li>', toanchor(module.name), module.name)
+end
+lines[#lines + 1] = '</ul></dd>'
+lines[#lines + 1] = '</dl>'
+blocks:add('%s', table.concat(lines, '\n'))
 
 local bsignore = {
   ['apr.dbd'] = true,
