@@ -29,8 +29,8 @@
  *
  * In the future this module might expose the full XML parse tree to Lua as
  * userdata objects, so that Lua has access to all parse information. This
- * would also make it possible to expose the [apr_xml_to_text()] [xml_to_text]
- * function.
+ * would also make it possible to expose the [apr\_xml\_to\_text()]
+ * [xml_to_text] function.
  *
  * [xml]: http://en.wikipedia.org/wiki/XML
  * [lxp]: http://www.keplerproject.org/luaexpat/
