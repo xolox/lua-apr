@@ -1,7 +1,7 @@
 /* Header file for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 8, 2011
+ * Last Change: February 9, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -86,6 +86,9 @@
 
 #define time_put(L, time) \
   lua_pushnumber(L, (lua_Number)time / APR_USEC_PER_SEC)
+
+#define new_object(L, T) \
+  new_object_ex(L, T, 0)
 
 /* Type definitions. {{{1 */
 
@@ -193,7 +196,7 @@ apr_pool_t *to_pool(lua_State*);
 int status_to_message(lua_State*, apr_status_t);
 int push_status(lua_State*, apr_status_t);
 int push_error_status(lua_State*, apr_status_t);
-void *new_object(lua_State*, lua_apr_objtype*);
+void *new_object_ex(lua_State*, lua_apr_objtype*, int);
 void getdefaultenv(lua_State*);
 int getobjenv(lua_State*, int);
 void *check_object(lua_State*, int, lua_apr_objtype*);

@@ -1,7 +1,7 @@
 /* Multi threading module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 8, 2011
+ * Last Change: February 9, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -21,24 +21,36 @@
 
 #if APR_HAS_THREADS
 
+/* Heads up: I can't find any documentation on this but apr_thread_exit()
+ * destroys the thread's memory pool (at least on UNIX it does). This makes
+ * sense but complicates the allocation of "lua_apr_thread" structures: they
+ * can't be allocated as Lua userdata (because the child thread might outlive
+ * its creator) nor can they be allocated from the memory pool (because
+ * apr_thread_exit() destroys the memory pool and the thread structure with it,
+ * even though the creator might still want to access the thread structure). */
+
 /* Private parts. {{{1 */
 
 const char *status_names[] = { "init", "running", "done", "error" };
 
 #define check_thread(L, idx) \
-  check_object((L), (idx), &lua_apr_thread_type)
+  (*(lua_apr_thread**)check_object((L), (idx), &lua_apr_thread_type))
+
+#define thread_busy(T) \
+  ((T)->status == TS_INIT || (T)->status == TS_RUNNING)
 
 typedef struct {
+  int refcount;
   apr_pool_t *pool;
   apr_thread_t *handle;
   apr_threadattr_t *attr;
-  apr_status_t exit_status;
   lua_State *state;
   struct threadbuf {
     const char *data;
     size_t size;
   } function, argument, result;
   enum { TS_INIT, TS_RUNNING, TS_DONE, TS_ERROR } status;
+  int joined;
 } lua_apr_thread;
 
 /* error_handler(state) {{{2 */
@@ -64,60 +76,77 @@ static int error_handler(lua_State *L) {
   return 1;
 }
 
-/* thread_runner(handle, thread) {{{2 */
-
-static void *thread_runner(apr_thread_t *handle, lua_apr_thread *thread)
-{
-  lua_State *L = thread->state;
-  const char *data;
-  size_t size;
-
-  /* Load the standard library. */
-  luaL_openlibs(L);
-
-  /* Push the code and argument strings and evaluate the code. */
-  lua_settop(L, 0);
-  lua_pushcfunction(L, error_handler);
-  if (luaL_loadbuffer(L, thread->function.data, thread->function.size, "apr.thread_runner()")) {
-    LUA_APR_DBG("Error: %s", lua_tostring(L, -1));
-    thread->status = TS_ERROR;
-  } else {
-    lua_pushlstring(L, thread->argument.data, thread->argument.size);
-    thread->status = TS_RUNNING;
-    if (lua_pcall(L, 1, 1, 1)) {
-      LUA_APR_DBG("Error: %s", lua_tostring(L, -1));
-      thread->status = TS_ERROR;
-    } else {
-      thread->status = TS_DONE;
-    }
-  }
-
-  /* Save the returned string or error message. */
-  data = lua_tolstring(L, -1, &size);
-  thread->result.size = size;
-  thread->result.data = apr_pmemdup(thread->pool, data, (apr_size_t) size);
-
-  /* Terminate the OS thread. */
-  thread->exit_status = apr_thread_exit(handle, APR_SUCCESS);
-
-  return NULL;
-}
-
 /* thread_destroy(thread) {{{2 */
 
 static void thread_destroy(lua_apr_thread *thread)
 {
-  /* TODO Should the thread be forcefully closed here?! */
-  if (thread != NULL) {
+  /* The current thread is no longer using the thread structure. */
+  thread->refcount--;
+
+  /* XXX If the thread exited with an error and the user didn't check the
+   * result using thread:join() we print the error message to stderr. */
+  if (thread->refcount == 0 && thread->status == TS_ERROR && !thread->joined)
+    fprintf(stderr, "Lua/APR thread exited with error: %.*s\n", thread->result.size, thread->result.data);
+
+  /* XXX Only destroy the thread when the child has finished executing and
+   * neither Lua state will reference the thread structure anymore. */
+  if (!thread_busy(thread) && thread->refcount == 0) {
     if (thread->state != NULL) {
       lua_close(thread->state);
       thread->state = NULL;
     }
-    if (thread->pool != NULL) {
-      apr_pool_destroy(thread->pool);
-      thread->pool = NULL;
-    }
+    free(thread);
   }
+}
+
+/* thread_runner(handle, thread) {{{2 */
+
+static void *thread_runner(apr_thread_t *handle, lua_apr_thread *thread)
+{
+  lua_State *L;
+  const char *data;
+  size_t size;
+  int lstatus;
+
+  /* The child thread is now using the thread structure. */
+  thread->refcount++;
+
+  /* Create the child Lua state. */
+  L = thread->state = luaL_newstate();
+  if (thread->state == NULL) {
+    const char *msg = error_message_memory;
+    thread->result.data = msg;
+    thread->result.size = strlen(msg);
+    thread->status = TS_ERROR;
+  } else {
+
+    /* Load the standard library. */
+    luaL_openlibs(L);
+
+    /* Push the code and argument strings and evaluate the code. */
+    lua_settop(L, 0);
+    lua_pushcfunction(L, error_handler);
+    lstatus = luaL_loadbuffer(L, thread->function.data, thread->function.size, thread->function.data);
+    if (lstatus == 0) {
+      lua_pushlstring(L, thread->argument.data, thread->argument.size);
+      thread->status = TS_RUNNING;
+      lstatus = lua_pcall(L, 1, 1, 1);
+    }
+
+    /* Save the returned string / error message. */
+    data = lua_tolstring(L, -1, &size);
+    thread->result.size = size;
+    thread->result.data = apr_pmemdup(thread->pool, data, (apr_size_t) size);
+
+    /* Update the status as the last modification of the thread structure. */
+    thread->status = lstatus ? TS_ERROR : TS_DONE;
+  }
+
+  /* Terminate (and destroy) the thread. */
+  thread_destroy(thread);
+  apr_thread_exit(handle, APR_SUCCESS);
+
+  return NULL;
 }
 
 /* apr.thread_create(code [, arg]) -> thread {{{1
@@ -132,40 +161,36 @@ static void thread_destroy(lua_apr_thread *thread)
 
 int lua_apr_thread_create(lua_State *L)
 {
-  apr_status_t status = APR_ENOMEM;
-  lua_apr_thread *thread;
-  const char *data;
-  size_t size;
+  lua_apr_thread *thread = NULL;
+  apr_status_t status;
+  const char *fun, *arg;
+  size_t funsize, argsize;
+  int i;
 
-  /* Expecting string of code and optional string argument. */
+  /* Set the Lua stack to its expected size. */
   lua_settop(L, 2);
 
-  /* Create the Lua/APR thread object.
-   * FIXME Don't rely on parent Lua state staying alive for userdata allocation?! */
-  thread = new_object(L, &lua_apr_thread_type);
+  /* Validate and copy arguments. */
+  fun = luaL_checklstring(L, 1, &funsize);
+  arg = luaL_optlstring(L, 2, "", &argsize);
+
+  /* Create the Lua/APR thread object. */
+  thread = new_object_ex(L, &lua_apr_thread_type, 1);
   if (thread == NULL)
     goto fail;
-  /* Redundant but explicit initialization. */
+  thread->refcount = 1;
   thread->status = TS_INIT;
-  thread->exit_status = APR_SUCCESS;
 
-  /* Create a memory pool for the thread structure and string buffers. */
+  /* Create a memory pool for the thread structures and string buffers. */
   status = apr_pool_create(&thread->pool, NULL);
   if (status != APR_SUCCESS)
     goto fail;
 
   /* Move both string arguments to the thread's memory pool. */
-  data = luaL_checklstring(L, 1, &size);
-  thread->function.size = size;
-  thread->function.data = apr_pmemdup(thread->pool, data, (apr_size_t) size);
-  data = luaL_optlstring(L, 2, "", &size);
-  thread->argument.size = size;
-  thread->argument.data = apr_pmemdup(thread->pool, data, (apr_size_t) size);
-
-  /* Create an independent Lua state. */
-  thread->state = luaL_newstate();
-  if (thread->state == NULL)
-    goto fail;
+  thread->function.size = funsize;
+  thread->function.data = apr_pmemdup(thread->pool, fun, (apr_size_t) funsize);
+  thread->argument.size = argsize;
+  thread->argument.data = apr_pmemdup(thread->pool, arg, (apr_size_t) argsize);
 
   /* Start the operating system thread. */
   status = apr_threadattr_create(&thread->attr, thread->pool);
@@ -175,11 +200,25 @@ int lua_apr_thread_create(lua_State *L)
   if (status != APR_SUCCESS)
     goto fail;
 
+  /* XXX Wait for the child thread to start before returning control to Lua:
+   * I've found that when the parent Lua state is closed while the child thread
+   * is still being initialized one can experience hard to debug crashes. */
+  while (thread->status == TS_INIT) {
+    apr_sleep(APR_USEC_PER_SEC / 20);
+    if (thread->status != TS_INIT)
+      break;
+    else if (i++ % 20 == 0)
+      /* Let the user know what's happening in case this turns out to take a
+       * while, but don't bother the user if we only need to wait once.. */
+      LUA_APR_DBG("Lua/APR waiting for thread to initialize .. (%i)", i);
+  }
+
   /* Return the thread object. */
   return 1;
 
 fail:
-  thread_destroy(thread);
+  if (thread != NULL)
+    thread_destroy(thread);
   return push_error_status(L, status);
 }
 
@@ -229,16 +268,15 @@ static int thread_join(lua_State *L)
 
   object = check_thread(L, 1);
 
-  /* Don't block when the thread has already finished. */
-  if (object->status == TS_INIT || object->status == TS_RUNNING) {
+  /* Only block when the thread hasn't finished yet. */
+  if (thread_busy(object)) {
     status = apr_thread_join(&unused, object->handle);
     if (status != APR_SUCCESS)
       return push_error_status(L, status);
   }
 
-  /* Return error status in parent if possible. */
-  if (object->exit_status != APR_SUCCESS)
-    return push_error_status(L, object->exit_status);
+  /* Remember that the user has checked the result. */
+  object->joined = 1;
 
   /* Push the thread's exit status and return value. */
   if (object->status == TS_DONE)
@@ -246,6 +284,7 @@ static int thread_join(lua_State *L)
   else
     lua_pushnil(L);
   lua_pushlstring(L, object->result.data, object->result.size);
+
   return 2;
 }
 
@@ -253,7 +292,6 @@ static int thread_join(lua_State *L)
  *
  * Returns a string describing the state of the thread:
  *
- *  - `'init'`: the thread is being initialized
  *  - `'running'`: the thread is currently running
  *  - `'done'`: the thread terminated successfully
  *  - `'error'`: the thread encountered an error
@@ -283,8 +321,7 @@ static int thread_tostring(lua_State *L)
 
 static int thread_gc(lua_State *L)
 {
-  lua_apr_thread *object = check_thread(L, 1);
-  thread_destroy(object);
+  thread_destroy(check_thread(L, 1));
   return 0;
 }
 

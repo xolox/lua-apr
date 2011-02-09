@@ -1,7 +1,7 @@
 /* Miscellaneous functions module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 8, 2011
+ * Last Change: February 9, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -163,7 +163,7 @@ int luaopen_apr_core(lua_State *L)
     if (atexit(apr_terminate) != 0)
       raise_error_message(L, "Lua/APR: Failed to register apr_terminate()");
     apr_was_initialized = 1;
- }
+  }
 
   /* Create the table of global functions. */
   lua_createtable(L, 0, count(functions));
@@ -377,11 +377,26 @@ int push_error_status(lua_State *L, apr_status_t status)
 
 /* new_object() allocates userdata of the given type. {{{1 */
 
-void *new_object(lua_State *L, lua_apr_objtype *T)
+void *new_object_ex(lua_State *L, lua_apr_objtype *T, int independant)
 {
-  void *object;
+  void *object, **indirect;
 
-  object = lua_newuserdata(L, T->objsize);
+  if (!independant) {
+    /* Common case: Allocate as Lua userdata object. */
+    object = lua_newuserdata(L, T->objsize);
+  } else {
+    /* Thread objects are allocated as a reference counted chunk of memory. */
+    object = malloc(T->objsize);
+    /* The actual Lua userdata in this case is just a pointer. */
+    indirect = lua_newuserdata(L, sizeof(void*));
+    if (indirect != NULL) {
+      *indirect = object;
+    } else {
+      free(object);
+      object = NULL;
+    }
+  }
+
   if (object != NULL) {
     memset(object, 0, T->objsize);
     get_metatable(L, T);
@@ -389,6 +404,7 @@ void *new_object(lua_State *L, lua_apr_objtype *T)
     getdefaultenv(L);
     lua_setfenv(L, -2);
   }
+
   return object;
 }
 
