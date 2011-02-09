@@ -33,9 +33,6 @@
 
 const char *status_names[] = { "init", "running", "done", "error" };
 
-#define check_thread(L, idx) \
-  (*(lua_apr_thread**)check_object((L), (idx), &lua_apr_thread_type))
-
 #define thread_busy(T) \
   ((T)->status == TS_INIT || (T)->status == TS_RUNNING)
 
@@ -50,8 +47,22 @@ typedef struct {
     size_t size;
   } function, argument, result;
   enum { TS_INIT, TS_RUNNING, TS_DONE, TS_ERROR } status;
-  int joined;
+  int detached, joined;
 } lua_apr_thread;
+
+/* check_thread(L, idx, check_joinable) {{{2 */
+
+static lua_apr_thread *check_thread(lua_State *L, int idx, int check_joinable)
+{
+  lua_apr_thread *object, **indirect;
+
+  indirect = check_object(L, idx, &lua_apr_thread_type);
+  object = *indirect;
+  if (check_joinable && object->detached)
+    luaL_error(L, "attempt to join a detached thread");
+
+  return object;
+}
 
 /* error_handler(state) {{{2 */
 
@@ -246,8 +257,10 @@ static int thread_detach(lua_State *L)
   lua_apr_thread *object;
   apr_status_t status;
 
-  object = check_thread(L, 1);
+  object = check_thread(L, 1, 0);
   status = apr_thread_detach(object->handle);
+  if (status == APR_SUCCESS)
+    object->detached = 1;
   return push_status(L, status);
 }
 
@@ -266,7 +279,7 @@ static int thread_join(lua_State *L)
   lua_apr_thread *object;
   apr_status_t status, unused;
 
-  object = check_thread(L, 1);
+  object = check_thread(L, 1, 1);
 
   /* Only block when the thread hasn't finished yet. */
   if (thread_busy(object)) {
@@ -301,7 +314,7 @@ static int thread_status(lua_State *L)
 {
   lua_apr_thread *object;
 
-  object = check_thread(L, 1);
+  object = check_thread(L, 1, 0);
   lua_pushstring(L, status_names[object->status]);
   return 1;
 }
@@ -310,7 +323,7 @@ static int thread_status(lua_State *L)
 
 static int thread_tostring(lua_State *L)
 {
-  lua_apr_thread *object = check_thread(L, 1);
+  lua_apr_thread *object = check_thread(L, 1, 0);
   lua_pushfstring(L, "%s (%s)",
       lua_apr_thread_type.friendlyname,
       status_names[object->status]);
@@ -321,7 +334,7 @@ static int thread_tostring(lua_State *L)
 
 static int thread_gc(lua_State *L)
 {
-  thread_destroy(check_thread(L, 1));
+  thread_destroy(check_thread(L, 1, 0));
   return 0;
 }
 
