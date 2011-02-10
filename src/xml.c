@@ -262,7 +262,7 @@ static int xml_geterror(lua_State *L)
 /* xml_parser:getinfo() -> table {{{1
  *
  * Convert the parse information to a Lua table following the
- * [Lua Object Model] [lom] defined by [LuaExpat] [luaexpat].
+ * [Lua Object Model] [lom] defined by [LuaExpat] [lxp].
  */
 
 static int xml_getinfo(lua_State *L)
