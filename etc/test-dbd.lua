@@ -38,7 +38,7 @@ end
 
 local function count_rows()
   local results = assert(driver:select 'SELECT COUNT (*) FROM apr_dbd_test')
-  return results:tuple()
+  return results:tuple() + 0
 end
 
 -- Create table. {{{1
@@ -85,46 +85,43 @@ assert(not status)
 assert(message:find 'bad argument #1')
 assert(message:find 'invalid value at index 2')
 
--- Test resultset:tuples() iterator (and type guessing). {{{1
+-- Test resultset:tuples() iterator. {{{1
 local results = assert(driver:select [[
   SELECT col1, col2, col3
   FROM apr_dbd_test
   ORDER BY col1
 ]])
 check_label(results, '^result set %([x%x]+%)$')
-local actual = string.byte 'a'
+local expected = string.byte 'a'
 for col1, col2, col3 in results:tuples() do
-  assert(type(col1) == 'string')
-  assert(col1 == string.char(actual))
-  assert(type(col2) == 'number')
-  assert(col2 == actual)
-  assert(type(col3) == 'number')
-  assert(col3 == actual)
-  actual = actual + 1
+  assert(col1 == string.char(expected))
+  assert(tonumber(col2) == expected)
+  assert(tonumber(col3) == expected)
+  expected = expected + 1
 end
-assert(actual == (string.byte 'z' + 1))
+assert(expected == (string.byte 'z' + 1))
 
--- Test resultset:tuple() function (and type guessing). {{{1
+-- Test resultset:tuple() function. {{{1
 
 -- Tuple containing one number. {{{2
 local results = assert(driver:select 'SELECT 42')
 -- Check the number of results.
 assert(#results == 1)
 -- Check the resulting tuple.
-compare_tuple({ 42 }, results:tuple(1))
+compare_tuple({ '42' }, results:tuple(1))
 -- Check that just one tuple is returned.
 assert(not results:tuple())
 
 -- Tuple containing two numbers. {{{2
 local results = assert(driver:select 'SELECT 42, 24')
 assert(#results == 1)
-compare_tuple({ 42, 24 }, results:tuple(1))
+compare_tuple({ '42', '24' }, results:tuple(1))
 assert(not results:tuple())
 
 -- Tuple containing number and string. {{{2
 local results = assert(driver:select [[ SELECT 42, 'hello world!' ]])
 assert(#results == 1)
-compare_tuple({ 42, 'hello world!' }, results:tuple(1))
+compare_tuple({ '42', 'hello world!' }, results:tuple(1))
 assert(not results:tuple())
 
 -- Named tuple containing number and string. {{{2
@@ -135,7 +132,7 @@ assert(not results:columns(0))
 assert(results:columns(1) == 'num')
 assert(results:columns(2) == 'str')
 assert(not results:columns(3))
-compare_tuple({ 42, 'hello world!' }, results:tuple(1))
+compare_tuple({ '42', 'hello world!' }, results:tuple(1))
 assert(not results:tuple())
 
 -- Result set with multiple tuples. {{{2
@@ -144,20 +141,17 @@ local results = assert(driver:select [[
   FROM apr_dbd_test
   ORDER BY col1
 ]])
-local actual = string.byte 'a'
+local expected = string.byte 'a'
 compare_tuple({ 'col1', 'col2', 'col3' }, results:columns())
 while true do
   local col1, col2, col3 = results:tuple()
   if not col1 then break end
-  assert(type(col1) == 'string')
-  assert(col1 == string.char(actual))
-  assert(type(col2) == 'number')
-  assert(col2 == actual)
-  assert(type(col3) == 'number')
-  assert(col3 == actual)
-  actual = actual + 1
+  assert(col1 == string.char(expected))
+  assert(tonumber(col2) == expected)
+  assert(tonumber(col3) == expected)
+  expected = expected + 1
 end
-assert(actual == (string.byte 'z' + 1))
+assert(expected == (string.byte 'z' + 1))
 
 -- Test resultset:rows() iterator. {{{1
 local results = assert(driver:select [[
@@ -165,35 +159,35 @@ local results = assert(driver:select [[
   FROM apr_dbd_test
   ORDER BY col1
 ]])
-local actual = string.byte 'a'
+local expected = string.byte 'a'
 for row in results:rows() do
   compare_table({
-    col1 = string.char(actual),
-    col2 = actual,
-    col3 = actual,
+    col1 = string.char(expected),
+    col2 = tostring(expected),
+    col3 = tostring(expected)
   }, row)
-  actual = actual + 1
+  expected = expected + 1
 end
-assert(actual == (string.byte 'z' + 1))
+assert(expected == (string.byte 'z' + 1))
 
--- Test resultset:row() function (and type guessing). {{{1
+-- Test resultset:row() function. {{{1
 
 -- Basic usage.
 local results = assert(driver:select [[ SELECT 42 AS "num", 'hello world!' AS "str" ]])
 assert(#results == 1)
-compare_table({ num = 42, str = 'hello world!' }, results:row(1))
+compare_table({ num = '42', str = 'hello world!' }, results:row(1))
 assert(not results:row())
 
 -- NULL translates to nil.
 local results = assert(driver:select [[ SELECT 42 AS "num", 'hello world!' AS "str", NULL AS "whatever" ]])
 assert(#results == 1)
-compare_table({ num = 42, str = 'hello world!' }, results:row(1))
+compare_table({ num = '42', str = 'hello world!' }, results:row(1))
 assert(not results:row())
 
 -- True and false translate to 0 and 1.
 local results = assert(driver:select [[ SELECT (1 == 1) AS "t", (1 == 2) AS "f" ]])
 assert(#results == 1)
-compare_table({ t = 1, f = 0 }, results:row(1))
+compare_table({ t = '1', f = '0' }, results:row(1))
 
 -- Test resultset:pairs() iterator. {{{1
 local results = assert(driver:select [[
@@ -202,18 +196,18 @@ local results = assert(driver:select [[
   ORDER BY col1
 ]])
 local ii = 1
-local actual = string.byte 'a'
+local expected = string.byte 'a'
 for i, row in results:pairs() do
   compare_table({
-    col1 = string.char(actual),
-    col2 = actual,
-    col3 = actual,
+    col1 = string.char(expected),
+    col2 = tostring(expected),
+    col3 = tostring(expected)
   }, row)
   assert(i == ii)
-  actual = actual + 1
+  expected = expected + 1
   ii = ii + 1
 end
-assert(actual == (string.byte 'z' + 1))
+assert(expected == (string.byte 'z' + 1))
 
 -- Delete all rows in table. {{{1
 delete_rows()
@@ -233,7 +227,7 @@ end
 
 local results = driver:select 'SELECT 1, 2, 3'
 assert(apr.type(results) == 'result set')
-compare_tuple({ 1, 2, 3 }, results:tuple(1))
+compare_tuple({ '1', '2', '3' }, results:tuple(1))
 
 local statement = driver:prepare 'SELECT 1, 2, 3'
 assert(apr.type(statement) == 'prepared statement')

@@ -3,24 +3,27 @@
  * Authors:
  *  - zhiguo zhao <zhaozg@gmail.com>
  *  - Peter Odding <peter@peterodding.com>
- * Last Change: February 8, 2011
+ * Last Change: February 11, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
- * This is an *experimental* module that makes it possible to query relational
- * database engines like [SQLite] [sqlite], [MySQL] [mysql], [PostgreSQL]
- * [pgsql], [Oracle] [oracle], [ODBC] [odbc] and [FreeTDS] [freetds]. This
- * module currently has two big limitations which I'm afraid are inherent in
- * the Apache Portable Runtime's DBD framework:
+ * The APR DBD module makes it possible to query relational database engines
+ * like [SQLite] [sqlite], [MySQL] [mysql], [PostgreSQL] [pgsql], [Oracle]
+ * [oracle], [ODBC] [odbc] and [FreeTDS] [freetds]. This module currently has
+ * some drawbacks which appear to be unavoidable given the design of the Apache
+ * Portable Runtime DBD framework:
  *
- *  - Prepared queries accept only nil, boolean, number and string parameters;
- *  - String arguments and results are not binary safe, i.e. they will be
- *    truncated at the first zero byte (see the [apr-dev mailing list]
+ *  - Booleans and numbers are returned as strings because result set types are
+ *    not known to the Lua/APR binding (and type guessing is too error prone)
+ *
+ *  - String arguments and results are not binary safe, this means they will
+ *    be truncated at the first zero byte (see the [apr-dev mailing list]
  *    [apr_dev] thread ["current dbd initiatives"] [dbd_binary_discuss] for
- *    discussion about this limitation of APR).
+ *    discussion about this limitation of APR)
  *
- * If you control the data going into the database you can overcome the second
- * limitation by using APR's built in support for [Base64 encoding](#base64_encoding).
+ * Note that if you control the data going into the database you can overcome
+ * the second limitation by using APR's built in support for
+ * [Base64 encoding](#base64_encoding).
  *
  * ### Installing drivers
  *
@@ -195,14 +198,17 @@ static const char *check_dbd_value(lua_State *L, int idx, int origidx, int i)
   if (type == LUA_TNIL || type == LUA_TNONE)
     return NULL;
   else if (type == LUA_TBOOLEAN)
+    /* Not sure if this is standard but SQLite and MySQL do it like this. */
     return lua_toboolean(L, idx) ? "1" : "0";
   else if (type == LUA_TNUMBER || type == LUA_TSTRING)
     return lua_tostring(L, idx);
   else if (origidx == 0)
+    /* Let the user know we were expecting a string argument. */
     luaL_checkstring(L, idx);
   else
+    /* Let the user know which value in the table was invalid. */
     luaL_argcheck(L, 0, origidx, lua_pushfstring(L, "invalid value at index %d", i));
-  return NULL; /* make the compiler happy */
+  return NULL;
 }
 
 /* check_dbd_values() {{{2 */
@@ -232,22 +238,7 @@ static void check_dbd_values(lua_State *L, int idx, int *nargs, const char ***va
 
 static int push_dbd_value(lua_State *L, const char *value)
 {
-  lua_Number number;
-  size_t length;
-  char *endptr;
-
-  if (value == NULL) {
-    /* FIXME This will break iterators! */
-    lua_pushnil(L);
-  } else {
-    length = strlen(value);
-    number = lua_str2number(value, &endptr);
-    if ((endptr - value) == length)
-      lua_pushnumber(L, number);
-    else
-      lua_pushlstring(L, value, length);
-  }
-
+  lua_pushstring(L, value);
   return 1;
 }
 
@@ -723,8 +714,8 @@ static int dbd_transaction_mode(lua_State *L)
  * PostgreSQL, this would be `$1`, `$2`, for SQLite3 this would be `?`, etc.).
  * For instance: `SELECT name FROM customers WHERE name = %s` would be a query
  * that this function understands. Here is the list of supported format
- * specifiers and what they map to in SQL (the most useful types are marked in
- * bold text):
+ * specifiers and what they map to in SQL (generally you'll only need the types
+ * marked in bold text):
  *
  *  - `%hhd`: TINY INT
  *  - `%hhu`: UNSIGNED TINY INT
@@ -739,17 +730,13 @@ static int dbd_transaction_mode(lua_State *L)
  *  - __`%f`: FLOAT, REAL__
  *  - __`%lf`: DOUBLE PRECISION__
  *  - __`%s`: VARCHAR__
- *  - `%pDt`: TEXT
+ *  - __`%pDt`: TEXT__
  *  - `%pDi`: TIME
  *  - `%pDd`: DATE
  *  - `%pDa`: DATETIME
  *  - `%pDs`: TIMESTAMP
  *  - `%pDz`: TIMESTAMP WITH TIME ZONE
- *  - `%pDb`: BLOB
- *  - `%pDc`: CLOB
  *  - `%pDn`: NULL
- *
- * TODO: Remove irrelevant types from the above listing?!
  */
 
 static int dbd_prepare(lua_State *L)
