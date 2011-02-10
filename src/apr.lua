@@ -3,10 +3,10 @@
  Lua source code for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: February 9, 2011
+ Last Change: February 10, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
- Version: 0.12.3
+ Version: 0.12.4
 
  This Lua script is executed on require("apr"), loads the binary module using
  require("apr.core"), defines several library functions implemented on top of
@@ -15,7 +15,7 @@
 --]]
 
 local apr = require 'apr.core'
-apr._VERSION = '0.12.3'
+apr._VERSION = '0.12.4'
 
 -- apr.md5(input [, binary]) -> digest {{{1
 --

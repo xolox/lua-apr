@@ -3,7 +3,7 @@
  * Authors:
  *  - zhiguo zhao <zhaozg@gmail.com>
  *  - Peter Odding <peter@peterodding.com>
- * Last Change: February 8, 2011
+ * Last Change: February 10, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -168,21 +168,15 @@ static void xml_close_real(lua_apr_xml_object *object)
 
 int lua_apr_xml(lua_State *L)
 {
-  /* TODO Why is this a static? */
-  static apr_pool_t *g_pool = NULL;
   lua_apr_xml_object *object;
   apr_status_t status;
   const char *filename;
-
-  if (g_pool == NULL)
-    g_pool = to_pool(L);
 
   filename = luaL_optstring(L, 1, NULL);
   object = new_object(L, &lua_apr_xml_type);
   if (object == NULL)
     return push_error_memory(L);
-  /* TODO Don't child pools get cleaned when the parent pool is cleaned? */
-  status = apr_pool_create_ex(&object->pool, g_pool, NULL, NULL);
+  status = apr_pool_create(&object->pool, NULL);
   if (status != APR_SUCCESS)
     return push_error_status(L, status);
 
@@ -190,7 +184,6 @@ int lua_apr_xml(lua_State *L)
     object->parser = apr_xml_parser_create(object->pool);
     if (object->parser == NULL)
       return push_error_memory(L);
-    return 1;
   } else {
     apr_finfo_t info;
     apr_file_t *xmlfd;
