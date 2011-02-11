@@ -237,12 +237,3 @@ assert(apr.type(statement_results) == 'result set')
 driver:close()
 check_reinitialized(function() results:row() end)
 check_reinitialized(function() statement:select() end)
-
--- }}}1
-
--- Signal to the test suite that we've completed successfully?
-if arg[1] then
-  local handle = assert(io.open(arg[1], 'w'))
-  assert(handle:write 'DONE')
-  assert(handle:close())
-end

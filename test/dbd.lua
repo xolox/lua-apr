@@ -21,7 +21,7 @@ if apr.env_get 'LD_PRELOAD' == nil
 end
 
 local child = assert(apr.proc_create 'lua')
-local signalfile = helpers.tmpname()
 assert(child:cmdtype_set 'shellcmd/env')
-assert(child:exec { helpers.scriptpath 'dbd-child.lua', signalfile })
-assert(helpers.wait_for(signalfile, 30), 'Relational database module tests failed?!')
+assert(child:exec { helpers.scriptpath 'dbd-child.lua' })
+local dead, reason, code = assert(child:wait(true))
+return reason == 'exit' and code == 0

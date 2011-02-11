@@ -24,8 +24,12 @@ for _, testname in ipairs(modules) do
   helpers.message("Running %s tests ..", testname)
   local modname = string.format('%s.%s', ..., testname)
   package.loaded[modname] = nil
-  require(modname)
-  helpers.message("Running %s tests: OK\n", testname)
+  if require(modname) then
+    helpers.message("Running %s tests: OK\n", testname)
+  else
+    helpers.message("Running %s tests: Failed!\n", testname)
+  end
+  package.loaded[modname] = nil
 end
 helpers.message("Done!\n")
 os.exit()
