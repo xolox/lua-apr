@@ -1,7 +1,7 @@
 /* Shared memory module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 11, 2011
+ * Last Change: February 12, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -31,7 +31,7 @@ typedef struct {
 static void init_shm(lua_State *L, lua_apr_shm *object)
 {
   object->base = apr_shm_baseaddr_get(object->handle);
-  object->size = apr_shm_size_get(object->handle);
+  object->size = apr_shm_size_get(object->handle) - LUA_APR_BUFSLACK;
   object->last_op = &object->input.buffer;
   init_unmanaged_buffers(L,
       &object->input, &object->output,
@@ -80,17 +80,10 @@ int lua_apr_shm_create(lua_State *L)
 
   filename = lua_isnil(L, 1) ? NULL : luaL_checkstring(L, 1);
 
-  /* XXX Add one byte to reqsize so that we can mark the end of the shared
+  /* XXX Add some bytes to reqsize so that we can mark the end of the shared
    * memory segment with NUL. This is required by the buffered I/O interface
-   * whose name is a bit of a misnomer since I introduced shared memory :-).
-   *
-   * Add one more byte to the reqsize to avoid what is probably a bug in the
-   * AVAIL() macro in the buffered I/O interface: when reading one byte at a
-   * time the last byte in the shared memory isn't returned. I can't "just" fix
-   * the macro because that seems to cause crashes in the file I/O module!
-   * Definitely something to look into :-S
-   */
-  reqsize = luaL_checkinteger(L, 2) + 2;
+   * whose name is a bit of a misnomer since I introduced shared memory :-) */
+  reqsize = luaL_checkinteger(L, 2) + LUA_APR_BUFSLACK;
 
   object = new_object(L, &lua_apr_shm_type);
   if (object == NULL)
@@ -206,14 +199,14 @@ static int shm_seek(lua_State *L)
   if (mode == 1) { /* CUR */
     offset += object->last_op->index;
   } else if (mode == 2) { /* END */
-    offset += object->last_op->limit;
+    offset += object->last_op->limit - 1;
   }
 
-  luaL_argcheck(L, offset >= 0, 2, "cannot seek before start of shared memory!");
-  luaL_argcheck(L, offset < object->size, 2, "cannot seek past end of shared memory!");
+  luaL_argcheck(L, offset >= 0, 2, "cannot seek before start of shared memory segment!");
+  luaL_argcheck(L, offset < object->size, 2, "cannot seek past end of shared memory segment!");
   object->input.buffer.index = offset;
   object->output.buffer.index = offset;
-  lua_pushboolean(L, 1);
+  lua_pushinteger(L, offset);
 
   return 1;
 }

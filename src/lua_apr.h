@@ -22,32 +22,6 @@
 
 /* Macro definitions. {{{1 */
 
-#include <stdio.h>
-
-/* Capture debug mode in a compile time conditional. */
-#ifdef DEBUG
-#define DEBUG_TEST 1
-#else
-#define DEBUG_TEST 0
-#endif
-
-/* Enable printing messages to stderr in debug mode, but always compile
- * the code so that it's syntax checked even when debug mode is off. */
-#define LUA_APR_DBG(MSG, ...) \
-  do { \
-    if (DEBUG_TEST) { \
-      fprintf(stderr, " *** " MSG "\n", __VA_ARGS__); \
-      fflush(stderr); \
-    } \
-  } while (0)
-
-/* Since I don't use the MSVC++ IDE I can't set breakpoints without this :-) */
-#define LUA_APR_BRK() \
-  do { \
-    if (DEBUG_TEST) \
-      *((int*)0) = 1; \
-  } while (0)
-
 /* FIXME Pushing onto the stack might not work in this scenario? */
 #define error_message_memory "memory allocation error"
 
@@ -56,6 +30,9 @@
 
 /* The initial size of I/O buffers. */
 #define LUA_APR_BUFSIZE 1024
+
+/* Slack space at the end of I/O buffers. */
+#define LUA_APR_BUFSLACK 10
 
 #define count(array) \
   (sizeof((array)) / sizeof((array)[0]))
@@ -89,6 +66,47 @@
 
 #define new_object(L, T) \
   new_object_ex(L, T, 0)
+
+/* Debugging aids. {{{1 */
+
+#include <stdio.h>
+
+/* Capture debug mode in a compile time conditional. */
+#ifdef DEBUG
+#define DEBUG_TEST 1
+#else
+#define DEBUG_TEST 0
+#endif
+
+/* Enable printing messages to stderr in debug mode, but always compile
+ * the code so that it's syntax checked even when debug mode is off. */
+#define LUA_APR_DBG(MSG, ...) do {                  \
+  if (DEBUG_TEST) {                                 \
+    fprintf(stderr, " *** " MSG "\n", __VA_ARGS__); \
+    fflush(stderr);                                 \
+  }                                                 \
+} while (0)
+
+/* Since I don't use the MSVC++ IDE I can't set breakpoints without this :-) */
+#define LUA_APR_BRK() do { \
+  if (DEBUG_TEST)          \
+    *((int*)0) = 1;        \
+} while (0)
+
+/* Dump the state of the Lua stack. */
+#define LUA_APR_DUMP_STACK(L, LABEL) do { \
+  int i, top = lua_gettop(L); \
+  LUA_APR_DBG("%s: %i", LABEL, top); \
+  for (i = 1; i <= top; i++) { \
+    switch (lua_type(L, i)) { \
+      case LUA_TNIL: LUA_APR_DBG(" %i: nil", i); break; \
+      case LUA_TBOOLEAN: LUA_APR_DBG(" %i: boolean %s", i, lua_toboolean(L, i) ? "true" : "false"); \
+      case LUA_TNUMBER: LUA_APR_DBG(" %i: number %f", i, lua_tonumber(L, i)); break; \
+      case LUA_TSTRING: LUA_APR_DBG(" %i: string \"%.*s\"", i, lua_objlen(L, i), lua_tostring(L, i)); break; \
+      default: LUA_APR_DBG(" %i: %s", i, luaL_typename(L, i)); break; \
+    } \
+  } \
+} while (0)
 
 /* Type definitions. {{{1 */
 

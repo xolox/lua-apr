@@ -1,7 +1,7 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: February 11, 2011
+# Last Change: February 12, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -48,11 +48,6 @@ endif
 
 # The build rules.
 
-default:
-	make $(BINARY_MODULE)
-	sudo make install
-	make test
-
 $(BINARY_MODULE): $(OBJECTS)
 	$(CC) -shared -o $(BINARY_MODULE) $(OBJECTS) $(LFLAGS)
 
@@ -76,6 +71,9 @@ uninstall:
 
 test:
 	lua -lapr.test
+
+valgrind:
+	valgrind -q --track-origins=yes --leak-check=full lua -lapr.test
 
 coverage:
 	[ -d etc/coverage ] || mkdir etc/coverage
