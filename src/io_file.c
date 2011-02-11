@@ -446,53 +446,54 @@ static int file_write(lua_State *L)
 
 static int file_seek(lua_State *L)
 {
+  /* TODO Seek the write buffer as well! */
+
   const char *const modenames[] = { "set", "cur", "end", NULL };
   const apr_seek_where_t modes[] = { APR_SET, APR_CUR, APR_END };
 
   apr_status_t status;
-  apr_off_t start_of_buf, end_of_buf, offset;
   lua_apr_file *file;
+  lua_apr_buffer *B;
+  apr_off_t offset;
   int mode;
 
   file = file_check(L, 1, 1);
+  B = &file->input.buffer;
   mode = modes[luaL_checkoption(L, 2, "cur", modenames)];
   offset = luaL_optlong(L, 3, 0);
 
-  if (mode != APR_CUR || offset != 0) {
-    /* Flush write buffer before changing the offset. */
+  /* XXX Flush write buffer before changing offset! */
+  if (!(mode == APR_CUR && offset == 0)) {
     status = flush_buffer(L, &file->output, 1);
     if (status != APR_SUCCESS)
       return push_file_error(L, file, status);
   }
 
-  /* Get offsets corresponding to start/end of buffered input. */
-  end_of_buf = 0;
-  status = apr_file_seek(file->handle, APR_CUR, &end_of_buf);
-  if (status != APR_SUCCESS)
-    return push_file_error(L, file, status);
-  start_of_buf = end_of_buf - file->input.buffer.limit;
-
-  /* Adjust APR_CUR to index in buffered input. */
-  if (mode == APR_CUR) {
-    mode = APR_SET;
-    offset += start_of_buf + file->input.buffer.index;
+  /* Make relative offsets absolute, adjust for buffered input. */
+  if (mode == APR_CUR && B->index < B->limit) {
+    apr_off_t temp = 0;
+    status = apr_file_seek(file->handle, APR_CUR, &temp);
+    if (status != APR_SUCCESS)
+      return push_file_error(L, file, status);
+    mode = APR_SET, offset = temp - (B->limit - B->index);
   }
 
-  /* Perform the actual seek() requested from Lua. */
+  /* Perform the requested seek() operation. */
   status = apr_file_seek(file->handle, mode, &offset);
   if (status != APR_SUCCESS)
     return push_file_error(L, file, status);
 
-  /* Adjust buffer index / invalidate buffered input? */
-  if (offset >= start_of_buf && offset <= end_of_buf)
-    file->input.buffer.index = (size_t) (offset - start_of_buf);
-  else {
-    file->input.buffer.index = 0;
-    file->input.buffer.limit = 0;
-  }
+  /* Invalidate all buffered input (very inefficient but foolproof: parts of
+   * the buffer may have been modified by the binary to text translation).
+   * XXX The write buffer has already been reset by flush_buffer() above.
+   * FIXME Don't invalidate the buffered input unnecessarily?!
+   */
+  file->input.buffer.index = 0;
+  file->input.buffer.limit = 0;
 
   /* FIXME Bound to lose precision when APR_FOPEN_LARGEFILE is in effect? */
   lua_pushnumber(L, (lua_Number) offset);
+
   return 1;
 }
 

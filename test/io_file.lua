@@ -30,7 +30,7 @@ assert(type(info) == 'table')
 assert(info.name == 'io_file.lua')
 assert(info.path:find 'io_file%.lua$')
 assert(info.type == 'file')
-assert(info.size >= 1024 * 7)
+assert(info.size >= 1024 * 5)
 assert(info.mtime >= 1293510503)
 assert(info.nlink >= 1)
 assert(type(info.inode) == 'number')
@@ -121,64 +121,13 @@ for testsize = 1, maxmultiplier do
     table.insert(testlines, l)
   end
 
-  -- Create temporary file with test data.
-  local tempname = assert(helpers.tmpname())
-  local testfile = assert(io.open(tempname, 'w'))
-  assert(testfile:write(testdata))
-  assert(testfile:close())
-
-  -- Read back the temporary file's contents using various formats.
-  local escapes = { ['\r'] = '\\r', ['\n'] = '\\n', ['"'] = '\\"', ['\0'] = '\\0' }
-  local function formatvalue(v)
-    if type(v) == 'number' then
-      local s = fmt('%.99f', v)
-      return s:find '%.' and (s:gsub('0+$', '0')) or s
-    elseif type(v) == 'string' then
-      return '"' .. v:gsub('[\r\n"%z]', escapes) .. '"'
-      -- XXX return fmt('%q', v)
-    else
-      return tostring(v)
-    end
-  end
-
-  local function testformat(format)
-    helpers.message("Testing file:read(%s) ..", format)
-    local apr_file = assert(apr.file_open(tempname, 'r'))
-    local lua_file = assert(io.open(tempname, 'r'))
-    repeat
-      local lua_value = lua_file:read(format)
-      local apr_value = apr_file:read(format)
-      if lua_value ~= apr_value then
-        helpers.warning("Wrong result for file:read(%q)!\nLua value: %s\nAPR value: %s\n",
-            format, formatvalue(lua_value), formatvalue(apr_value))
-        helpers.warning("Lua position: %i, APR position: %i", lua_file:seek 'cur', apr_file:seek 'cur')
-        helpers.warning("Remaining data in Lua file: %s", formatvalue(lua_file:read '*a' :sub(1, 50)))
-        helpers.warning("Remaining data in APR file: %s", formatvalue(apr_file:read '*a' :sub(1, 50)))
-        os.exit(1)
-      end
-      assert(lua_value == apr_value)
-    until (format == '*a' and lua_value == '') or not lua_value
-    assert(lua_file:close())
-    assert(apr_file:close())
-  end
-
-  testformat '*n'
-  testformat '*l'
-  testformat '*a'
-  testformat (1)
-  testformat (2)
-  testformat (3)
-  testformat (4)
-  testformat (5)
-  testformat (10)
-  testformat (20)
-  testformat (50)
-  testformat (100)
-
-  assert(os.remove(tempname))
+  -- Write test data to file, execute buffered I/O tests.
+  local tempname = helpers.tmpname()
+  helpers.writefile(tempname, testdata)
+  local test_buffer = require(((...):gsub('io_file$', 'io_buffer')))
+  test_buffer(tempname, assert(apr.file_open(tempname, 'r')))
 
   -- Perform write tests.
-
   local lua_file = assert(helpers.tmpname())
   local apr_file = assert(helpers.tmpname())
 
@@ -209,7 +158,7 @@ for testsize = 1, maxmultiplier do
     for j, writemethod in ipairs { write_all, write_blocks, write_lines } do
       local lua_handle = assert(io.open(lua_file, mode)) -- TODO test b mode
       local apr_handle = assert(apr.file_open(apr_file, mode))
-      helpers.message("Testing file:write() mode %i, method %i ..", i, j)
+      -- helpers.message("Testing file:write() mode %i, method %i ..", i, j)
       writemethod(lua_handle, apr_handle)
       assert(lua_handle:close())
       assert(apr_handle:close())

@@ -239,7 +239,8 @@ static apr_status_t read_number(lua_State *L, lua_apr_readbuf *input) /* {{{1 */
         break;
     }
     B->data[B->limit+1] = '\0';
-    /* Skip leading whitespace in buffered input. */
+    /* Skip leading whitespace in buffered input.
+     * FIXME The following call sometimes gives "Use of uninitialised value of size 4" under Valgrind?! */
     offset += strspn(CURSOR(B) + offset, " \n\t\r\f\v");
     /* Calculate available bytes but guard against overflow. */
     test = offset <= AVAIL(B) ? (AVAIL(B) - offset) : 0;
