@@ -1,7 +1,7 @@
 /* Cryptography routines module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 8, 2011
+ * Last Change: February 11, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -88,7 +88,7 @@ static lua_apr_sha1_ctx *sha1_check(lua_State *L, int idx, int valid)
 /* apr.md5_encode(password, salt) -> digest {{{1
  *
  * Encode the string @password using the [MD5] [md5] algorithm and a [salt]
- * [salt] string. On success the digest is returned. Otherwise a nil followed
+ * [salt] string. On success the digest is returned, otherwise a nil followed
  * by an error message is returned.
  */
 
@@ -106,7 +106,7 @@ int lua_apr_md5_encode(lua_State *L)
   if (status != APR_SUCCESS) {
     pushed = push_error_status(L, status);
   } else {
-    lua_pushlstring(L, digest, count(digest));
+    lua_pushstring(L, digest);
     pushed = 1;
   }
 
