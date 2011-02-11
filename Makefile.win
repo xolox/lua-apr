@@ -61,6 +61,9 @@ src\errno.c: etc\errors.lua
 
 install: core.dll
 	COPY src\apr.lua "$(LUA_SHAREDIR)"
+	IF NOT EXIST "$(LUA_SHAREDIR)\apr" MD "$(LUA_SHAREDIR)\apr"
+	IF NOT EXIST "$(LUA_SHAREDIR)\apr\test" MD "$(LUA_SHAREDIR)\apr\test"
+	COPY test\*.lua "$(LUA_SHAREDIR)\apr\test"
 	IF NOT EXIST "$(LUA_LIBDIR)\apr" MD "$(LUA_LIBDIR)\apr"
 	COPY core.dll "$(LUA_LIBDIR)\apr"
 	COPY "$(APR_LIBDIR)\libapr-1.dll" "$(LUA_DIR)"
@@ -69,6 +72,7 @@ install: core.dll
 
 uninstall:
 	DEL "$(LUA_SHAREDIR)\apr.lua"
+	DEL "$(LUA_SHAREDIR)\apr"
 	DEL "$(LUA_LIBDIR)\apr\core.dll"
 	RD "$(LUA_LIBDIR)\apr"
 	DEL "$(LUA_DIR)\libapr-1.dll"
@@ -76,10 +80,10 @@ uninstall:
 	DEL "$(LUA_DIR)\libapriconv-1.dll"
 
 test: install
-	LUA etc\tests.lua
+	LUA -l apr.test
 
 debug:
-	NTSD -g lua etc\tests.lua
+	NTSD -g LUA -l apr.test
 
 clean:
 	DEL $(OBJECTS) core.dll core.lib core.exp core.pdb core.ilk 2>NUL

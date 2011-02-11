@@ -48,6 +48,11 @@ endif
 
 # The build rules.
 
+default:
+	make $(BINARY_MODULE)
+	sudo make install
+	make test
+
 $(BINARY_MODULE): $(OBJECTS)
 	$(CC) -shared -o $(BINARY_MODULE) $(OBJECTS) $(LFLAGS)
 
@@ -58,18 +63,19 @@ src/errno.c: etc/errors.lua
 	lua etc/errors.lua > src/errno.c.new && mv src/errno.c.new src/errno.c
 
 install: $(BINARY_MODULE)
-	@mkdir -p $(LUA_SHAREDIR)
+	mkdir -p $(LUA_SHAREDIR)/apr/test
 	cp $(SOURCE_MODULE) $(LUA_SHAREDIR)/apr.lua
-	@mkdir -p $(LUA_LIBDIR)/apr
+	cp test/*.lua $(LUA_SHAREDIR)/apr/test
+	mkdir -p $(LUA_LIBDIR)/apr
 	cp $(BINARY_MODULE) $(LUA_LIBDIR)/apr/$(BINARY_MODULE)
 
 uninstall:
-	@rm $(LUA_SHAREDIR)/apr.lua
-	@rm $(LUA_LIBDIR)/apr/$(BINARY_MODULE)
-	@rmdir $(LUA_LIBDIR)/apr
+	rm -f $(LUA_SHAREDIR)/apr.lua
+	rm -fR $(LUA_SHAREDIR)/apr/test
+	rm -fR $(LUA_LIBDIR)/apr
 
 test:
-	@lua etc/tests.lua
+	lua -lapr.test
 
 coverage:
 	[ -d etc/coverage ] || mkdir etc/coverage
@@ -91,12 +97,13 @@ ZIPNAME = lua-apr-0.11-1
 package: docs
 	@echo Packaging sources
 	@rm -f $(ZIPNAME).zip
-	@mkdir -p $(ZIPNAME)/doc $(ZIPNAME)/etc $(ZIPNAME)/src $(ZIPNAME)/examples
-	@cp -a src/lua_apr.h $(SOURCES) $(SOURCE_MODULE) $(ZIPNAME)/src
-	@cp -a etc/docs.lua etc/errors.lua etc/tests.lua etc/test-*.lua $(ZIPNAME)/etc
-	@cp -a examples/download.lua examples/webserver.lua $(ZIPNAME)/examples
-	@cp Makefile Makefile.win make.cmd NOTES.md README.md $(ZIPNAME)
+	@mkdir -p $(ZIPNAME)/doc $(ZIPNAME)/etc $(ZIPNAME)/examples $(ZIPNAME)/src  $(ZIPNAME)/test
 	@cp docs.html $(ZIPNAME)/doc/apr.html
+	@cp -a etc/docs.lua etc/errors.lua $(ZIPNAME)/etc
+	@cp -a examples/download.lua examples/webserver.lua $(ZIPNAME)/examples
+	@cp -a src/lua_apr.h $(SOURCES) $(SOURCE_MODULE) $(ZIPNAME)/src
+	@cp -a test/*.lua $(ZIPNAME)/test
+	@cp Makefile Makefile.win make.cmd NOTES.md README.md $(ZIPNAME)
 	@zip $(ZIPNAME).zip -r $(ZIPNAME)
 	@rm -R $(ZIPNAME)
 	@echo Calculating MD5 sum for LuaRocks

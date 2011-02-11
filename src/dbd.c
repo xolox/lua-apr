@@ -432,6 +432,7 @@ int lua_apr_dbd(lua_State *L)
   driver = new_object(L, &lua_apr_dbd_type);
   if (driver == NULL)
     return push_error_memory(L);
+  /* FIXME I'm not sure whether these pools should be related! */
   status = apr_pool_create_ex(&driver->pool, pool, NULL, NULL);
   if (status != APR_SUCCESS)
     return push_error_status(L, status);
