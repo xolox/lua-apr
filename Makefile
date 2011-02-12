@@ -112,6 +112,6 @@ clean:
 	@which lcov && lcov -z -d .
 	@rm -f src/*.gcov src/*.gcno
 
-.PHONY: install uninstall test docs install_deps clean
+.PHONY: install uninstall test valgrind coverage docs install_deps package clean
 
 # vim: ts=4 sw=4 noet
