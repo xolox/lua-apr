@@ -3,7 +3,7 @@
  Documentation generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: February 11, 2011
+ Last Change: February 12, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -60,7 +60,7 @@ The available formats are:
  - `'*a'`: reads all data from the file, starting at the current position. On end of input, it returns the empty string
  - `'*l'`: reads the next line (skipping the end of line), returning nil on end of input (this is the default format)
  - `number`: reads a string with up to this number of characters, returning nil on end of input. If number is zero, it reads nothing and returns an empty string, or nil on end of input
-   
+
 [fread]: http://www.lua.org/manual/5.1/manual.html#pdf-file:read ]],
   -- file:write() {{{1
   ['file:write'] = [[
@@ -91,8 +91,7 @@ call `file:seek('set')` sets the position to the beginning of the file (and
 returns 0); and the call `file:seek('end')` sets the position to the end of the
 file, and returns its size.
 
-[fseek]: http://www.lua.org/manual/5.1/manual.html#pdf-file:seek
-]],
+[fseek]: http://www.lua.org/manual/5.1/manual.html#pdf-file:seek ]],
   -- file:lines() {{{1
   ['file:lines'] = [[
 _This function implements the interface of the [file:lines()] [flines] function described in the Lua 5.1 reference manual. Here is the description from the reference manual:_
@@ -144,13 +143,14 @@ local function mungedesc(signature, description)
     local oldtype = sname:match '^(%w+)'
     local newtype = signature:match '^%s*(%w+)'
     local firstline, otherlines = shareddocs[sname]:match '^(.-)\n\n(.+)$'
+    local otherlines, lastline = otherlines:match '^(.+)\n\n(.-)$'
     if newtype == 'shm' then
       otherlines = otherlines:gsub('file:seek', 'shm:seek')
       otherlines = otherlines:gsub('@file', '@shm')
       otherlines = otherlines:gsub('file', 'shared memory')
     end
     otherlines = otherlines:gsub(oldtype, newtype)
-    description = firstline .. '\n\n' .. otherlines
+    description = firstline .. '\n\n' .. otherlines .. '\n\n' .. lastline
   end
   return description
 end
