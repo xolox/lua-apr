@@ -232,7 +232,7 @@ static apr_status_t read_chars(lua_State *L, lua_apr_readbuf *input, apr_size_t 
 
   if (AVAIL(B) > 0) {
     /* TODO binary_to_text() may not need to be called again! */
-    if (n > 0 && input->text_mode)
+    if (!B->unmanaged && n > 0 && input->text_mode)
       binary_to_text(B);
     if (n > AVAIL(B))
       n = AVAIL(B);
@@ -259,7 +259,7 @@ static apr_status_t read_all(lua_State *L, lua_apr_readbuf *input)
       binary_to_text(B);
   }
   lua_pushlstring(L, CURSOR(B), AVAIL(B));
-  B->index = B->limit;
+  B->index = B->limit + 1;
 
   return status;
 }
