@@ -1,7 +1,7 @@
 /* Multi threading module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 9, 2011
+ * Last Change: February 12, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -176,7 +176,7 @@ int lua_apr_thread_create(lua_State *L)
   apr_status_t status;
   const char *fun, *arg;
   size_t funsize, argsize;
-  int i;
+  int i = 0;
 
   /* Set the Lua stack to its expected size. */
   lua_settop(L, 2);
