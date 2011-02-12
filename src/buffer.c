@@ -1,7 +1,7 @@
 /* Buffered I/O interface for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 23, 2010
+ * Last Change: February 11, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -18,36 +18,74 @@
 
 #define CURSOR(B) (&B->data[B->index])
 #define AVAIL(B) (B->index <= B->limit ? B->limit - B->index : 0)
-#define SPACE(B) (B->limit <= B->size ? B->size - B->limit : 0)
-#define SUCCESS_OR_EOF(S) ((S) == APR_SUCCESS || APR_STATUS_IS_EOF(S))
+#define SPACE(B) (B->unmanaged ? B->size - B->index : (B->limit <= B->size ? B->size - B->limit : 0))
+#define SUCCESS_OR_EOF(B, S) ((S) == APR_SUCCESS || CHECK_FOR_EOF(B, S))
+#define CHECK_FOR_EOF(B, S) (APR_STATUS_IS_EOF(S) || (B)->unmanaged)
 
-void init_buffers(lua_State *L, lua_apr_readbuf *input, lua_apr_writebuf *output, void *object, int text_mode, lua_apr_buf_rf read, lua_apr_buf_wf write, lua_apr_buf_ff flush) /* {{{1 */
+void init_buffers(lua_State *L,
+    lua_apr_readbuf *input,
+    lua_apr_writebuf *output,
+    void *object, int text_mode,
+    lua_apr_buf_rf read,
+    lua_apr_buf_wf write,
+    lua_apr_buf_ff flush) /* {{{1 */
 {
 #if !defined(WIN32) && !defined(OS2) && !defined(NETWARE)
   text_mode = 0;
 #endif
-  /* Initialize the input/read buffer's structure. */
+  /* Initialize the input buffer structure. */
   input->text_mode = text_mode;
   input->object = object;
   input->read = read;
+  input->buffer.unmanaged = 0;
   input->buffer.data = NULL;
   input->buffer.index = 0;
   input->buffer.limit = 0;
   input->buffer.size = 0;
-  /* Initialize the output/write buffer's structure. */
+  /* Initialize the output buffer structure. */
   output->text_mode = text_mode;
   output->object = object;
   output->write = write;
   output->flush = flush;
+  output->buffer.unmanaged = 0;
   output->buffer.data = NULL;
   output->buffer.index = 0;
   output->buffer.limit = 0;
   output->buffer.size = 0;
 }
 
+/* limit < size! */
+
+void init_unmanaged_buffers(lua_State *L,
+    lua_apr_readbuf *input, lua_apr_writebuf *output,
+    char *data, size_t size)
+{
+  /* Initialize the input buffer structure. */
+  input->text_mode = 0;
+  input->object = NULL;
+  input->read = NULL;
+  input->buffer.unmanaged = 1;
+  input->buffer.data = data;
+  input->buffer.index = 0;
+  /* A note about the limit variable of unmanaged read buffers: every position
+   * in the buffer can be read except the last byte which is reserved for NUL */
+  input->buffer.limit = size - 2;
+  input->buffer.size = size;
+  /* Initialize the output buffer structure. */
+  output->text_mode = 0;
+  output->object = NULL;
+  output->write = NULL;
+  output->flush = NULL;
+  output->buffer.unmanaged = 1;
+  output->buffer.data = data;
+  output->buffer.index = 0;
+  output->buffer.limit = 0;
+  output->buffer.size = size;
+}
+
 void free_buffer(lua_State *L, lua_apr_buffer *B) /* {{{1 */
 {
-  if (B->data != NULL) {
+  if (!B->unmanaged && B->data != NULL) {
     free(B->data);
     B->data = NULL;
     B->index = 0;
@@ -104,6 +142,10 @@ static apr_status_t grow_buffer(lua_apr_buffer *B) /* {{{1 */
   size_t newsize = LUA_APR_BUFSIZE;
   char *newdata;
 
+  /* Don't do anything for unmanaged buffers. */
+  if (B->unmanaged)
+    return status;
+
   if (B->size >= newsize)
     newsize = B->size / 2 * 3;
   newdata = realloc(B->data, newsize);
@@ -120,8 +162,12 @@ static apr_status_t grow_buffer(lua_apr_buffer *B) /* {{{1 */
 static apr_status_t fill_buffer(lua_apr_readbuf *input) /* {{{1 */
 {
   lua_apr_buffer *B = &input->buffer;
-  apr_status_t status;
+  apr_status_t status = APR_SUCCESS;
   apr_size_t len;
+
+  /* Don't do anything for unmanaged buffers. */
+  if (B->unmanaged)
+    return status;
 
   /* Shift the buffer's contents down? */
   shift_buffer(B);
@@ -158,7 +204,7 @@ static apr_status_t read_line(lua_State *L, lua_apr_readbuf *input) /* {{{1 */
       lua_pushlstring(L, CURSOR(B), skip_crlf ? length - 1 : length);
       B->index += length + 1;
       break;
-    } else if (APR_STATUS_IS_EOF(status)) {
+    } else if (CHECK_FOR_EOF(&input->buffer, status)) {
       /* Got EOF while searching for end of line? */
       if (AVAIL(B) >= 1) {
         lua_pushlstring(L, CURSOR(B), AVAIL(B));
@@ -171,7 +217,7 @@ static apr_status_t read_line(lua_State *L, lua_apr_readbuf *input) /* {{{1 */
     offset = AVAIL(B);
     /* Get more input. */
     status = fill_buffer(input);
-  } while (SUCCESS_OR_EOF(status));
+  } while (SUCCESS_OR_EOF(&input->buffer, status));
 
   return status;
 }
@@ -198,7 +244,7 @@ static apr_status_t read_number(lua_State *L, lua_apr_readbuf *input) /* {{{1 */
     /* Calculate available bytes but guard against overflow. */
     test = offset <= AVAIL(B) ? (AVAIL(B) - offset) : 0;
     /* Make sure enough input remains to read full number [or we got EOF]. */
-    if (test >= LUAI_MAXNUMBER2STR || APR_STATUS_IS_EOF(status)) {
+    if (test >= LUAI_MAXNUMBER2STR || CHECK_FOR_EOF(B, status)) {
       /* Try to parse number at selected position. */
       value = lua_str2number(CURSOR(B) + offset, &endptr);
       if (endptr > CURSOR(B) + offset) {
@@ -210,7 +256,7 @@ static apr_status_t read_number(lua_State *L, lua_apr_readbuf *input) /* {{{1 */
     }
     /* Get more input. */
     status = fill_buffer(input);
-  } while (SUCCESS_OR_EOF(status));
+  } while (SUCCESS_OR_EOF(&input->buffer, status));
 
   return status;
 }
@@ -220,10 +266,11 @@ static apr_status_t read_chars(lua_State *L, lua_apr_readbuf *input, apr_size_t 
   lua_apr_buffer *B = &input->buffer;
   apr_status_t status = APR_SUCCESS;
 
-  /* XXX The <= comparison is intended to make sure we read enough bytes to
-   * successfully convert \r\n to \n even when at the end of the buffer. */
-  while (AVAIL(B) <= n && status == APR_SUCCESS)
-    status = fill_buffer(input);
+  if (!B->unmanaged)
+    /* XXX The <= comparison is intended to make sure we read enough bytes to
+     * successfully convert \r\n to \n even when at the end of the buffer. */
+    while (AVAIL(B) <= n && status == APR_SUCCESS)
+      status = fill_buffer(input);
 
   if (AVAIL(B) > 0) {
     /* TODO binary_to_text() may not need to be called again! */
@@ -244,11 +291,13 @@ static apr_status_t read_all(lua_State *L, lua_apr_readbuf *input) /* {{{1 */
   lua_apr_buffer *B = &input->buffer;
   apr_status_t status;
 
-  do {
-    status = fill_buffer(input);
-  } while (status == APR_SUCCESS);
-  if (input->text_mode)
-    binary_to_text(B);
+  if (!B->unmanaged) {
+    do {
+      status = fill_buffer(input);
+    } while (status == APR_SUCCESS);
+    if (input->text_mode)
+      binary_to_text(B);
+  }
   lua_pushlstring(L, CURSOR(B), AVAIL(B));
   B->index = B->limit;
 
@@ -257,12 +306,14 @@ static apr_status_t read_all(lua_State *L, lua_apr_readbuf *input) /* {{{1 */
 
 static int read_lines_cb(lua_State *L) /* {{{1 */
 {
+  lua_apr_readbuf *B;
   apr_status_t status;
 
-  status = read_line(L, lua_touserdata(L, lua_upvalueindex(1)));
+  B = lua_touserdata(L, lua_upvalueindex(1));
+  status = read_line(L, B);
   if (status == APR_SUCCESS)
     return 1;
-  else if (APR_STATUS_IS_EOF(status))
+  else if (CHECK_FOR_EOF(&B->buffer, status))
     return 0;
   else
     return push_error_status(L, status);
@@ -313,7 +364,7 @@ int read_buffer(lua_State *L, lua_apr_readbuf *B) /* {{{1 */
       }
     }
   }
-  if (!SUCCESS_OR_EOF(status)) {
+  if (!SUCCESS_OR_EOF(&B->buffer, status)) {
     /* Replace results with (nil, message, code). */
     lua_settop(L, 1);
     nresults = push_error_status(L, status);
@@ -380,6 +431,10 @@ apr_status_t flush_buffer(lua_State *L, lua_apr_writebuf *output, int soft) /* {
   lua_apr_buffer *B = &output->buffer;
   apr_status_t status = APR_SUCCESS;
   apr_size_t len;
+
+  /* Don't do anything for unmanaged buffers. */
+  if (output->buffer.unmanaged)
+    return status;
 
   /* Flush the internal write buffer. */
   while ((len = AVAIL(B)) > 0 && status == APR_SUCCESS) {

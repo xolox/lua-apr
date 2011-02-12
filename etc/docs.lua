@@ -3,16 +3,16 @@
  Documentation generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: February 8, 2011
+ Last Change: February 11, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
 ]]
 
 local SOURCES = [[ base64.c crypt.c date.c dbd.c dbm.c env.c filepath.c
-  fnmatch.c io_dir.c io_file.c io_net.c io_pipe.c proc.c str.c thread.c time.c
-  uri.c user.c uuid.c xlate.c xml.c apr.lua lua_apr.c permissions.c errno.c
-  ../examples/download.lua ../examples/webserver.lua ]]
+  fnmatch.c io_dir.c io_file.c io_net.c io_pipe.c proc.c shm.c str.c thread.c
+  time.c uri.c user.c uuid.c xlate.c xml.c apr.lua lua_apr.c permissions.c
+  errno.c ../examples/download.lua ../examples/webserver.lua ]]
 
 local modules = {}
 local sorted_modules = {}
@@ -52,12 +52,12 @@ local shareddocs = {
   ['file:read'] = [[
 _This function implements the interface of the [file:read()] [fread] function described in the Lua 5.1 reference manual. Here is the description from the reference manual:_
 
-Read from @file, according to the given formats, which specify what to read. For each format, the function returns a string (or a number) with the characters read, or nil if it cannot read data with the specified format. When called without formats, it uses a default format that reads the entire next line (see below).
+Read from file, according to the given formats, which specify what to read. For each format, the function returns a string (or a number) with the characters read, or nil if it cannot read data with the specified format. When called without formats, it uses a default format that reads the entire next line (see below).
 
 The available formats are:
 
  - `'*n'`: reads a number; this is the only format that returns a number instead of a string
- - `'*a'`: reads all data from the @file, starting at the current position. On end of input, it returns the empty string
+ - `'*a'`: reads all data from the file, starting at the current position. On end of input, it returns the empty string
  - `'*l'`: reads the next line (skipping the end of line), returning nil on end of input (this is the default format)
  - `number`: reads a string with up to this number of characters, returning nil on end of input. If number is zero, it reads nothing and returns an empty string, or nil on end of input
    
@@ -66,18 +66,42 @@ The available formats are:
   ['file:write'] = [[
 _This function implements the interface of the [file:write()] [fwrite] function described in the Lua 5.1 reference manual. Here is the description from the reference manual:_
 
-Write the value of each argument to @file. The arguments must be strings or numbers. To write other values, use `tostring()` or `string.format()` before this function.
+Write the value of each argument to file. The arguments must be strings or numbers. To write other values, use `tostring()` or `string.format()` before this function.
 
 [fwrite]: http://www.lua.org/manual/5.1/manual.html#pdf-file:write ]],
+  -- file:seek() {{{1
+  ['file:seek'] = [[
+_This function implements the interface of the [file:seek()] [fseek] function described in the Lua 5.1 reference manual. Here is the description from the reference manual:_
+
+Sets and gets the file position, measured from the beginning of the file, to
+the position given by @offset plus a base specified by the string @whence, as
+follows:
+
+ - `'set'`:  base is position 0 (beginning of the file)
+ - `'cur'`:  base is current position
+ - `'end'`:  base is end of file
+
+In case of success, function `seek` returns the final file position, measured
+in bytes from the beginning of the file. If this function fails, it returns
+nil, plus a string describing the error.
+
+The default value for @whence is `'cur'`, and for offset is 0. Therefore, the
+call `file:seek()` returns the current file position, without changing it; the
+call `file:seek('set')` sets the position to the beginning of the file (and
+returns 0); and the call `file:seek('end')` sets the position to the end of the
+file, and returns its size.
+
+[fseek]: http://www.lua.org/manual/5.1/manual.html#pdf-file:seek
+]],
   -- file:lines() {{{1
   ['file:lines'] = [[
 _This function implements the interface of the [file:lines()] [flines] function described in the Lua 5.1 reference manual. Here is the description from the reference manual:_
 
-Return an iterator function that, each time it is called, returns a new line read from the @file. Therefore, the construction
+Return an iterator function that, each time it is called, returns a new line read from the file. Therefore, the construction
 
     for line in file:lines() do body end
 
-will iterate over all lines. This function does not close the @file when the loop ends.
+will iterate over all lines. This function does not close the file when the loop ends.
 
 [flines]: http://www.lua.org/manual/5.1/manual.html#pdf-file:lines ]],
 -- }}}1
@@ -120,7 +144,13 @@ local function mungedesc(signature, description)
     local oldtype = sname:match '^(%w+)'
     local newtype = signature:match '^%s*(%w+)'
     local firstline, otherlines = shareddocs[sname]:match '^(.-)\n\n(.+)$'
-    description = firstline .. '\n\n' .. otherlines:gsub(oldtype, newtype)
+    if newtype == 'shm' then
+      otherlines = otherlines:gsub('file:seek', 'shm:seek')
+      otherlines = otherlines:gsub('@file', '@shm')
+      otherlines = otherlines:gsub('file', 'shared memory')
+    end
+    otherlines = otherlines:gsub(oldtype, newtype)
+    description = firstline .. '\n\n' .. otherlines
   end
   return description
 end

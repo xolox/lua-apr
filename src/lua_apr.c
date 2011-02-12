@@ -1,7 +1,7 @@
 /* Miscellaneous functions module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 9, 2011
+ * Last Change: February 11, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -113,6 +113,11 @@ int luaopen_apr_core(lua_State *L)
 #   if APR_HAS_FORK
     { "proc_fork", lua_apr_proc_fork },
 #   endif
+
+    /* shm.c -- shared memory. */
+    { "shm_create", lua_apr_shm_create },
+    { "shm_attach", lua_apr_shm_attach },
+    { "shm_remove", lua_apr_shm_remove },
 
     /* str.c -- string handling. */
     { "strnatcmp", lua_apr_strnatcmp },

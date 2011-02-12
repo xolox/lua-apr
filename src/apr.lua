@@ -6,7 +6,7 @@
  Last Change: February 11, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
- Version: 0.12.5
+ Version: 0.13
 
  This Lua script is executed on require("apr"), loads the binary module using
  require("apr.core"), defines several library functions implemented on top of
@@ -15,7 +15,7 @@
 --]]
 
 local apr = require 'apr.core'
-apr._VERSION = '0.12.5'
+apr._VERSION = '0.13'
 
 -- apr.md5(input [, binary]) -> digest {{{1
 --

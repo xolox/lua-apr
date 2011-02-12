@@ -1,7 +1,7 @@
 /* File I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 8, 2011
+ * Last Change: February 11, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -441,28 +441,7 @@ static int file_write(lua_State *L)
 
 /* file:seek([whence [, offset]]) -> offset {{{1
  *
- * _This function imitates Lua's [file:seek()] [fseek] function, so here is the
- * documentation for that function:_
- * 
- * Sets and gets the file position, measured from the beginning of the file, to
- * the position given by @offset plus a base specified by the string @whence,
- * as follows:
- *
- *  - `'set'`:  base is position 0 (beginning of the file)
- *  - `'cur'`:  base is current position
- *  - `'end'`:  base is end of file
- *
- * In case of success, function `seek` returns the final file position, measured
- * in bytes from the beginning of the file. If this function fails, it returns
- * nil, plus a string describing the error.
- *
- * The default value for @whence is `'cur'`, and for offset is 0. Therefore, the
- * call `file:seek()` returns the current file position, without changing it; the
- * call `file:seek('set')` sets the position to the beginning of the file (and
- * returns 0); and the call `file:seek('end')` sets the position to the end of
- * the file, and returns its size.
- *
- * [fseek]: http://www.lua.org/manual/5.1/manual.html#pdf-file:seek
+ * This function implements the interface of Lua's `file:seek()` function.
  */
 
 static int file_seek(lua_State *L)

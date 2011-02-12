@@ -1,7 +1,7 @@
 /* Header file for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 9, 2011
+ * Last Change: February 11, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -119,6 +119,7 @@ typedef apr_status_t (APR_THREAD_FUNC *lua_apr_setpipe_f)(apr_procattr_t*, apr_f
 /* Structures for internal I/O buffers. */
 
 typedef struct lua_apr_buffer {
+  int unmanaged;
   size_t index, limit, size;
   char *data;
 } lua_apr_buffer;
@@ -176,6 +177,7 @@ extern lua_apr_objtype lua_apr_dir_type;
 extern lua_apr_objtype lua_apr_socket_type;
 extern lua_apr_objtype lua_apr_thread_type;
 extern lua_apr_objtype lua_apr_proc_type;
+extern lua_apr_objtype lua_apr_shm_type;
 extern lua_apr_objtype lua_apr_dbm_type;
 extern lua_apr_objtype lua_apr_dbd_type;
 extern lua_apr_objtype lua_apr_dbr_type;
@@ -209,6 +211,7 @@ int lua_apr_base64_decode(lua_State*);
 /* buffer.c */
 void init_buffers(lua_State*, lua_apr_readbuf*, lua_apr_writebuf*, void*, int,
                   lua_apr_buf_rf, lua_apr_buf_wf, lua_apr_buf_ff);
+void init_unmanaged_buffers(lua_State*, lua_apr_readbuf*, lua_apr_writebuf*, char*, size_t);
 int read_lines(lua_State*, lua_apr_readbuf*);
 int read_buffer(lua_State*, lua_apr_readbuf*);
 int write_buffer(lua_State*, lua_apr_writebuf*);
@@ -309,6 +312,11 @@ void refpool_decref(lua_apr_pool*);
 /* stat.c */
 void check_stat_request(lua_State*, lua_apr_stat_context*);
 int push_stat_results(lua_State*, lua_apr_stat_context*, const char*);
+
+/* shm.c */
+int lua_apr_shm_create(lua_State*);
+int lua_apr_shm_attach(lua_State*);
+int lua_apr_shm_remove(lua_State*);
 
 /* str.c */
 int lua_apr_strnatcmp(lua_State*);

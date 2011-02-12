@@ -15,6 +15,7 @@ The [Lua/APR binding](http://peterodding.com/code/lua/apr/) aims to bring most o
  * [Network I/O handling](http://peterodding.com/code/lua/apr/docs/#network_i_o_handling)
  * [Pipe I/O handling](http://peterodding.com/code/lua/apr/docs/#pipe_i_o_handling)
  * [Process handling](http://peterodding.com/code/lua/apr/docs/#process_handling)
+ * [Shared memory](http://peterodding.com/code/lua/apr/docs/#shared_memory)
  * [String routines](http://peterodding.com/code/lua/apr/docs/#string_routines)
  * [Multi threading](http://peterodding.com/code/lua/apr/docs/#multi_threading)
  * [Time routines](http://peterodding.com/code/lua/apr/docs/#time_routines)
