@@ -3,7 +3,7 @@
  Unit tests for the shared memory module of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: February 11, 2011
+ Last Change: February 19, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -33,7 +33,7 @@ assert(tostring(shm_file):find '^shared memory %([0x%x]+%)$')
 
 -- Launch child process.
 local child = assert(apr.proc_create('lua'))
-assert(child:cmdtype_set 'shellcmd')
+assert(child:cmdtype_set 'shellcmd/env')
 assert(child:exec { helpers.scriptpath 'shm-child.lua', shm_path, tmp_path })
 assert(child:wait(true))
 

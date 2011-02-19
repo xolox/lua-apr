@@ -18,6 +18,7 @@ The [Lua/APR binding](http://peterodding.com/code/lua/apr/) aims to bring most o
  * [Shared memory](http://peterodding.com/code/lua/apr/docs/#shared_memory)
  * [String routines](http://peterodding.com/code/lua/apr/docs/#string_routines)
  * [Multi threading](http://peterodding.com/code/lua/apr/docs/#multi_threading)
+ * [Thread queues](http://peterodding.com/code/lua/apr/docs/#thread_queues)
  * [Time routines](http://peterodding.com/code/lua/apr/docs/#time_routines)
  * [Uniform resource identifier parsing](http://peterodding.com/code/lua/apr/docs/#uniform_resource_identifier_parsing)
  * [User/group identification](http://peterodding.com/code/lua/apr/docs/#user_group_identification)
@@ -27,17 +28,21 @@ The [Lua/APR binding](http://peterodding.com/code/lua/apr/) aims to bring most o
 
 ## How to download, build & install the module
 
-There are [Windows binaries](http://github.com/downloads/xolox/lua-apr/lua-apr-0.11-win32.zip) available that have been tested with [Lua for Windows](http://code.google.com/p/luaforwindows/) v5.1.4-40. You can also build the Lua/APR binding yourself. Here are your options:
+There are [Windows binaries](http://github.com/downloads/xolox/lua-apr/lua-apr-0.14.2-win32.zip) available that have been tested with [Lua for Windows](http://code.google.com/p/luaforwindows/) v5.1.4-40. You can also build the Lua/APR binding yourself. Here are your options:
 
 ### Build on UNIX using LuaRocks
 
 The easiest way to download, build & install the Lua/APR binding is to use [LuaRocks](http://luarocks.org/):
 
-    $ luarocks install http://peterodding.com/code/lua/apr/downloads/lua-apr-0.11-1.rockspec
+    $ luarocks install http://peterodding.com/code/lua/apr/downloads/lua-apr-0.14.2-1.rockspec
 
 If you have git installed you can also download and install the latest sources using the following command:
 
     $ luarocks install http://peterodding.com/code/lua/apr/downloads/lua-apr-scm-1.rockspec
+
+After installing the library you can run the test suite using the following command:
+
+    $ lua -lapr.test
 
 ### Build on UNIX using makefile
 
@@ -46,14 +51,14 @@ If you don't have LuaRocks installed the following shell commands should help yo
     $ if which git; then # Get the latest sources using `git'?
     $   git clone git://github.com/xolox/lua-apr.git
     $ else # Or get the most recently released archive using `wget'.
-    $   wget http://peterodding.com/code/lua/apr/downloads/lua-apr-0.11-1.zip
-    $   unzip lua-apr-0.11-1.zip
-    $   mv lua-apr-0.11-1 lua-apr
+    $   wget http://peterodding.com/code/lua/apr/downloads/lua-apr-0.14.2-1.zip
+    $   unzip lua-apr-0.14.2-1.zip
+    $   mv lua-apr-0.14.2-1 lua-apr
     $ fi
     $ cd lua-apr
     $ sudo make install_deps # installs build & runtime dependencies for Debian/Ubuntu
     $ sudo make install # installs apr.lua and apr/core.so in /usr/local
-    $ make test # runs the test suite
+    $ lua -lapr.test # runs the test suite
 
 The makefile creates a debug build by default. Use `sudo make install RELEASE=1` to create a release build instead. Just be sure to run `make clean` when switching between debug/release mode to avoid linking incompatible object files.
 
@@ -65,9 +70,9 @@ The makefile creates a debug build by default. Use `NMAKE /f Makefile.win RELEAS
 
 ## Status
 
-The following functionality has not been implemented yet but is on the to-do list (highest to lowest priority):
+The following functionality has not been implemented yet but is on the to-do list:
 
- * **Encrypted network communication** (unfortunately this isn't provided by APR so `io_net.c` could get messy…)
+ * **Encrypted network communication** (unfortunately this isn't provided by APR so [io_net.c](https://github.com/xolox/lua-apr/blob/master/src/io_net.c) could get messy…)
 
 ## Contact
 

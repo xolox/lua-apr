@@ -202,7 +202,7 @@ static void* lua_apr_cc thread_runner(apr_thread_t *handle, lua_apr_thread *thre
 int lua_apr_thread_create(lua_State *L)
 {
   lua_apr_thread *thread = NULL;
-  apr_status_t status;
+  apr_status_t status = APR_ENOMEM;
   int top = lua_gettop(L);
 
   luaL_checktype(L, 1, LUA_TSTRING);

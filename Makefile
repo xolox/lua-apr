@@ -118,16 +118,22 @@ install_deps:
 		lua5.1 liblua5.1-0 liblua5.1-0-dev libreadline-dev \
 		liblua5.1-markdown0
 
-ZIPNAME = lua-apr-0.11-1
+ZIPNAME = lua-apr-0.14.2-1
 
 package: docs
 	@echo Packaging sources
 	@rm -f $(ZIPNAME).zip
-	@mkdir -p $(ZIPNAME)/doc $(ZIPNAME)/etc $(ZIPNAME)/examples $(ZIPNAME)/src  $(ZIPNAME)/test
+	@mkdir -p $(ZIPNAME)/doc
 	@cp docs.html $(ZIPNAME)/doc/apr.html
+	@mkdir -p $(ZIPNAME)/etc
 	@cp -a etc/docs.lua etc/errors.lua $(ZIPNAME)/etc
-	@cp -a examples/download.lua examples/webserver.lua $(ZIPNAME)/examples
+	@mkdir -p $(ZIPNAME)/benchmarks
+	@cp -a benchmarks/* $(ZIPNAME)/benchmarks
+	@mkdir -p $(ZIPNAME)/examples
+	@cp -a examples/*.lua $(ZIPNAME)/examples
+	@mkdir -p $(ZIPNAME)/src
 	@cp -a src/lua_apr.h $(SOURCES) $(SOURCE_MODULE) $(ZIPNAME)/src
+	@mkdir -p $(ZIPNAME)/test
 	@cp -a test/*.lua $(ZIPNAME)/test
 	@cp Makefile Makefile.win make.cmd NOTES.md README.md $(ZIPNAME)
 	@zip $(ZIPNAME).zip -r $(ZIPNAME)
