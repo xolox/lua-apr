@@ -28,7 +28,7 @@ The [Lua/APR binding](http://peterodding.com/code/lua/apr/) aims to bring most o
 
 ## How to download, build & install the module
 
-There are [Windows binaries](http://github.com/downloads/xolox/lua-apr/lua-apr-0.14.2-win32.zip) available that have been tested with [Lua for Windows](http://code.google.com/p/luaforwindows/) v5.1.4-40. You can also build the Lua/APR binding yourself. Here are your options:
+There are [Windows binaries](http://peterodding.com/code/lua/apr/downloads/lua-apr-0.14.2-win32.zip) available that have been tested with [Lua for Windows](http://code.google.com/p/luaforwindows/) v5.1.4-40. You can also build the Lua/APR binding yourself. Here are your options:
 
 ### Build on UNIX using LuaRocks
 
