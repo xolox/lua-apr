@@ -1,7 +1,7 @@
 /* DBM routines module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 13, 2011
+ * Last Change: February 19, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -30,15 +30,15 @@
 /* XXX Default to sdbm because it's always available. */
 #define LUA_APR_DBM_DEFAULT "sdbm"
 
-/* Internal functions {{{1 */
-
-/* DBM object structure declaration. */
+/* Structure for DBM objects. */
 typedef struct {
   lua_apr_refobj header;
   apr_pool_t *pool;
   apr_dbm_t *handle;
   const char *path;
 } lua_apr_dbm;
+
+/* Internal functions {{{1 */
 
 /* dbm_check(L, i, open) -- get dbm object from Lua stack {{{2 */
 

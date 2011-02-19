@@ -1,7 +1,7 @@
 /* Directory manipulation module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 13, 2011
+ * Last Change: February 19, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -11,6 +11,14 @@
 #include <apr_fnmatch.h>
 #include <apr_strings.h>
 #include <apr_lib.h>
+
+/* Structure for directory objects. */
+typedef struct {
+  lua_apr_refobj header;
+  apr_dir_t *handle;
+  apr_pool_t *memory_pool;
+  const char *filepath;
+} lua_apr_dir;
 
 /* Internal functions {{{1 */
 

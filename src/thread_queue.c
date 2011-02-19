@@ -12,9 +12,19 @@
 #include "lua_apr.h"
 #if APR_HAS_THREADS
 
+#define check_queue(L, idx) \
+  ((lua_apr_queue*)check_object((L), (idx), &lua_apr_queue_type))
+
+/* Structure for thread queue objects. */
+typedef struct {
+  lua_apr_refobj header;
+  apr_pool_t *pool;
+  apr_queue_t *handle;
+} lua_apr_queue;
+
 /* Internal functions. {{{1 */
 
-void close_queue_real(lua_State *L, lua_apr_queue *object)
+static void close_queue_real(lua_State *L, lua_apr_queue *object)
 {
   if (object_collectable((lua_apr_refobj*)object)) {
     if (object->pool != NULL) {

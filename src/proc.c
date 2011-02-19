@@ -1,7 +1,7 @@
 /* Process handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 13, 2011
+ * Last Change: February 19, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -16,6 +16,16 @@
  *  - apr_procattr_perms_set_register()
  *  - apr_proc_wait_all_procs()
  */
+
+/* Structure for process objects. */
+typedef struct {
+  lua_apr_refobj header;
+  apr_pool_t *memory_pool;
+  apr_proc_t handle;
+  apr_procattr_t *attr;
+  const char *path;
+  const char **env;
+} lua_apr_proc;
 
 /* Internal functions {{{1 */
 
