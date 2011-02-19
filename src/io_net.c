@@ -1,7 +1,7 @@
 /* Network I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 8, 2011
+ * Last Change: February 19, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -13,6 +13,7 @@
 
 /* Socket object structure declaration. */
 typedef struct {
+  lua_apr_refobj header;
   lua_apr_readbuf input;
   lua_apr_writebuf output;
   apr_pool_t *pool;
@@ -85,19 +86,17 @@ static apr_int32_t option_check(lua_State *L, int i)
 
 /* socket_close_impl(L, socket) -- destroy socket object {{{2 */
 
-static apr_status_t socket_close_impl(lua_State *L, lua_apr_socket *object)
+static apr_status_t socket_close_impl(lua_State *L, lua_apr_socket *socket)
 {
   apr_status_t status = APR_SUCCESS;
-
-  if (object->handle != NULL) {
-    status = apr_socket_close(object->handle);
-    object->handle = NULL;
+  if (socket->handle != NULL) {
+    status = apr_socket_close(socket->handle);
+    socket->handle = NULL;
   }
-  if (object->pool != NULL) {
-    apr_pool_destroy(object->pool);
-    object->pool = NULL;
+  if (socket->pool != NULL) {
+    apr_pool_destroy(socket->pool);
+    socket->pool = NULL;
   }
-
   return status;
 }
 
@@ -109,7 +108,7 @@ static apr_status_t socket_close_impl(lua_State *L, lua_apr_socket *object)
  *
  *  - `'tcp'` to create a [TCP] [tcp] socket (this is the default)
  *  - `'udp'` to create a [UDP] [udp] socket
- *  
+ *
  * These are the valid values for the @family argument:
  *
  *  - `'inet'` to create a socket using the [IPv4] [ipv4] address family
@@ -151,7 +150,7 @@ int lua_apr_socket_create(lua_State *L)
 }
 
 /* apr.hostname_get() -> name {{{1
- * 
+ *
  * Get the name of the current machine. On success the host name string is
  * returned, otherwise a nil followed by an error message is returned.
  */
@@ -320,17 +319,22 @@ static int socket_bind(lua_State *L)
  * On success true is returned, otherwise a nil followed by an error message is
  * returned. The @backlog argument indicates the number of outstanding
  * connections allowed in the socket's listen queue. If this value is less than
- * zero, the listen queue size is set to zero.
+ * zero, the listen queue size is set to zero. As a special case, if you pass
+ * the string `'max'` as @backlog then a platform specific maximum value is
+ * chosen based on the compile time constant [SOMAXCONN] [SOMAXCONN].
+ *
+ * [SOMAXCONN]: http://www.google.com/search?q=SOMAXCONN
  */
 
 static int socket_listen(lua_State *L)
 {
   lua_apr_socket *object;
   apr_status_t status;
-  apr_int32_t backlog;
+  apr_int32_t backlog = SOMAXCONN;
 
   object = socket_check(L, 1, 1);
-  backlog = luaL_checkinteger(L, 2);
+  if (strcmp(lua_tostring(L, 2), "max") != 0)
+    backlog = luaL_checkinteger(L, 2);
   status = apr_socket_listen(object->handle, backlog);
 
   return push_status(L, status);
@@ -541,6 +545,37 @@ static int socket_addr_get(lua_State *L)
   return 2;
 }
 
+/* socket:shutdown(mode) -> status {{{1
+ *
+ * Shutdown either reading, writing, or both sides of a socket. On success true
+ * is returned, otherwise a nil followed by an error message is returned. Valid
+ * values for @mode are:
+ *
+ *  - `'read'`: no longer allow read requests
+ *  - `'write'`: no longer allow write requests
+ *  - `'both'`: no longer allow read or write requests
+ *
+ * This does not actually close the socket descriptor, it just controls which
+ * calls are still valid on the socket. To close sockets see `socket:close()`.
+ */
+
+static int socket_shutdown(lua_State *L)
+{
+  const char *options[] = { "read", "write", "both", NULL };
+  const apr_shutdown_how_e values[] = {
+    APR_SHUTDOWN_READ, APR_SHUTDOWN_WRITE, APR_SHUTDOWN_READWRITE
+  };
+  lua_apr_socket *socket;
+  apr_status_t status;
+  apr_shutdown_how_e how;
+
+  socket = socket_check(L, 1, 1);
+  how = values[luaL_checkoption(L, 2, NULL, options)];
+  status = apr_socket_shutdown(socket->handle, how);
+
+  return push_status(L, status);
+}
+
 /* socket:close() -> status {{{1
  *
  * Close @socket. On success true is returned, otherwise a nil followed by an
@@ -571,7 +606,13 @@ static int socket_tostring(lua_State *L)
 
 static int socket_gc(lua_State *L)
 {
-  socket_close_impl(L, socket_check(L, 1, 0));
+  lua_apr_socket *socket = socket_check(L, 1, 0);
+  if (object_collectable((lua_apr_refobj*)socket)) {
+    free_buffer(L, &socket->input.buffer);
+    free_buffer(L, &socket->output.buffer);
+    socket_close_impl(L, socket);
+  }
+  release_object(L, (lua_apr_refobj*)socket);
   return 0;
 }
 
@@ -590,20 +631,22 @@ luaL_reg socket_methods[] = {
   { "opt_get", socket_opt_get },
   { "opt_set", socket_opt_set },
   { "addr_get", socket_addr_get },
+  { "shutdown", socket_shutdown },
   { "close", socket_close },
   { NULL, NULL },
 };
 
 luaL_reg socket_metamethods[] = {
   { "__tostring", socket_tostring },
+  { "__eq", objects_equal },
   { "__gc", socket_gc },
   { NULL, NULL },
 };
 
 lua_apr_objtype lua_apr_socket_type = {
-  "lua_apr_socket*",
-  "socket",
-  sizeof(lua_apr_socket),
-  socket_methods,
-  socket_metamethods
+  "lua_apr_socket*",      /* metatable name in registry */
+  "socket",               /* friendly object name */
+  sizeof(lua_apr_socket), /* structure size */
+  socket_methods,         /* methods table */
+  socket_metamethods      /* metamethods table */
 };

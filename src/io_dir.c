@@ -1,7 +1,7 @@
 /* Directory manipulation module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 8, 2011
+ * Last Change: February 13, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -17,7 +17,7 @@
 static lua_apr_dir *checkdir(lua_State *L, int idx, int check_open)
 {
   lua_apr_dir *object;
- 
+
   object = check_object(L, idx, &lua_apr_dir_type);
   if (check_open && object->handle == NULL)
     luaL_error(L, "attempt to use a closed directory");
@@ -48,7 +48,7 @@ int lua_apr_temp_dir_get(lua_State *L)
 }
 
 /* apr.dir_make(path [, permissions]) -> status {{{1
- * 
+ *
  * Create the directory @path on the file system. On success true is returned,
  * otherwise a nil followed by an error message is returned. See the
  * documentation on @permissions for the optional second argument.
@@ -245,30 +245,30 @@ cleanup:
 int lua_apr_dir_open(lua_State *L)
 {
   apr_status_t status;
-  apr_pool_t *memory_pool;
-  apr_dir_t *handle;
-  lua_apr_dir *directory;
   const char *filepath;
+  lua_apr_dir *directory;
 
   filepath = luaL_checkstring(L, 1);
+  directory = new_object(L, &lua_apr_dir_type);
+  if (directory == NULL)
+    return push_error_memory(L);
 
   /* Create a memory pool for the lifetime of the directory object. */
-  status = apr_pool_create(&memory_pool, NULL);
-  if (APR_SUCCESS != status)
+  status = apr_pool_create(&directory->memory_pool, NULL);
+  if (APR_SUCCESS != status) {
+    directory->memory_pool = NULL;
     return push_error_status(L, status);
+  }
 
   /* Try to open a handle to the directory. */
-  status = apr_dir_open(&handle, filepath, memory_pool);
+  status = apr_dir_open(&directory->handle, filepath, directory->memory_pool);
   if (APR_SUCCESS != status) {
-    apr_pool_destroy(memory_pool);
+    directory->handle = NULL;
     return push_error_status(L, status);
   }
 
   /* Initialize and return the directory object. */
-  directory = new_object(L, &lua_apr_dir_type);
-  directory->memory_pool = memory_pool;
-  directory->filepath = filepath;
-  directory->handle = handle;
+  directory->filepath = apr_pstrdup(directory->memory_pool, filepath);
 
   return 1;
 }
@@ -404,7 +404,8 @@ static int dir_close(lua_State *L)
 
   directory = checkdir(L, 1, 1);
   status = apr_dir_close(directory->handle);
-  directory->handle = NULL;
+  if (status == APR_SUCCESS)
+    directory->handle = NULL;
 
   return push_status(L, status);
 }
@@ -421,23 +422,25 @@ static int dir_tostring(lua_State *L)
   else
     lua_pushfstring(L, "%s (closed)", lua_apr_dir_type.friendlyname);
 
-  return 1; 
+  return 1;
 }
 
 /* directory:__gc() {{{1 */
 
 static int dir_gc(lua_State *L)
 {
-  lua_apr_dir *object;
-
-  object = checkdir(L, 1, 0);
-
-  if (object->handle) {
-    apr_dir_close(object->handle);
-    apr_pool_destroy(object->memory_pool);
-    object->handle = NULL;
+  lua_apr_dir *directory = checkdir(L, 1, 0);
+  if (object_collectable((lua_apr_refobj*)directory)) {
+    if (directory->handle != NULL) {
+      apr_dir_close(directory->handle);
+      directory->handle = NULL;
+    }
+    if (directory->memory_pool != NULL) {
+      apr_pool_destroy(directory->memory_pool);
+      directory->memory_pool = NULL;
+    }
   }
-
+  release_object(L, (lua_apr_refobj*)directory);
   return 0;
 }
 
@@ -452,17 +455,18 @@ static luaL_Reg dir_methods[] = {
 };
 
 static luaL_Reg dir_metamethods[] = {
-  { "__gc", dir_gc },
   { "__tostring", dir_tostring },
+  { "__eq", objects_equal },
+  { "__gc", dir_gc },
   { NULL, NULL }
 };
 
 lua_apr_objtype lua_apr_dir_type = {
-  "lua_apr_dir*",
-  "directory",
-  sizeof(lua_apr_dir),
-  dir_methods,
-  dir_metamethods
+  "lua_apr_dir*",      /* metatable name in registry */
+  "directory",         /* friendly object name */
+  sizeof(lua_apr_dir), /* structure size */
+  dir_methods,         /* methods table */
+  dir_metamethods      /* metamethods table */
 };
 
 /* vim: set ts=2 sw=2 et tw=79 fen fdm=marker : */

@@ -3,7 +3,7 @@
  * Authors:
  *  - zhiguo zhao <zhaozg@gmail.com>
  *  - Peter Odding <peter@peterodding.com>
- * Last Change: February 11, 2011
+ * Last Change: February 19, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -75,6 +75,7 @@
 
 /* Driver objects. */
 typedef struct {
+  lua_apr_refobj header;
   int generation;
   apr_pool_t *pool;
   const apr_dbd_driver_t *driver;
@@ -97,6 +98,7 @@ typedef struct {
 
 /* Result set objects. */
 typedef struct {
+  lua_apr_refobj header;
   lua_apr_dbd_reference parent;
   apr_dbd_results_t *results;
   int random_access, rownum;
@@ -104,6 +106,7 @@ typedef struct {
 
 /* Prepared statement objects. */
 typedef struct {
+  lua_apr_refobj header;
   lua_apr_dbd_reference parent;
   apr_dbd_prepared_t *statement;
 } lua_apr_dbp_object;
@@ -125,48 +128,51 @@ static lua_apr_dbd_object *check_dbd(lua_State *L, int idx, int connected, int t
   return object;
 }
 
-static void *check_subobj(lua_State *L, int idx, lua_apr_objtype *type) /* {{{2 */
+static void *check_subobj(lua_State *L, int idx, lua_apr_objtype *type, size_t offset) /* {{{2 */
 {
-  lua_apr_dbd_reference *subobj;
+  void *object;
+  lua_apr_dbd_reference *reference;
 
-  subobj = check_object(L, idx, type);
-  if (subobj->generation != subobj->driver->generation)
-    luaL_error(L, "database driver has been reinitialized");
+  object = check_object(L, idx, type);
+  if (object != NULL) {
+    reference = (void*)((char*)object + offset);
+    if (reference->generation != reference->driver->generation)
+      luaL_error(L, "database driver has been reinitialized");
+  }
 
-  return subobj;
+  return object;
 }
 
 /* check_dbr() {{{2 */
 
 static lua_apr_dbr_object *check_dbr(lua_State *L, int idx)
 {
-  return check_subobj(L, idx, &lua_apr_dbr_type);
+  return check_subobj(L, idx, &lua_apr_dbr_type, offsetof(lua_apr_dbr_object, parent));
 }
 
 /* check_dbp() {{{2 */
 
 static lua_apr_dbp_object *check_dbp(lua_State *L, int idx)
 {
-  return check_subobj(L, idx, &lua_apr_dbp_type);
+  return check_subobj(L, idx, &lua_apr_dbp_type, offsetof(lua_apr_dbp_object, parent));
 }
 
 /* new_subobj() {{{2 */
 
-static void *new_subobj(lua_State *L, lua_apr_objtype *type, int idx, lua_apr_dbd_object *driver)
+static void *new_subobj(lua_State *L, lua_apr_objtype *type, int idx, lua_apr_dbd_object *driver, size_t offset)
 {
-  lua_apr_dbd_reference *object;
-
-  object = new_object(L, type);
+  void *object = new_object(L, type);
   if (object != NULL) {
-    object->driver = driver;
-    object->generation = driver->generation;
+    lua_apr_dbd_reference *reference;
+    reference = (void*)((char*)object + offset);
+    reference->driver = driver;
+    reference->generation = driver->generation;
     /* Let Lua's garbage collector know we want the driver to stay alive. */
-    getobjenv(L, -1); /* get result set environment */
+    object_env_private(L, -1); /* get result set environment */
     lua_pushvalue(L, idx); /* copy driver object reference */
     lua_setfield(L, -2, "driver"); /* store reference to driver */
     lua_pop(L, 1); /* remove environment from stack */
   }
-
   return object;
 }
 
@@ -176,7 +182,7 @@ static lua_apr_dbr_object *new_resultset(lua_State *L, int idx, lua_apr_dbd_obje
 {
   lua_apr_dbr_object *object;
 
-  object = new_subobj(L, &lua_apr_dbr_type, idx, driver);
+  object = new_subobj(L, &lua_apr_dbr_type, idx, driver, offsetof(lua_apr_dbr_object, parent));
   if (object != NULL)
     object->random_access = random_access;
 
@@ -187,7 +193,7 @@ static lua_apr_dbr_object *new_resultset(lua_State *L, int idx, lua_apr_dbd_obje
 
 static lua_apr_dbp_object *new_statement(lua_State *L, int idx, lua_apr_dbd_object *driver)
 {
-  return new_subobj(L, &lua_apr_dbp_type, idx, driver);
+  return new_subobj(L, &lua_apr_dbp_type, idx, driver, offsetof(lua_apr_dbp_object, parent));
 }
 
 /* check_dbd_value() {{{2 */
@@ -378,7 +384,6 @@ static int dbr_row_cb(lua_State *L, lua_apr_dbr_object *results, apr_dbd_row_t *
 static apr_status_t dbd_close_impl(lua_apr_dbd_object *driver)
 {
   apr_status_t status = APR_SUCCESS;
-
   if (driver->handle != NULL) {
     status = apr_dbd_close(driver->driver, driver->handle);
     if (status == APR_SUCCESS) {
@@ -386,7 +391,6 @@ static apr_status_t dbd_close_impl(lua_apr_dbd_object *driver)
       driver->generation++;
     }
   }
-
   return status;
 }
 
@@ -766,6 +770,8 @@ static int dbd_prepare(lua_State *L)
  *
  * If you pass a list then the values in the list become query parameters,
  * otherwise all function arguments become query parameters.
+ *
+ * *This function is not binary safe.*
  */
 
 static int dbp_query(lua_State *L)
@@ -798,6 +804,8 @@ static int dbp_query(lua_State *L)
  *
  * TODO Make the @random_access argument an attribute of the prepared
  * statement object so that we can get rid of the argument here?!
+ *
+ * *This function is not binary safe.*
  */
 
 static int dbp_select(lua_State *L)
@@ -832,6 +840,15 @@ static int dbp_tostring(lua_State *L)
   lua_pushfstring(L, "%s (%p)", lua_apr_dbp_type.friendlyname, object);
 
   return 1;
+}
+
+/* prepared_statement:__gc() {{{2 */
+
+static int dbp_gc(lua_State *L)
+{
+  lua_apr_dbp_object *object = check_dbp(L, 1);
+  release_object(L, (lua_apr_refobj*)object);
+  return 0;
 }
 
 /* Result sets. {{{1 */
@@ -880,6 +897,8 @@ static int dbr_columns(lua_State *L)
  * row with index @rownum if given. When there are no more rows nothing is
  * returned, in case of an error a nil followed by an error message is
  * returned.
+ *
+ * *This function is not binary safe.*
  */
 
 static int dbr_row(lua_State *L)
@@ -893,6 +912,8 @@ static int dbr_row(lua_State *L)
  * (remaining) row in the result set.
  *
  * In Lua 5.2 you can also use `pairs(result_set)`.
+ *
+ * *This function is not binary safe.*
  */
 
 static int dbr_rows(lua_State *L)
@@ -911,6 +932,8 @@ static int dbr_rows(lua_State *L)
  * be in the same order as the column list in the SQL query. When there are no
  * more rows nothing is returned, in case of an error a nil followed by an
  * error message is returned.
+ *
+ * *This function is not binary safe.*
  */
 
 static int dbr_tuple(lua_State *L)
@@ -932,6 +955,8 @@ static int dbr_tuple(lua_State *L)
  *     >>  print(quote)
  *     >>  print()
  *     >> end
+ *
+ * *This function is not binary safe.*
  */
 
 static int dbr_tuples(lua_State *L)
@@ -949,6 +974,8 @@ static int dbr_tuples(lua_State *L)
  * for each (remaining) row in the result set.
  *
  * In Lua 5.2 you can also use `ipairs(result_set)`.
+ *
+ * *This function is not binary safe.*
  */
 
 static int dbr_pairs(lua_State *L)
@@ -993,6 +1020,15 @@ static int dbr_tostring(lua_State *L)
   return 1;
 }
 
+/* result_set:__gc() {{{2 */
+
+static int dbr_gc(lua_State *L)
+{
+  lua_apr_dbr_object *object = check_dbr(L, 1);
+  release_object(L, (lua_apr_refobj*)object);
+  return 0;
+}
+
 /* driver:close() -> status {{{1
  *
  * Close a connection to a backend.
@@ -1028,7 +1064,10 @@ static int dbd_tostring(lua_State *L)
 
 static int dbd_gc(lua_State *L)
 {
-  dbd_close_impl(check_dbd(L, 1, 0, 0));
+  lua_apr_dbd_object *driver = check_dbd(L, 1, 0, 0);
+  if (object_collectable((lua_apr_refobj*)driver))
+    dbd_close_impl(driver);
+  release_object(L, (lua_apr_refobj*)driver);
   return 0;
 }
 
@@ -1038,6 +1077,7 @@ static int dbd_gc(lua_State *L)
 
 static luaL_reg dbd_metamethods[] = {
   { "__tostring", dbd_tostring },
+  { "__eq", objects_equal },
   { "__gc", dbd_gc },
   { NULL, NULL }
 };
@@ -1061,11 +1101,11 @@ static luaL_reg dbd_methods[] = {
 };
 
 lua_apr_objtype lua_apr_dbd_type = {
-  "lua_apr_dbd_object*",
-  "database driver",
-  sizeof(lua_apr_dbd_object),
-  dbd_methods,
-  dbd_metamethods
+  "lua_apr_dbd_object*",      /* metatable name in registry */
+  "database driver",          /* friendly object name */
+  sizeof(lua_apr_dbd_object), /* structure size */
+  dbd_methods,                /* methods table */
+  dbd_metamethods             /* metamethods table */
 };
 
 /* Result set objects. {{{2 */
@@ -1073,6 +1113,8 @@ lua_apr_objtype lua_apr_dbd_type = {
 static luaL_reg dbr_metamethods[] = {
   { "__len", dbr_len },
   { "__tostring", dbr_tostring },
+  { "__eq", objects_equal },
+  { "__gc", dbr_gc },
 #if LUA_VERSION_NUM >= 502
   { "__pairs", dbr_rows },
   { "__ipairs", dbr_pairs },
@@ -1091,17 +1133,19 @@ static luaL_reg dbr_methods[] = {
 };
 
 lua_apr_objtype lua_apr_dbr_type = {
-  "lua_apr_dbr_object*",
-  "result set",
-  sizeof(lua_apr_dbr_object),
-  dbr_methods,
-  dbr_metamethods
+  "lua_apr_dbr_object*",      /* metatable name in registry */
+  "result set",               /* friendly object name */
+  sizeof(lua_apr_dbr_object), /* structure size */
+  dbr_methods,                /* methods table */
+  dbr_metamethods             /* metamethods table */
 };
 
 /* Prepared statement objects. {{{2 */
 
 static luaL_reg dbp_metamethods[] = {
   { "__tostring", dbp_tostring },
+  { "__eq", objects_equal },
+  { "__gc", dbp_gc },
   { NULL, NULL }
 };
 
@@ -1112,11 +1156,11 @@ static luaL_reg dbp_methods[] = {
 };
 
 lua_apr_objtype lua_apr_dbp_type = {
-  "lua_apr_dbp_object*",
-  "prepared statement",
-  sizeof(lua_apr_dbp_object),
-  dbp_methods,
-  dbp_metamethods
+  "lua_apr_dbp_object*",      /* metatable name in registry */
+  "prepared statement",       /* friendly object name */
+  sizeof(lua_apr_dbp_object), /* structure size */
+  dbp_methods,                /* methods table */
+  dbp_metamethods             /* metamethods table */
 };
 
 /* vim: set ts=2 sw=2 et tw=79 fen fdm=marker : */

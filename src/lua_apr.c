@@ -1,7 +1,7 @@
 /* Miscellaneous functions module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 11, 2011
+ * Last Change: February 19, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -12,8 +12,25 @@
 /* Used to make sure that APR is only initialized once. */
 static int apr_was_initialized = 0;
 
-/* Used to locate global memory pool used by library functions. */
-static int mp_regidx = LUA_NOREF;
+/* List of all userdata types exposed to Lua by the binding. */
+lua_apr_objtype *lua_apr_types[] = {
+  &lua_apr_file_type,
+  &lua_apr_dir_type,
+  &lua_apr_socket_type,
+# if APR_HAS_THREADS
+  &lua_apr_thread_type,
+  &lua_apr_queue_type,
+# endif
+  &lua_apr_proc_type,
+  &lua_apr_dbm_type,
+  &lua_apr_dbd_type,
+  &lua_apr_dbr_type,
+  &lua_apr_dbp_type,
+  &lua_apr_md5_type,
+  &lua_apr_sha1_type,
+  &lua_apr_xml_type,
+  NULL
+};
 
 /* luaopen_apr_core() initializes the binding and library. {{{1 */
 
@@ -24,7 +41,7 @@ int luaopen_apr_core(lua_State *L)
   /* Table of library functions. */
   luaL_Reg functions[] = {
 
-    /* lua_apr.c -- the "main" file. */
+    /* lua_apr.c -- miscellaneous functions. */
     { "platform_get", lua_apr_platform_get },
     { "version_get", lua_apr_version_get },
     { "os_default_encoding", lua_apr_os_default_encoding },
@@ -125,10 +142,15 @@ int luaopen_apr_core(lua_State *L)
     { "strfsize", lua_apr_strfsize },
     { "tokenize_to_argv", lua_apr_tokenize_to_argv },
 
-    /* thread.c -- multi threading */
 #   if APR_HAS_THREADS
+
+    /* thread.c -- multi threading. */
     { "thread_create", lua_apr_thread_create },
     { "thread_yield", lua_apr_thread_yield },
+
+    /* thread_queue.c -- thread queues. */
+    { "thread_queue", lua_apr_thread_queue },
+
 #   endif
 
     /* time.c -- time management */
@@ -168,7 +190,16 @@ int luaopen_apr_core(lua_State *L)
     if (atexit(apr_terminate) != 0)
       raise_error_message(L, "Lua/APR: Failed to register apr_terminate()");
     apr_was_initialized = 1;
+#   if APR_HAS_THREADS
+    /* Initialize the thread module's mutex and condition variables. */
+    threads_initialize(L);
+#   endif
   }
+
+  /* Create the `scratch' memory pool for global APR functions (as opposed to
+   * object methods) and install a __gc metamethod to detect when the Lua state
+   * is exited. */
+  to_pool(L);
 
   /* Create the table of global functions. */
   lua_createtable(L, 0, count(functions));
@@ -186,7 +217,7 @@ int luaopen_apr_core(lua_State *L)
 }
 
 /* apr.platform_get() -> name {{{1
- * 
+ *
  * Get the name of the platform for which the Lua/APR binding was compiled.
  * Returns one of the following strings:
  *
@@ -291,61 +322,20 @@ int lua_apr_os_locale_encoding(lua_State *L)
 
 int lua_apr_type(lua_State *L)
 {
-  lua_apr_objtype *types[] = {
-    &lua_apr_file_type,
-    &lua_apr_dir_type,
-    &lua_apr_socket_type,
-    &lua_apr_thread_type,
-    &lua_apr_proc_type,
-    &lua_apr_dbm_type,
-    &lua_apr_dbd_type,
-    &lua_apr_dbr_type,
-    &lua_apr_dbp_type,
-    &lua_apr_md5_type,
-    &lua_apr_sha1_type,
-    &lua_apr_xml_type
-  };
   int i;
 
   lua_settop(L, 1);
   luaL_checktype(L, 1, LUA_TUSERDATA);
   lua_getmetatable(L, 1);
 
-  for (i = 0; i < count(types); i++) {
-    get_metatable(L, types[i]);
-    if (lua_rawequal(L, 2, 3)) {
-      lua_pushstring(L, types[i]->friendlyname);
+  for (i = 0; lua_apr_types[i] != NULL; i++) {
+    if (object_has_type(L, 1, lua_apr_types[i], 0)) {
+      lua_pushstring(L, lua_apr_types[i]->friendlyname);
       return 1;
     }
-    lua_pop(L, 1);
   }
 
   return 0;
-}
-
-/* to_pool() returns the global memory pool from the registry. {{{1 */
-
-apr_pool_t *to_pool(lua_State *L)
-{
-  apr_pool_t *memory_pool;
-  apr_status_t status;
-
-  luaL_checkstack(L, 1, "not enough stack space to get memory pool");
-
-  if (mp_regidx == LUA_NOREF) {
-    status = apr_pool_create(&memory_pool, NULL);
-    if (status != APR_SUCCESS)
-      raise_error_status(L, status);
-    lua_pushlightuserdata(L, memory_pool);
-    mp_regidx = luaL_ref(L, LUA_REGISTRYINDEX);
-  } else {
-    lua_rawgeti(L, LUA_REGISTRYINDEX, mp_regidx);
-    memory_pool = lua_touserdata(L, -1);
-    apr_pool_clear(memory_pool);
-    lua_pop(L, 1);
-  }
-
-  return memory_pool;
 }
 
 /* status_to_message() converts APR status codes to error messages. {{{1 */
@@ -378,103 +368,6 @@ int push_error_status(lua_State *L, apr_status_t status)
   status_to_message(L, status);
   status_to_name(L, status);
   return 3;
-}
-
-/* new_object() allocates userdata of the given type. {{{1 */
-
-void *new_object_ex(lua_State *L, lua_apr_objtype *T, int independant)
-{
-  void *object, **indirect;
-
-  if (!independant) {
-    /* Common case: Allocate as Lua userdata object. */
-    object = lua_newuserdata(L, T->objsize);
-  } else {
-    /* Thread objects are allocated as a reference counted chunk of memory. */
-    object = malloc(T->objsize);
-    /* The actual Lua userdata in this case is just a pointer. */
-    indirect = lua_newuserdata(L, sizeof(void*));
-    if (indirect != NULL) {
-      *indirect = object;
-    } else {
-      free(object);
-      object = NULL;
-    }
-  }
-
-  if (object != NULL) {
-    memset(object, 0, T->objsize);
-    get_metatable(L, T);
-    lua_setmetatable(L, -2);
-    getdefaultenv(L);
-    lua_setfenv(L, -2);
-  }
-
-  return object;
-}
-
-/* getdefaultenv() returns the default userdata environment. {{{1 */
-
-void getdefaultenv(lua_State *L)
-{
-  const char *key = "Lua/APR default environment for userdata";
-
-  lua_getfield(L, LUA_REGISTRYINDEX, key);
-  if (!lua_istable(L, -1)) {
-    lua_pop(L, 1);
-    lua_newtable(L);
-    lua_pushvalue(L, -1);
-    lua_setfield(L, LUA_REGISTRYINDEX, key);
-  }
-}
-
-/* getobjenv() returns the given object's environment. {{{1 */
-
-int getobjenv(lua_State *L, int idx)
-{
-  lua_getfenv(L, idx); /* get current environment table */
-  getdefaultenv(L); /* get default environment table */
-  if (!lua_equal(L, -1, -2)) {
-    lua_pop(L, 1);
-    return 1;
-  } else {
-    lua_pop(L, 2);
-    lua_newtable(L); /* create environment table */
-    lua_pushvalue(L, -1); /* copy reference to table */
-    lua_setfenv(L, idx); /* install environment table */
-    return 0;
-  }
-}
-
-/* check_object() validates objects created by new_object(). {{{1 */
-
-void *check_object(lua_State *L, int idx, lua_apr_objtype *T)
-{
-  int valid = 0;
-  get_metatable(L, T);
-  lua_getmetatable(L, idx);
-  valid = lua_rawequal(L, -1, -2);
-  lua_pop(L, 2);
-  if (valid)
-    return lua_touserdata(L, idx);
-  luaL_typerror(L, idx, T->typename);
-  return NULL;
-}
-
-/* get_metatable() returns the metatable for the given type. {{{1 */
-
-int get_metatable(lua_State *L, lua_apr_objtype *T)
-{
-  luaL_getmetatable(L, T->typename);
-  if (lua_type(L, -1) != LUA_TTABLE) {
-    lua_pop(L, 1);
-    luaL_newmetatable(L, T->typename);
-    luaL_register(L, NULL, T->metamethods);
-    lua_newtable(L);
-    luaL_register(L, NULL, T->methods);
-    lua_setfield(L, -2, "__index");
-  }
-  return 1;
 }
 
 /* vim: set ts=2 sw=2 et tw=79 fen fdm=marker : */

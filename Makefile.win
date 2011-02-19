@@ -1,7 +1,7 @@
 # This is the Windows makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: February 12, 2011
+# Last Change: February 19, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -38,13 +38,38 @@ CFLAGS = $(CFLAGS) /Zi /Fd"core.pdb" /DDEBUG
 LFLAGS = $(LFLAGS) /debug
 !ENDIF
 
-# Names of compiled object files.
-OBJECTS = src\base64.obj src\buffer.obj src\crypt.obj src\date.obj \
-		  src\dbd.obj src\dbm.obj src\env.obj src\errno.obj src\filepath.obj \
-		  src\fnmatch.obj src\io_dir.obj src\io_file.obj src\io_net.obj \
-		  src\io_pipe.obj src\lua_apr.obj src\permissions.obj src\proc.obj \
-		  src\refpool.obj src\stat.obj src\shm.obj src\str.obj src\thread.obj \
-		  src\time.obj src\uri.obj src\user.obj src\uuid.obj src\xlate.obj \
+# Names of compiled object files (the individual lines enable automatic
+# rebasing between git feature branches and the master branch).
+OBJECTS = src\base64.obj \
+		  src\buffer.obj \
+		  src\crypt.obj \
+		  src\date.obj \
+		  src\dbd.obj \
+		  src\dbm.obj \
+		  src\env.obj \
+		  src\errno.obj \
+		  src\filepath.obj \
+		  src\fnmatch.obj \
+		  src\io_dir.obj \
+		  src\io_file.obj \
+		  src\io_net.obj \
+		  src\io_pipe.obj \
+		  src\lua_apr.obj \
+		  src\memory_pool.obj \
+		  src\object.obj \
+		  src\permissions.obj \
+		  src\proc.obj \
+		  src\shm.obj \
+		  src\stat.obj \
+		  src\str.obj \
+		  src\thread.obj \
+		  src\thread_queue.obj \
+		  src\time.obj \
+		  src\tuple.obj \
+		  src\uri.obj \
+		  src\user.obj \
+		  src\uuid.obj \
+		  src\xlate.obj \
 		  src\xml.obj
 
 # Build rules.

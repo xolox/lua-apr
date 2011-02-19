@@ -1,7 +1,7 @@
 /* Process handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 8, 2011
+ * Last Change: February 13, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -52,7 +52,7 @@ static int get_pipe(lua_State *L, apr_file_t *handle, const char *key)
 {
   lua_apr_file *file;
 
-  if (getobjenv(L, 1)) {
+  if (object_env_private(L, 1)) {
     lua_getfield(L, -1, key); /* get cached pipe object */
     if (lua_type(L, -1) == LUA_TUSERDATA)
       return 1; /* return cached pipe object */
@@ -84,7 +84,7 @@ static int set_pipe(lua_State *L, const char *ck, const char *pk, lua_apr_setpip
     parent = file_check(L, 3, 1)->handle;
 
   /* Make sure pipe(s) aren't garbage collected while process is alive! */
-  getobjenv(L, 1); /* process, child_pipe, parent_pipe, environment */
+  object_env_private(L, 1); /* process, child_pipe, parent_pipe, environment */
   lua_insert(L, 1); /* environment, process, child_pipe, parent_pipe */
   lua_setfield(L, 1, pk); /* environment, process, child_pipe */
   lua_setfield(L, 1, ck); /* environment, process */
@@ -734,7 +734,7 @@ static int proc_kill(lua_State *L)
 static int proc_tostring(lua_State *L)
 {
   lua_apr_proc *process;
-  
+
   process = proc_check(L, 1);
   lua_pushfstring(L, "%s (%p)", lua_apr_proc_type.friendlyname, process);
 
@@ -746,20 +746,23 @@ static int proc_tostring(lua_State *L)
 static int proc_gc(lua_State *L)
 {
   lua_apr_proc *process = proc_check(L, 1);
-  lua_settop(L, 1);
-  lua_getfenv(L, 1);
-  if (lua_type(L, -1) == LUA_TTABLE) {
-    close_pipe(L, "in_child");
-    close_pipe(L, "in_parent");
-    close_pipe(L, "out_child");
-    close_pipe(L, "out_parent");
-    close_pipe(L, "err_child");
-    close_pipe(L, "err_parent");
+  if (object_collectable((lua_apr_refobj*)process)) {
+    lua_settop(L, 1);
+    lua_getfenv(L, 1);
+    if (lua_type(L, -1) == LUA_TTABLE) {
+      close_pipe(L, "in_child");
+      close_pipe(L, "in_parent");
+      close_pipe(L, "out_child");
+      close_pipe(L, "out_parent");
+      close_pipe(L, "err_child");
+      close_pipe(L, "err_parent");
+    }
+    if (process->memory_pool != NULL) {
+      apr_pool_destroy(process->memory_pool);
+      process->memory_pool = NULL;
+    }
   }
-  if (process->memory_pool != NULL) {
-    apr_pool_destroy(process->memory_pool);
-    process->memory_pool = NULL;
-  }
+  release_object(L, (lua_apr_refobj*)process);
   return 0;
 }
 
@@ -788,17 +791,18 @@ static luaL_Reg proc_methods[] = {
 };
 
 static luaL_Reg proc_metamethods[] = {
-  { "__gc", proc_gc },
   { "__tostring", proc_tostring },
+  { "__eq", objects_equal },
+  { "__gc", proc_gc },
   { NULL, NULL }
 };
 
 lua_apr_objtype lua_apr_proc_type = {
-  "lua_apr_proc*",
-  "process",
-  sizeof(lua_apr_proc),
-  proc_methods,
-  proc_metamethods
+  "lua_apr_proc*",      /* metatable name in registry */
+  "process",            /* friendly object name */
+  sizeof(lua_apr_proc), /* structure size */
+  proc_methods,         /* methods table */
+  proc_metamethods      /* metamethods table */
 };
 
 /* vim: set ts=2 sw=2 et tw=79 fen fdm=marker : */

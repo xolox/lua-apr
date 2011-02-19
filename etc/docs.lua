@@ -3,16 +3,46 @@
  Documentation generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: February 12, 2011
+ Last Change: February 19, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
 ]]
 
-local SOURCES = [[ base64.c crypt.c date.c dbd.c dbm.c env.c filepath.c
-  fnmatch.c io_dir.c io_file.c io_net.c io_pipe.c proc.c shm.c str.c thread.c
-  time.c uri.c user.c uuid.c xlate.c xml.c apr.lua lua_apr.c permissions.c
-  errno.c ../examples/download.lua ../examples/webserver.lua ]]
+-- Files containing documentation fragments (the individual lines enable
+-- automatic rebasing between git feature branches and the master branch).
+local SOURCES = [[
+  base64.c
+  crypt.c
+  date.c
+  dbd.c
+  dbm.c
+  env.c
+  filepath.c
+  fnmatch.c
+  io_dir.c
+  io_file.c
+  io_net.c
+  io_pipe.c
+  proc.c
+  shm.c
+  str.c
+  thread.c
+  thread_queue.c
+  time.c
+  uri.c
+  user.c
+  uuid.c
+  xlate.c
+  xml.c
+  apr.lua
+  lua_apr.c
+  permissions.c
+  errno.c
+  ../examples/download.lua
+  ../examples/webserver.lua
+  ../examples/threaded-webserver.lua
+]]
 
 local modules = {}
 local sorted_modules = {}
@@ -176,7 +206,7 @@ for filename in SOURCES:gmatch '%S+' do
       else
         description = mungedesc(signature, description)
         local by = funcbody:find 'luaL_checklstring' or funcbody:find 'datum_check' or funcbody:find 'lua_pushlstring'
-        local bn = funcbody:find 'luaL_checkstring' or funcbody:find 'lua_tostring' or funcbody:find 'luaL_optstring'
+        local bn = funcbody:find 'luaL_checkstring' or funcbody:find 'lua_tostring' or funcbody:find 'luaL_optstring' or funcbody:find 'lua_pushstring'
         local binarysafe; if by and not bn then binarysafe = true elseif bn then binarysafe = false end
         table.insert(module.functions, {
           signature = stripfoldmarker(signature),
@@ -242,7 +272,9 @@ end
 
 local function toanchor(s)
   s = s:lower()
-  return s:gsub('[^a-z0-9_.:]+', '_')
+  s = s:gsub('[^a-z0-9_.:]+', '_')
+  s = s:gsub('example:_', 'example_')
+  return s
 end
 
 local function sig2pubfun(s)
@@ -340,15 +372,26 @@ blocks:add('%s', table.concat(lines, '\n'))
 
 local bsignore = {
   ['apr.dbd'] = true,
+  ['apr.os_default_encoding'] = true,
+  ['apr.os_locale_encoding'] = true,
+  ['apr.platform_get'] = true,
+  ['apr.proc_fork'] = true,
   ['apr.strfsize'] = true,
+  ['apr.type'] = true,
   ['apr.uri_port_of_scheme'] = true,
   ['apr.uuid_format'] = true,
   ['apr.uuid_get'] = true,
   ['apr.uuid_parse'] = true,
+  ['apr.version_get'] = true,
+  ['driver:driver'] = true,
+  ['driver:transaction_mode'] = true,
   ['file:lock'] = true,
   ['md5_context:digest'] = true,
   ['sha1_context:digest'] = true,
-  ['xml_parser:convert'] = true,
+  ['socket:listen'] = true,
+  ['thread:join'] = true,
+  ['thread:status'] = true,
+  ['xml_parser:geterror'] = true,
 }
 local function dumpentries(functions)
   for _, entry in ipairs(functions) do

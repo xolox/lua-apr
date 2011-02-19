@@ -1,7 +1,7 @@
 /* Pipe I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: January 2, 2011
+ * Last Change: February 13, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -30,7 +30,7 @@ static int pipe_open(lua_State*, lua_apr_openpipe_f);
 /* apr.pipe_open_stdin() -> pipe {{{1
  *
  * Open standard input as a pipe. On success the pipe is returned, otherwise a
- * nil followed by an error message is returned. 
+ * nil followed by an error message is returned.
  */
 
 int lua_apr_pipe_open_stdin(lua_State *L)
@@ -52,7 +52,7 @@ int lua_apr_pipe_open_stdout(lua_State *L)
 /* apr.pipe_open_stderr() -> pipe {{{1
  *
  * Open standard error as a pipe. On success the pipe is returned, otherwise a
- * nil followed by an error message is returned. 
+ * nil followed by an error message is returned.
  */
 
 int lua_apr_pipe_open_stderr(lua_State *L)

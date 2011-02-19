@@ -1,7 +1,7 @@
 /* File I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 11, 2011
+ * Last Change: February 13, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -701,7 +701,10 @@ static int file_tostring(lua_State *L)
 
 static int file_gc(lua_State *L)
 {
-  file_close_impl(L, file_check(L, 1, 0));
+  lua_apr_file *file = file_check(L, 1, 0);
+  if (object_collectable((lua_apr_refobj*)file))
+    file_close_impl(L, file);
+  release_object(L, (lua_apr_refobj*)file);
   return 0;
 }
 
@@ -747,10 +750,10 @@ apr_status_t file_close_impl(lua_State *L, lua_apr_file *file) /* {{{1 */
       status = apr_file_close(file->handle);
     else
       apr_file_close(file->handle);
+    file->handle = NULL;
     refpool_decref(file->pool);
     free_buffer(L, &file->input.buffer);
     free_buffer(L, &file->output.buffer);
-    file->handle = NULL;
   }
   return status;
 }
@@ -798,17 +801,18 @@ static luaL_Reg file_methods[] = {
 };
 
 static luaL_Reg file_metamethods[] = {
-  { "__gc", file_gc },
   { "__tostring", file_tostring },
+  { "__eq", objects_equal },
+  { "__gc", file_gc },
   { NULL, NULL }
 };
 
 lua_apr_objtype lua_apr_file_type = {
-  "lua_apr_file*",
-  "file",
-  sizeof(lua_apr_file),
-  file_methods,
-  file_metamethods
+  "lua_apr_file*",      /* metatable name in registry */
+  "file",               /* friendly object name */
+  sizeof(lua_apr_file), /* structure size */
+  file_methods,         /* methods table */
+  file_metamethods      /* metamethods table */
 };
 
 /* vim: set ts=2 sw=2 et tw=79 fen fdm=marker : */

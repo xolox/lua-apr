@@ -1,9 +1,9 @@
 --[[
 
-  Example: HTTP server
+  Example: Single threaded webserver
 
   Author: Peter Odding <peter@peterodding.com>
-  Last Change: December 30, 2010
+  Last Change: February 19, 2011
   Homepage: http://peterodding.com/code/lua/apr/
   License: MIT
 
@@ -23,14 +23,16 @@
 
 ]]
 
+local port_number = tonumber(arg[1]) or 8080
+
 -- Load the Lua/APR binding.
 local apr = require 'apr'
 
 -- Initialize the server socket.
 local server = assert(apr.socket_create())
-assert(server:bind('*', 8080))
+assert(server:bind('*', port_number))
 assert(server:listen(1))
-print "Okay, now open http://localhost:8080/ in your web browser..!"
+print("Running webserver on http://localhost:" .. port_number .. " ..")
 
 -- Wait for clients to serve.
 local visitor = 1
@@ -46,18 +48,17 @@ local template = [[
   </head>
   <body>
     <h1>Hello from Lua/APR!</h1>
-    <p><em>You are visitor number %i.</em></p>
+    <p><em>You are visitor number %010i.</em></p>
     <p>The headers provided by your web browser:</p>
     <dl>%s</dl>
   </body>
 </html>
 ]]
 while true do
-  print "Waiting for client, press Ctrl-C to quit.."
   local status, message = pcall(function()
     local client = assert(server:accept())
     -- Read the HTTP request so that the client can receive data.
-    local request = assert(client:read())
+    local request = assert(client:read(), "Failed to receive request from client!")
     local method, location, protocol = assert(request:match '^(%w+)%s+(%S+)%s+(%S+)')
     local headers = {}
     for line in client:lines() do

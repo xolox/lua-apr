@@ -1,7 +1,7 @@
 /* Header file for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 11, 2011
+ * Last Change: February 19, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -19,6 +19,7 @@
 #include <apr_file_info.h>
 #include <apr_file_io.h>
 #include <apr_thread_proc.h>
+#include <apr_queue.h>
 
 /* Macro definitions. {{{1 */
 
@@ -64,8 +65,8 @@
 #define time_put(L, time) \
   lua_pushnumber(L, (lua_Number)time / APR_USEC_PER_SEC)
 
-#define new_object(L, T) \
-  new_object_ex(L, T, 0)
+#define check_queue(L, idx) \
+  ((lua_apr_queue*)check_object((L), (idx), &lua_apr_queue_type))
 
 /* Debugging aids. {{{1 */
 
@@ -110,6 +111,19 @@
 
 /* Type definitions. {{{1 */
 
+/* Reference counted Lua objects. */
+typedef struct lua_apr_refobj lua_apr_refobj;
+struct lua_apr_refobj {
+  lua_apr_refobj *reference;
+  int refcount, unmanaged;
+};
+
+/* Reference counted APR memory pool. */
+typedef struct lua_apr_pool {
+  apr_pool_t *ptr;
+  int refs;
+} lua_apr_pool;
+
 /* Context structure for stat() calls. */
 typedef struct lua_apr_stat_context {
   apr_int32_t wanted;
@@ -120,19 +134,22 @@ typedef struct lua_apr_stat_context {
 
 /* Structure for directory objects. */
 typedef struct lua_apr_dir {
+  lua_apr_refobj header;
   apr_dir_t *handle;
   apr_pool_t *memory_pool;
   const char *filepath;
 } lua_apr_dir;
 
-/* Type definitions used to call APR functions through function pointers.
- * NB: Omitting __stdcall here on Windows causes nasty stack corruption! */
+/* The calling convention for APR functions and callbacks. On Windows this
+ * means __stdcall and omitting it can cause nasty stack corruption! */
+#define lua_apr_cc APR_THREAD_FUNC
 
-typedef apr_status_t (APR_THREAD_FUNC *lua_apr_buf_rf)(void*, char*, apr_size_t*);
-typedef apr_status_t (APR_THREAD_FUNC *lua_apr_buf_wf)(void*, const char*, apr_size_t*);
-typedef apr_status_t (APR_THREAD_FUNC *lua_apr_buf_ff)(void*);
-typedef apr_status_t (APR_THREAD_FUNC *lua_apr_openpipe_f)(apr_file_t**, apr_pool_t*);
-typedef apr_status_t (APR_THREAD_FUNC *lua_apr_setpipe_f)(apr_procattr_t*, apr_file_t*, apr_file_t*);
+/* Type definitions used to call APR functions through function pointers. */
+typedef apr_status_t (lua_apr_cc *lua_apr_buf_rf)(void*, char*, apr_size_t*);
+typedef apr_status_t (lua_apr_cc *lua_apr_buf_wf)(void*, const char*, apr_size_t*);
+typedef apr_status_t (lua_apr_cc *lua_apr_buf_ff)(void*);
+typedef apr_status_t (lua_apr_cc *lua_apr_openpipe_f)(apr_file_t**, apr_pool_t*);
+typedef apr_status_t (lua_apr_cc *lua_apr_setpipe_f)(apr_procattr_t*, apr_file_t*, apr_file_t*);
 
 /* Structures for internal I/O buffers. */
 
@@ -157,14 +174,9 @@ typedef struct lua_apr_writebuf {
   lua_apr_buffer buffer;
 } lua_apr_writebuf;
 
-/* Reference counted APR memory pool. */
-typedef struct lua_apr_pool {
-  apr_pool_t *ptr;
-  int refs;
-} lua_apr_pool;
-
 /* Structure for file objects. */
 typedef struct lua_apr_file {
+  lua_apr_refobj header;
   lua_apr_readbuf input;
   lua_apr_writebuf output;
   apr_file_t *handle;
@@ -174,12 +186,20 @@ typedef struct lua_apr_file {
 
 /* Structure for process objects. */
 typedef struct lua_apr_proc {
+  lua_apr_refobj header;
   apr_pool_t *memory_pool;
   apr_proc_t handle;
   apr_procattr_t *attr;
   const char *path;
   const char **env;
 } lua_apr_proc;
+
+/* Structure for thread queue objects. */
+typedef struct lua_apr_queue {
+  lua_apr_refobj header;
+  apr_pool_t *pool;
+  apr_queue_t *handle;
+} lua_apr_queue;
 
 /* Structure for Lua userdatum types. */
 typedef struct lua_apr_objtype {
@@ -190,10 +210,12 @@ typedef struct lua_apr_objtype {
 } lua_apr_objtype;
 
 /* External type definitions. */
+extern lua_apr_objtype *lua_apr_types[];
 extern lua_apr_objtype lua_apr_file_type;
 extern lua_apr_objtype lua_apr_dir_type;
 extern lua_apr_objtype lua_apr_socket_type;
 extern lua_apr_objtype lua_apr_thread_type;
+extern lua_apr_objtype lua_apr_queue_type;
 extern lua_apr_objtype lua_apr_proc_type;
 extern lua_apr_objtype lua_apr_shm_type;
 extern lua_apr_objtype lua_apr_dbm_type;
@@ -216,11 +238,6 @@ apr_pool_t *to_pool(lua_State*);
 int status_to_message(lua_State*, apr_status_t);
 int push_status(lua_State*, apr_status_t);
 int push_error_status(lua_State*, apr_status_t);
-void *new_object_ex(lua_State*, lua_apr_objtype*, int);
-void getdefaultenv(lua_State*);
-int getobjenv(lua_State*, int);
-void *check_object(lua_State*, int, lua_apr_objtype*);
-int get_metatable(lua_State*, lua_apr_objtype*);
 
 /* base64.c */
 int lua_apr_base64_encode(lua_State*);
@@ -313,6 +330,19 @@ int lua_apr_pipe_open_stderr(lua_State*);
 int lua_apr_namedpipe_create(lua_State*);
 int lua_apr_pipe_create(lua_State*);
 
+/* object.c */
+void *new_object(lua_State*, lua_apr_objtype*);
+void *prepare_reference(lua_State*, lua_apr_objtype*, lua_apr_refobj*);
+void init_object(lua_State*, lua_apr_objtype*);
+int object_collectable(lua_apr_refobj*);
+void release_object(lua_State*, lua_apr_refobj*);
+void object_env_default(lua_State*);
+int object_env_private(lua_State*, int);
+int object_has_type(lua_State*, int, lua_apr_objtype*, int);
+int objects_equal(lua_State*);
+void *check_object(lua_State*, int, lua_apr_objtype*);
+int get_metatable(lua_State*, lua_apr_objtype*);
+
 /* permissions.c */
 int push_protection(lua_State*, apr_fileperms_t);
 apr_fileperms_t check_permissions(lua_State*, int, int);
@@ -322,7 +352,10 @@ int lua_apr_proc_create(lua_State*);
 int lua_apr_proc_detach(lua_State*);
 int lua_apr_proc_fork(lua_State*);
 
-/* refpool.c */
+/* refcount.c */
+void *object_incref(lua_apr_refobj*);
+void *proxy_object(lua_State*, lua_apr_objtype*, lua_apr_refobj*);
+int object_decref(void*);
 lua_apr_pool *refpool_alloc(lua_State*);
 apr_pool_t* refpool_incref(lua_apr_pool*);
 void refpool_decref(lua_apr_pool*);
@@ -345,6 +378,18 @@ int lua_apr_tokenize_to_argv(lua_State*);
 /* thread.c */
 int lua_apr_thread_create(lua_State*);
 int lua_apr_thread_yield(lua_State*);
+void threads_initialize(lua_State*);
+void threads_increment(lua_State*);
+void threads_decrement(lua_State*);
+void threads_terminate();
+
+/* thread_queue.c */
+void close_queue_real(lua_State*, lua_apr_queue*);
+int lua_apr_thread_queue(lua_State*);
+
+/* tuple.c */
+int check_tuple(lua_State*, int, int, void**);
+int push_tuple(lua_State*, void*);
 
 /* time.c */
 int lua_apr_sleep(lua_State*);
@@ -378,3 +423,5 @@ int lua_apr_xlate(lua_State*);
 int lua_apr_xml(lua_State*);
 
 /* vim: set ts=2 sw=2 et tw=79 fen fdm=marker : */
+
+

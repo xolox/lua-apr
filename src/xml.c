@@ -3,7 +3,7 @@
  * Authors:
  *  - zhiguo zhao <zhaozg@gmail.com>
  *  - Peter Odding <peter@peterodding.com>
- * Last Change: February 10, 2011
+ * Last Change: February 13, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -44,6 +44,7 @@
 #include <apr_xlate.h>
 
 typedef struct {
+  lua_apr_refobj header;
   apr_pool_t *pool;
   apr_xml_parser *parser;
   apr_xml_doc *doc;
@@ -153,8 +154,8 @@ static void dump_xml(lua_State *L, apr_xml_elem *elem)
 static void xml_close_real(lua_apr_xml_object *object)
 {
   if (object->parser != NULL) {
-    apr_pool_destroy(object->pool);
     object->parser = NULL;
+    apr_pool_destroy(object->pool);
     object->pool = NULL;
   }
 }
@@ -314,11 +315,10 @@ static int xml_tostring(lua_State *L)
 
 static int xml_gc(lua_State *L)
 {
-  lua_apr_xml_object *object;
-
-  object = check_xml_parser(L, 1, CHECK_NONE);
-  xml_close_real(object);
-
+  lua_apr_xml_object *object = check_xml_parser(L, 1, CHECK_NONE);
+  if (object_collectable((lua_apr_refobj*)object))
+    xml_close_real(object);
+  release_object(L, (lua_apr_refobj*)object);
   return 0;
 }
 
@@ -335,14 +335,15 @@ static luaL_reg xml_methods[] = {
 
 static luaL_reg xml_metamethods[] = {
   { "__tostring", xml_tostring },
+  { "__eq", objects_equal },
   { "__gc", xml_gc },
   { NULL, NULL }
 };
 
 lua_apr_objtype lua_apr_xml_type = {
-  "lua_apr_xml_object*",
-  "xml parser",
-  sizeof(lua_apr_xml_object),
-  xml_methods,
-  xml_metamethods
+  "lua_apr_xml_object*",      /* metatable name in registry */
+  "xml parser",               /* friendly object name */
+  sizeof(lua_apr_xml_object), /* structure size */
+  xml_methods,                /* methods table */
+  xml_metamethods             /* metamethods table */
 };

@@ -1,7 +1,7 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: February 12, 2011
+# Last Change: February 19, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -17,13 +17,39 @@ LUA_SHAREDIR = $(LUA_DIR)/share/lua/5.1
 SOURCE_MODULE = src/apr.lua
 BINARY_MODULE = core.so
 
-# Names of source code files to compile & link.
-SOURCES = src/base64.c src/buffer.c src/crypt.c src/date.c src/dbd.c src/dbm.c \
-		  src/env.c src/errno.c src/filepath.c src/fnmatch.c src/io_dir.c \
-		  src/io_file.c src/io_net.c src/io_pipe.c src/lua_apr.c \
-		  src/permissions.c src/proc.c src/refpool.c src/stat.c src/shm.c \
-		  src/str.c src/thread.c src/time.c src/uri.c src/user.c src/uuid.c \
-		  src/xlate.c src/xml.c
+# Names of source code files to compile & link (the individual lines enable
+# automatic rebasing between git feature branches and the master branch).
+SOURCES = src/base64.c \
+		  src/buffer.c \
+		  src/crypt.c \
+		  src/date.c \
+		  src/dbd.c \
+		  src/dbm.c \
+		  src/env.c \
+		  src/errno.c \
+		  src/filepath.c \
+		  src/fnmatch.c \
+		  src/io_dir.c \
+		  src/io_file.c \
+		  src/io_net.c \
+		  src/io_pipe.c \
+		  src/lua_apr.c \
+		  src/memory_pool.c \
+		  src/object.c \
+		  src/permissions.c \
+		  src/proc.c \
+		  src/shm.c \
+		  src/stat.c \
+		  src/str.c \
+		  src/thread.c \
+		  src/thread_queue.c \
+		  src/time.c \
+		  src/tuple.c \
+		  src/uri.c \
+		  src/user.c \
+		  src/uuid.c \
+		  src/xlate.c \
+		  src/xml.c
 
 # Names of compiled object files.
 OBJECTS = $(patsubst %.c,%.o,$(SOURCES))
@@ -48,13 +74,13 @@ endif
 
 # The build rules.
 
-$(BINARY_MODULE): $(OBJECTS)
+$(BINARY_MODULE): $(OBJECTS) Makefile
 	$(CC) -shared -o $(BINARY_MODULE) $(OBJECTS) $(LFLAGS)
 
-$(OBJECTS): %.o: %.c src/lua_apr.h
+$(OBJECTS): %.o: %.c src/lua_apr.h Makefile
 	$(CC) -Wall -c $(CFLAGS) -fPIC $< -o $@
 
-src/errno.c: etc/errors.lua
+src/errno.c: etc/errors.lua Makefile
 	lua etc/errors.lua > src/errno.c.new && mv src/errno.c.new src/errno.c
 
 install: $(BINARY_MODULE)
@@ -85,8 +111,10 @@ docs: etc/docs.lua $(SOURCE_MODULE) $(SOURCES)
 	@echo Generating documentation..
 	@lua etc/docs.lua docs.md docs.html
 
+# FIXME The libreadline-dev isn't really needed here is it?!
 install_deps:
-	apt-get install libapr1 libapr1-dev libaprutil1 libaprutil1-dev \
+	apt-get install libapr1 libapr1-dev \
+		libaprutil1 libaprutil1-dev libaprutil1-dbd-sqlite3 \
 		lua5.1 liblua5.1-0 liblua5.1-0-dev libreadline-dev \
 		liblua5.1-markdown0
 

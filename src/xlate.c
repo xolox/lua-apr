@@ -1,7 +1,7 @@
 /* Character encoding translation module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: January 2, 2011
+ * Last Change: February 13, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -10,7 +10,7 @@
 #include <apr_xlate.h>
 
 /* Internal functions {{{1 */
- 
+
 static const char *check_codepage(lua_State *L, int idx)
 {
   const char *codepage = luaL_checkstring(L, idx);

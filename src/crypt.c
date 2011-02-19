@@ -1,7 +1,7 @@
 /* Cryptography routines module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 11, 2011
+ * Last Change: February 13, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -49,11 +49,13 @@
 #define clear_stack(b) clear_mem(b, sizeof(b))
 
 typedef struct lua_apr_md5_ctx {
+  lua_apr_refobj header;
   apr_md5_ctx_t context;
   int finalized;
 } lua_apr_md5_ctx;
 
 typedef struct lua_apr_sha1_ctx {
+  lua_apr_refobj header;
   apr_sha1_ctx_t context;
   int finalized;
 } lua_apr_sha1_ctx;
@@ -312,6 +314,15 @@ static int md5_tostring(lua_State *L)
   return 1;
 }
 
+/* md5_context:__gc() {{{1 */
+
+static int md5_gc(lua_State *L)
+{
+  lua_apr_md5_ctx *object = md5_check(L, 1, 0);
+  release_object(L, (lua_apr_refobj*)object);
+  return 1;
+}
+
 /* apr.sha1_init() -> sha1_context {{{1
  *
  * Create and return an object that can be used to calculate [SHA1] [sha1]
@@ -417,6 +428,15 @@ static int sha1_tostring(lua_State *L)
   return 1;
 }
 
+/* sha1_context:__gc() {{{1 */
+
+static int sha1_gc(lua_State *L)
+{
+  lua_apr_sha1_ctx *object = sha1_check(L, 1, 0);
+  release_object(L, (lua_apr_refobj*)object);
+  return 1;
+}
+
 /* }}}1 */
 
 static luaL_reg md5_methods[] = {
@@ -428,15 +448,17 @@ static luaL_reg md5_methods[] = {
 
 static luaL_reg md5_metamethods[] = {
   { "__tostring", md5_tostring },
+  { "__eq", objects_equal },
+  { "__gc", md5_gc },
   { NULL, NULL },
 };
 
 lua_apr_objtype lua_apr_md5_type = {
-  "lua_apr_md5_ctx*",
-  "md5 context",
-  sizeof(lua_apr_md5_ctx),
-  md5_methods,
-  md5_metamethods
+  "lua_apr_md5_ctx*",      /* metatable name in registry */
+  "md5 context",           /* friendly object name */
+  sizeof(lua_apr_md5_ctx), /* structure size */
+  md5_methods,             /* methods table */
+  md5_metamethods          /* metamethods table */
 };
 
 static luaL_reg sha1_methods[] = {
@@ -448,15 +470,17 @@ static luaL_reg sha1_methods[] = {
 
 static luaL_reg sha1_metamethods[] = {
   { "__tostring", sha1_tostring },
+  { "__eq", objects_equal },
+  { "__gc", sha1_gc },
   { NULL, NULL },
 };
 
 lua_apr_objtype lua_apr_sha1_type = {
-  "lua_apr_sha1_ctx*",
-  "sha1 context",
-  sizeof(lua_apr_sha1_ctx),
-  sha1_methods,
-  sha1_metamethods
+  "lua_apr_sha1_ctx*",      /* metatable name in registry */
+  "sha1 context",           /* friendly object name */
+  sizeof(lua_apr_sha1_ctx), /* structure size */
+  sha1_methods,             /* methods table */
+  sha1_metamethods          /* metamethods table */
 };
 
 /* vim: set ts=2 sw=2 et tw=79 fen fdm=marker : */

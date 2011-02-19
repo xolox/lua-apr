@@ -1,7 +1,7 @@
 /* Date parsing module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: December 30, 2010
+ * Last Change: February 13, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -16,7 +16,7 @@
  *  - `'Sun, 06 Nov 1994 08:49:37 GMT'` - [RFC 822] [rfc822], updated by [RFC 1123][rfc1123]
  *  - `'Sunday, 06-Nov-94 08:49:37 GMT'` - [RFC 850] [rfc850], obsoleted by [RFC 1036][rfc1036]
  *  - `'Sun Nov  6 08:49:37 1994'` - ANSI C's [asctime()] [asctime] format
- * 
+ *
  * On success the date is returned as a number like documented under [time
  * routines](#time_routines). If the date string is out of range or invalid nil
  * is returned.
@@ -57,10 +57,10 @@ int lua_apr_date_parse_http(lua_State *L)
  *  - `'Sun, 6 Nov 1994 08:49:37 GMT'` - [RFC 822] [rfc822], updated by [RFC 1123] [rfc1123]
  *  - `'Sun, 06 Nov 94 08:49:37 GMT'` - [RFC 822] [rfc822]
  *  - `'Sun, 6 Nov 94 08:49:37 GMT'` - [RFC 822] [rfc822]
- *  - `'Sun, 06 Nov 94 08:49 GMT'` - Unknown [drtr@ast.cam.ac.uk] 
+ *  - `'Sun, 06 Nov 94 08:49 GMT'` - Unknown [drtr@ast.cam.ac.uk]
  *  - `'Sun, 6 Nov 94 08:49 GMT'` - Unknown [drtr@ast.cam.ac.uk]
  *  - `'Sun, 06 Nov 94 8:49:37 GMT'` - Unknown [Elm 70.85]
- *  - `'Sun, 6 Nov 94 8:49:37 GMT'` - Unknown [Elm 70.85] 
+ *  - `'Sun, 6 Nov 94 8:49:37 GMT'` - Unknown [Elm 70.85]
  *
  * On success the date is returned as a number like documented under [time
  * routines](#time_routines). If the date string is out of range or invalid nil

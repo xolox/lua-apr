@@ -3,7 +3,7 @@
  Test infrastructure for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: February 11, 2011
+ Last Change: February 18, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -11,6 +11,14 @@
 
 local apr = require 'apr'
 local helpers = {}
+
+function print(...)
+  local t = {}
+  for i = 1, select('#', ...) do
+    t[#t + 1] = tostring(select(i, ...))
+  end
+  io.stderr:write(table.concat(t, ' ') .. '\n')
+end
 
 function helpers.message(s, ...) -- {{{1
   io.stderr:write('\r', string.format(s, ...))
@@ -22,9 +30,32 @@ function helpers.warning(s, ...) -- {{{1
   io.stderr:flush()
 end
 
-function helpers.filedefined()
+function helpers.filedefined() -- {{{1
   local info = assert(debug.getinfo(2, 'S'))
   return info.source:sub(2)
+end
+
+function helpers.deepequal(a, b) -- {{{1
+  if type(a) ~= 'table' or type(b) ~= 'table' then
+    return a == b
+  else
+    for k, v in pairs(a) do
+      if not helpers.deepequal(v, b[k]) then
+        return false
+      end
+    end
+    for k, v in pairs(b) do
+      if not helpers.deepequal(v, a[k]) then
+        return false
+      end
+    end
+    return true
+  end
+end
+
+function helpers.checktuple(expected, ...) -- {{{1
+  assert(select('#', ...) == #expected)
+  for i = 1, #expected do assert(expected[i] == select(i, ...)) end
 end
 
 function helpers.scriptpath(name) -- {{{1

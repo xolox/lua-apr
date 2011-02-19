@@ -3,7 +3,7 @@
  Unit tests for the process handling module of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: February 11, 2011
+ Last Change: February 19, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -80,12 +80,12 @@ I originally used the following message above:
   local namedmsg = "Hello world over a named pipe! :-)"
 
 Which caused the following error message:
-  
+
   /bin/sh: Syntax error: ")" unexpected
 
 Using strace as follows I can see the escaping is lost:
 
-  $ strace -vfe trace=execve -s 250 lua etc/tests.lua 
+  $ strace -vfe trace=execve -s 250 lua etc/tests.lua
   [pid 30868] execve("/bin/sh", ["/bin/sh", "-c", "lua etc/test-namedpipe.lua /tmp/lua-apr-tempfile-66 Hello world over a named pipe! :-)"], [...]) = 0
 
 After removing the smiley the syntax errors disappeared but the words in

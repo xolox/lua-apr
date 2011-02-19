@@ -1,7 +1,7 @@
 /* DBM routines module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 8, 2011
+ * Last Change: February 13, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -34,6 +34,7 @@
 
 /* DBM object structure declaration. */
 typedef struct {
+  lua_apr_refobj header;
   apr_pool_t *pool;
   apr_dbm_t *handle;
   const char *path;
@@ -204,7 +205,7 @@ int dbm_fetch(lua_State *L)
 }
 
 /* dbm:store(key, value) -> status {{{1
- * 
+ *
  * Store the [dbm] [dbm] record @value (a string) by the given string @key. On
  * success true is returned, otherwise a nil followed by an error message is
  * returned.
@@ -328,7 +329,10 @@ int dbm_tostring(lua_State *L)
 
 int dbm_gc(lua_State *L)
 {
-  dbm_close_impl(L, dbm_check(L, 1, 0));
+  lua_apr_dbm *dbm = dbm_check(L, 1, 0);
+  if (object_collectable((lua_apr_refobj*)dbm))
+    dbm_close_impl(L, dbm);
+  release_object(L, (lua_apr_refobj*)dbm);
   return 0;
 }
 
@@ -347,14 +351,15 @@ luaL_reg dbm_methods[] = {
 
 luaL_reg dbm_metamethods[] = {
   { "__tostring", dbm_tostring },
+  { "__eq", objects_equal },
   { "__gc", dbm_gc },
   { NULL, NULL },
 };
 
 lua_apr_objtype lua_apr_dbm_type = {
-  "lua_apr_dbm*",
-  "dbm",
-  sizeof(lua_apr_dbm),
-  dbm_methods,
-  dbm_metamethods
+  "lua_apr_dbm*",      /* metatable name in registry */
+  "dbm",               /* friendly object name */
+  sizeof(lua_apr_dbm), /* structure size */
+  dbm_methods,         /* methods table */
+  dbm_metamethods      /* metamethods table */
 };

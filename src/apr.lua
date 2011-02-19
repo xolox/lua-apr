@@ -3,10 +3,10 @@
  Lua source code for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: February 12, 2011
+ Last Change: February 13, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
- Version: 0.13.3
+ Version: 0.14
 
  This Lua script is executed on require("apr"), loads the binary module using
  require("apr.core"), defines several library functions implemented on top of
@@ -15,7 +15,7 @@
 --]]
 
 local apr = require 'apr.core'
-apr._VERSION = '0.13.3'
+apr._VERSION = '0.14'
 
 -- apr.md5(input [, binary]) -> digest {{{1
 --
@@ -68,7 +68,7 @@ function apr.sha1(input, binary)
 end
 
 -- apr.filepath_which(program [, find_all]) -> pathname {{{1
--- 
+--
 -- Find the full pathname of @program by searching the directories in the
 -- [$PATH] [path_var] environment variable and return the pathname of the
 -- first program that's found. If @find_all is true then a list with the
@@ -104,7 +104,7 @@ function apr.filepath_which(program, find_all)
 end
 
 -- apr.glob(pattern [, ignorecase]) -> iterator {{{1
--- 
+--
 -- Split @pattern into a directory path and a filename pattern and return an
 -- iterator which returns all filenames in the directory that match the
 -- extracted filename pattern. The `apr.fnmatch()` function is used for

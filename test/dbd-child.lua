@@ -1,6 +1,7 @@
 -- Based on http://svn.apache.org/viewvc/apr/apr/trunk/test/testdbd.c?view=markup
 
 local apr = require 'apr'
+local helpers = require 'apr.test.helpers'
 local driver = assert(apr.dbd 'sqlite3')
 assert(driver:open ':memory:')
 assert(driver:driver() == 'sqlite3')
@@ -12,17 +13,6 @@ assert(driver:check())
 assert(not driver:dbname 'anything')
 
 -- Helpers {{{1
-
-function compare_tuple(expected, ...)
-  local nvalues = select('#', ...)
-  assert(nvalues == #expected)
-  for i = 1, nvalues do assert(expected[i] == select(i, ...)) end
-end
-
-function compare_table(expected, actual)
-  for k, v in pairs(expected) do assert(v == actual[k]) end
-  for k, v in pairs(actual) do assert(v == expected[k]) end
-end
 
 function check_label(object, pattern)
   local label = assert(tostring(object))
@@ -108,31 +98,31 @@ local results = assert(driver:select 'SELECT 42')
 -- Check the number of results.
 assert(#results == 1)
 -- Check the resulting tuple.
-compare_tuple({ '42' }, results:tuple(1))
+helpers.checktuple({ '42' }, results:tuple(1))
 -- Check that just one tuple is returned.
 assert(not results:tuple())
 
 -- Tuple containing two numbers. {{{2
 local results = assert(driver:select 'SELECT 42, 24')
 assert(#results == 1)
-compare_tuple({ '42', '24' }, results:tuple(1))
+helpers.checktuple({ '42', '24' }, results:tuple(1))
 assert(not results:tuple())
 
 -- Tuple containing number and string. {{{2
 local results = assert(driver:select [[ SELECT 42, 'hello world!' ]])
 assert(#results == 1)
-compare_tuple({ '42', 'hello world!' }, results:tuple(1))
+helpers.checktuple({ '42', 'hello world!' }, results:tuple(1))
 assert(not results:tuple())
 
 -- Named tuple containing number and string. {{{2
 local results = assert(driver:select [[ SELECT 42 AS "num", 'hello world!' AS "str" ]])
 assert(#results == 1)
-compare_tuple({ 'num', 'str' }, results:columns())
+helpers.checktuple({ 'num', 'str' }, results:columns())
 assert(not results:columns(0))
 assert(results:columns(1) == 'num')
 assert(results:columns(2) == 'str')
 assert(not results:columns(3))
-compare_tuple({ '42', 'hello world!' }, results:tuple(1))
+helpers.checktuple({ '42', 'hello world!' }, results:tuple(1))
 assert(not results:tuple())
 
 -- Result set with multiple tuples. {{{2
@@ -142,7 +132,7 @@ local results = assert(driver:select [[
   ORDER BY col1
 ]])
 local expected = string.byte 'a'
-compare_tuple({ 'col1', 'col2', 'col3' }, results:columns())
+helpers.checktuple({ 'col1', 'col2', 'col3' }, results:columns())
 while true do
   local col1, col2, col3 = results:tuple()
   if not col1 then break end
@@ -161,11 +151,11 @@ local results = assert(driver:select [[
 ]])
 local expected = string.byte 'a'
 for row in results:rows() do
-  compare_table({
+  assert(helpers.deepequal({
     col1 = string.char(expected),
     col2 = tostring(expected),
     col3 = tostring(expected)
-  }, row)
+  }, row))
   expected = expected + 1
 end
 assert(expected == (string.byte 'z' + 1))
@@ -175,19 +165,19 @@ assert(expected == (string.byte 'z' + 1))
 -- Basic usage.
 local results = assert(driver:select [[ SELECT 42 AS "num", 'hello world!' AS "str" ]])
 assert(#results == 1)
-compare_table({ num = '42', str = 'hello world!' }, results:row(1))
+assert(helpers.deepequal({ num = '42', str = 'hello world!' }, results:row(1)))
 assert(not results:row())
 
 -- NULL translates to nil.
 local results = assert(driver:select [[ SELECT 42 AS "num", 'hello world!' AS "str", NULL AS "whatever" ]])
 assert(#results == 1)
-compare_table({ num = '42', str = 'hello world!' }, results:row(1))
+assert(helpers.deepequal({ num = '42', str = 'hello world!' }, results:row(1)))
 assert(not results:row())
 
 -- True and false translate to 0 and 1.
 local results = assert(driver:select [[ SELECT (1 == 1) AS "t", (1 == 2) AS "f" ]])
 assert(#results == 1)
-compare_table({ t = '1', f = '0' }, results:row(1))
+assert(helpers.deepequal({ t = '1', f = '0' }, results:row(1)))
 
 -- Test resultset:pairs() iterator. {{{1
 local results = assert(driver:select [[
@@ -198,11 +188,11 @@ local results = assert(driver:select [[
 local ii = 1
 local expected = string.byte 'a'
 for i, row in results:pairs() do
-  compare_table({
+  assert(helpers.deepequal({
     col1 = string.char(expected),
     col2 = tostring(expected),
     col3 = tostring(expected)
-  }, row)
+  }, row))
   assert(i == ii)
   expected = expected + 1
   ii = ii + 1
@@ -227,7 +217,7 @@ end
 
 local results = driver:select 'SELECT 1, 2, 3'
 assert(apr.type(results) == 'result set')
-compare_tuple({ '1', '2', '3' }, results:tuple(1))
+helpers.checktuple({ '1', '2', '3' }, results:tuple(1))
 
 local statement = driver:prepare 'SELECT 1, 2, 3'
 assert(apr.type(statement) == 'prepared statement')
