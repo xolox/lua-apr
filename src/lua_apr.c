@@ -1,7 +1,7 @@
 /* Miscellaneous functions module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 19, 2011
+ * Last Change: February 20, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -245,26 +245,30 @@ int lua_apr_platform_get(lua_State *L)
   return 1;
 }
 
-/* apr.version_get() -> apr_version, apu_version {{{1
+/* apr.version_get() -> apr_version [, apu_version] {{{1
  *
- * Get the version numbers of the Apache Portable Runtime and its utility
- * library as strings. Each string contains three numbers separated by dots.
- * The numbers have the following meaning:
+ * Get the version number of the Apache Portable Runtime as a string. The
+ * string contains three numbers separated by dots. These numbers have the
+ * following meaning:
  *
  *  - The 1st number is used for major [API] [api] changes that can cause
- *    compatibility problems between the Lua/APR binding and the APR and
- *    APR-util libraries
+ *    compatibility problems between the Lua/APR binding and APR library
  *  - The 2nd number is used for minor API changes that shouldn't impact
  *    existing functionality in the Lua/APR binding
  *  - The 3rd number is used exclusively for bug fixes
+ *
+ * The second return value, the version number of the APR utility library, is
+ * only available when Lua/APR is compiled against APR 1.x because in APR 2.x
+ * the utility library has been absorbed back into the APR library; there is no
+ * longer a distinction between the APR core and APR utility libraries.
  *
  * This function can be useful when you want to know whether a certain bug fix
  * has been applied to APR and/or APR-util or if you want to report a bug in
  * APR, APR-util or the Lua/APR binding.
  *
  * If you're looking for the version of the Lua/APR binding you can use the
- * `apr._VERSION` string, but note that Lua/APR currently does not use the
- * above versioning rules.
+ * `apr._VERSION` string, but note that Lua/APR currently does not adhere to
+ * the above versioning rules.
  *
  * [api]: http://en.wikipedia.org/wiki/Application_programming_interface
  */
@@ -272,8 +276,12 @@ int lua_apr_platform_get(lua_State *L)
 int lua_apr_version_get(lua_State *L)
 {
   lua_pushstring(L, apr_version_string());
+# if APR_VERSION < 2
   lua_pushstring(L, apu_version_string());
   return 2;
+# else
+  return 1;
+# endif
 }
 
 /* apr.os_default_encoding() -> name {{{1
