@@ -34,7 +34,16 @@ lua_apr_objtype *lua_apr_types[] = {
 
 /* luaopen_apr_core() initializes the binding and library. {{{1 */
 
-int luaopen_apr_core(lua_State *L)
+/* Enable redefining exporting of loader function, with sane defaults. */
+#ifndef LUA_APR_EXPORT
+# ifdef WIN32
+#  define LUA_APR_EXPORT __declspec(dllexport)
+# else
+#  define LUA_APR_EXPORT extern
+# endif
+#endif
+
+LUA_APR_EXPORT int luaopen_apr_core(lua_State *L)
 {
   apr_status_t status;
 

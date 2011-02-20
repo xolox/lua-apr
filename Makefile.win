@@ -1,7 +1,7 @@
 # This is the Windows makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: February 19, 2011
+# Last Change: February 20, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -75,7 +75,7 @@ OBJECTS = src\base64.obj \
 # Build rules.
 
 core.dll: $(OBJECTS)
-	LINK /nologo /dll /out:$@ /export:luaopen_apr_core $(OBJECTS) $(LFLAGS)
+	LINK /nologo /dll /out:$@ $(OBJECTS) $(LFLAGS)
 	IF EXIST $@.manifest MT -nologo -manifest $@.manifest -outputresource:$@;2
 
 .c.obj:
