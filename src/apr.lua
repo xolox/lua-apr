@@ -6,7 +6,7 @@
  Last Change: February 20, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
- Version: 0.14.3
+ Version: 0.15
 
  This Lua script is executed on require("apr"), loads the binary module using
  require("apr.core"), defines several library functions implemented on top of
@@ -15,7 +15,7 @@
 --]]
 
 local apr = require 'apr.core'
-apr._VERSION = '0.14.3'
+apr._VERSION = '0.15'
 
 -- apr.md5(input [, binary]) -> digest {{{1
 --
@@ -165,6 +165,157 @@ function apr.uri_decode(s)
   return (s:gsub('%%(%x%x?)', function(code)
     return char(tonumber(code, 16))
   end))
+end
+
+-- apr.getopt(usage [, config ]) -> options, arguments {{{1
+--
+-- Parse the [command line arguments] [cmdargs] according to the option letters
+-- and/or long options defined in the string @usage (see the example below) and
+-- return a table with the matched options and a table with any remaining
+-- positional arguments. When an option is matched multiple times, the
+-- resulting value in @options depends on the following context:
+--
+--  * If the option doesn't take an argument, the value will be a number
+--    indicating the number of times that the option was matched
+--
+--  * If the option takes an argument and only one option/argument pair is
+--    matched, the value will be the argument (a string). When more than one
+--    pair is matched for the same option letter/name, the values will be
+--    collected in a table
+--
+-- The optional @config table can be used to change the following defaults:
+--
+--  * When @usage mentions `-h` or `--help` and either of these options is
+--    matched in the arguments, `apr.getopt()` will print the usage message
+--    and call `os.exit()`. To avoid this set `config.show_usage` to false
+--    (not nil!)
+--
+--  * When an error is encountered during argument parsing, `apr.getopt()` will
+--    print a warning about the invalid argument and call `os.exit()`. To avoid
+--    this set `config.handle_errors` to false (not nil!)
+--
+--  * By default the arguments in the global variable [arg] [arg-global] will
+--    be used, but you can set `config.args` to a table of arguments to be
+--    used instead
+--
+-- Here is a short example of a valid Lua script that doesn't really do
+-- anything useful but demonstrates the use of `apr.getopt()`:
+--
+--     apr = require 'apr'
+--     opts, args = apr.getopt [[
+--     Usage: echo.lua [OPTIONS] ARG...
+--       -h, --help     show this message and exit
+--       -v, --verbose  make more noise
+--           --version  print version and exit
+--     ]]
+--     if opts.version then
+--       print "This is version 0.1"
+--     else
+--       if opts.verbose then
+--         print("Got", #args, "arguments")
+--       end
+--       if opts.verbose >= 2 then
+--         print "Here they are:"
+--       end
+--       for i = 1, #args do print(args[i]) end
+--     end
+--
+-- The `apr.getopt()` function is very similar to [Lapp] [lapp] by Steve
+-- Donovan although Lapp is more full featured, for example it validates and
+-- converts argument types.
+--
+-- [cmdargs]: http://en.wikipedia.org/wiki/Command-line_argument
+-- [arg-global]: http://www.lua.org/manual/5.1/manual.html#6
+-- [lapp]: http://lua-users.org/wiki/LappFramework
+--
+-- Part of the "Command argument parsing" module.
+
+-- Match an option letter or a long option at the start of the line.
+local function match_arg(table, key, line, pattern)
+  local opt, remainder = line:match(pattern)
+  if opt and remainder then
+    local name, args = opt:match '^(.-)=(.-)$'
+    if name and args then
+      table[key] = name
+      table.has_arg = true
+    else
+      if key == 'optch' then
+        opt = opt:gsub(',$', '')
+      end
+      table[key] = opt
+    end
+    return remainder
+  end
+  return line
+end
+
+local function parse_usage(usage)
+  local optdefs = {}
+  -- Parse the usage message into a nested table structure.
+  for line in usage:gmatch '[^\n]+' do
+    local t = {}
+    line = match_arg(t, 'optch', line, '^%s*%-([^-]%S*)(.-)$')
+    line = match_arg(t, 'name', line, '^%s*%-%-(%S+)(.-)$')
+    t.description = line:match '^%s*(.-)%s*$'
+    optdefs[#optdefs + 1] = t
+    if t.optch then optdefs[t.optch] = t end
+    if t.name then optdefs[t.name] = t end
+  end
+  -- Generate any missing "optch" values.
+  for i, t in ipairs(optdefs) do
+    if t.name and not t.optch then
+      for i = 1, 255 do
+        local c = string.char(i)
+        if not optdefs[c] then
+          t.optch = c
+          t.fake_optch = true
+          optdefs[c] = t
+          break
+        end
+      end
+    end
+  end
+  return optdefs
+end
+
+local real_getopt = apr.getopt
+
+function apr.getopt(usage, config)
+  -- Validate arguments.
+  assert(type(usage) == 'string')
+  if config then assert(type(config) == 'table') else config = {} end
+  local arguments = config.args or _G.arg
+  assert(type(arguments) == 'table', "No arguments to parse!")
+  assert(arguments[0], "Program name missing from arguments!")
+  -- Get the option definitions from the usage message.
+  local optdefs = parse_usage(usage)
+  -- Parse the Lua script's arguments using the definitions.
+  local opts, args, code = real_getopt(optdefs, arguments, config.handle_errors == false)
+  -- Handle errors during command argument parsing.
+  if not (opts and args) then
+    if config.handle_errors ~= false then
+      os.exit(1)
+    else
+      local msg = args
+      return nil, msg, code
+    end
+  end
+  -- Copy option letter values to long option aliases.
+  for i, t in ipairs(optdefs) do
+    if t.optch and t.name then
+      opts[t.name] = opts[t.optch]
+    end
+    if t.fake_optch then
+      opts[t.optch] = nil
+    end
+  end
+  -- Print usage message or return results.
+  if config.show_usage ~= false and (opts.h or opts.help) then
+    io.write(usage)
+    os.exit(0)
+  else
+    return opts, args
+  end
 end
 
 -- }}}1

@@ -98,6 +98,9 @@ LUA_APR_EXPORT int luaopen_apr_core(lua_State *L)
     { "fnmatch", lua_apr_fnmatch },
     { "fnmatch_test", lua_apr_fnmatch_test },
 
+    /* getopt.c */
+    { "getopt", lua_apr_getopt },
+
     /* io_dir.c -- directory manipulation. */
     { "temp_dir_get", lua_apr_temp_dir_get },
     { "dir_make", lua_apr_dir_make },

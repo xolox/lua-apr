@@ -264,6 +264,9 @@ int lua_apr_filepath_set(lua_State*);
 int lua_apr_fnmatch(lua_State*);
 int lua_apr_fnmatch_test(lua_State*);
 
+/* getopt.c */
+int lua_apr_getopt(lua_State*);
+
 /* io_dir.c */
 int lua_apr_temp_dir_get(lua_State*);
 int lua_apr_dir_make(lua_State*);

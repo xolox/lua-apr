@@ -29,6 +29,7 @@ SOURCES = src/base64.c \
 		  src/errno.c \
 		  src/filepath.c \
 		  src/fnmatch.c \
+		  src/getopt.c \
 		  src/io_dir.c \
 		  src/io_file.c \
 		  src/io_net.c \

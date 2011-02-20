@@ -3,7 +3,7 @@
  Documentation generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: February 19, 2011
+ Last Change: February 20, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -24,6 +24,7 @@ local SOURCES = [[
   io_file.c
   io_net.c
   io_pipe.c
+  getopt.c
   proc.c
   shm.c
   str.c
@@ -215,7 +216,7 @@ for filename in SOURCES:gmatch '%S+' do
       end
     end
   elseif not filename:find '[\\/]examples[\\/]' then
-    local pattern = '\n(\n%-%- apr%.[%w_]+%(.-\n%-%-[^\n]*)\n\nfunction (apr%.[%w_]+)%('
+    local pattern = '\n(\n%-%- (apr%.[%w_]+)%(.-\n%-%-[^\n]*)\n\n'
     for docblock, funcname in source:gmatch(pattern) do
       docblock = trim(docblock:gsub('\n%-%- ?', '\n'))
       local signature, description = docblock:match '^([^\n]- %-> [^\n]+)(\n.-)$'
