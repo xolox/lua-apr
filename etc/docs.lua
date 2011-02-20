@@ -462,6 +462,25 @@ assert(output:close())
 
 local status, markdown = pcall(require, 'discount')
 if not status then markdown = require 'markdown' end
+local html_source = markdown(mkd_source)
+
+-- Workaround for bug in Discount :-(
+html_source = html_source:gsub('<code>&ndash;</code>', '<code>-</code>')
+
+local function htmldecode(s)
+  return (s:gsub('&amp;', '&')
+           :gsub('&lt;', '<')
+           :gsub('&gt;', '>'))
+end
+
+-- Syntax highlight snippets of Lua source code in the documentation.
+local status, highlighter = pcall(require, 'lxsh.highlighters.lua')
+if status and highlighter then
+  html_source = html_source:gsub('<pre>(.-)</pre>', function(block)
+    block = block:match '^<code>(.-)</code>$' or block
+    return highlighter(htmldecode(block), { encodews = true })
+  end)
+end
 
 -- Generate and write the HTML output to the 2nd file. This isn't actually used
 -- on http://peterodding.com/code/lua/apr/docs/ but does enable immediate
@@ -491,7 +510,7 @@ assert(output:write([[
     h2 a:hover, h3 a:hover { color: #F00; }
   </style>
  </head>
- <body>]], markdown(mkd_source), [[
+ <body>]], html_source, [[
  </body>
 </html>]]))
 assert(output:close())
