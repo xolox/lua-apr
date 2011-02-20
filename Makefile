@@ -1,7 +1,7 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: February 19, 2011
+# Last Change: February 20, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -55,9 +55,14 @@ SOURCES = src/base64.c \
 OBJECTS = $(patsubst %.c,%.o,$(SOURCES))
 
 # If you're building Lua/APR with LuaRocks it should locate the external
-# dependencies automatically, otherwise we fall back to `pkg-config'.
-CFLAGS = `pkg-config --cflags lua5.1` `pkg-config --cflags apr-1` `pkg-config --cflags apr-util-1`
-LFLAGS = `pkg-config --libs apr-1` `pkg-config --libs apr-util-1`
+# dependencies automatically, otherwise we fall back to `pkg-config'. On
+# Debian/Ubuntu the Lua pkg-config file is called "lua5.1", on Arch Linux its
+# just "lua".
+CFLAGS = $(shell pkg-config --cflags lua5.1 --silence-errors || pkg-config --cflags lua) \
+		 $(shell pkg-config --cflags apr-1) \
+		 $(shell pkg-config --cflags apr-util-1)
+LFLAGS = $(shell pkg-config --libs apr-1) \
+		 $(shell pkg-config --libs apr-util-1)
 
 # Create debug builds by default but enable release
 # builds using the command line "make RELEASE=1".

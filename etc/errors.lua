@@ -1,3 +1,20 @@
+--[[
+
+ Error handling code generator for the Lua/APR binding.
+
+ Author: Peter Odding <peter@peterodding.com>
+ Last Change: February 20, 2011
+ Homepage: http://peterodding.com/code/lua/apr/
+ License: MIT
+
+ The Apache Portable Runtime defines a long list of error codes whose integer
+ value differs between platforms and to make it even more complex several
+ integer values can map to the same error code. This script goes through the
+ APR header file, extracts the defined error codes (by name) and generates some
+ C source code that will convert APR error codes to symbolic strings.
+
+--]]
+
 local verbose = false
 local constants = {}
 local tests = {}
@@ -27,6 +44,28 @@ local ignored = {
   APR_UTIL_START_STATUS = true,
 }
 
+local function check(path)
+  io.stderr:write("Looking for headers at ", path, " .. ")
+  local status, msg = io.input(path)
+  if status then
+    io.stderr:write "Found them!\n"
+    return true
+  end
+  io.stderr:write("\nFailed to open headers: ", msg, "\n")
+end
+
+if not (check '/usr/include/apr-1.0/apr_errno.h' -- Debian / Ubuntu
+     or check '/usr/include/apr-1/apr_errno.h') then -- Arch Linux / Mac OS X
+  io.stderr:write [[
+Failed to determine where apr_errno.h is defined! This means the error
+handling module can't be regenerated, but don't worry: The Lua/APR
+repository includes a generated "errno.c" for just these situations.
+]]
+  os.exit(1)
+end
+
+-- Parse the header file. {{{1
+
 local function add(table, token)
   if not table[token] then
     table[#table + 1] = token
@@ -34,7 +73,6 @@ local function add(table, token)
   end
 end
 
-assert(io.input '/usr/include/apr-1.0/apr_errno.h')
 local source = io.read '*a'
 source = source:gsub('/%*.-%*/', '')
 local longest_constant, longest_test = 0, 0
@@ -52,6 +90,8 @@ end
 
 table.sort(constants)
 table.sort(tests)
+
+-- Report intermediate results? {{{1
 
 if verbose then
 
@@ -76,6 +116,10 @@ if verbose then
   io.write '\n'
 
 end
+
+-- Generate the error handling module's source code. {{{1
+
+-- Documentation. {{{2
 
 io.write([[
 /* Error handling module for the Lua/APR binding.
@@ -158,6 +202,8 @@ void status_to_name(lua_State *L, apr_status_t status)
   /* Use a switch statement for fast number to string mapping: */
   switch (status) {
 ]])
+
+-- }}}2
 
 local template = '    case %s: %slua_pushliteral(L, %q); %sreturn;\n'
 for i, constant in ipairs(constants) do
