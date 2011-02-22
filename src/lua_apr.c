@@ -1,7 +1,7 @@
 /* Miscellaneous functions module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 20, 2011
+ * Last Change: February 22, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -288,7 +288,7 @@ int lua_apr_platform_get(lua_State *L)
 int lua_apr_version_get(lua_State *L)
 {
   lua_pushstring(L, apr_version_string());
-# if APR_VERSION < 2
+# if APR_MAJOR_VERSION < 2
   lua_pushstring(L, apu_version_string());
   return 2;
 # else
