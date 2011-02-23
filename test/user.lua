@@ -7,33 +7,36 @@
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
+ Note that these tests don't assert() on anything useful because that would
+ make it impossible to run the Lua/APR test suite in "chrooted" build
+ environments and such..
+
 --]]
 
 local apr = require 'apr'
 local helpers = require 'apr.test.helpers'
 
--- First check whether apr.user_get() works or returns an error.
-assert(apr.user_get())
+-- Get the name and primary group of the current user.
+local apr_user, apr_group = assert(apr.user_get())
+assert(type(apr_user) == 'string' and apr_user ~= '')
+assert(type(apr_group) == 'string' and apr_group ~= '')
 
-local user, group = assert(apr.user_get())
-
--- Get the name of the current user.
-assert(user)
-
--- Get primary group of current user.
-assert(group)
-
-local env_user = apr.env_get 'USER'
-if env_user then
-  -- Match result of apr.user_get() against $USER.
-  assert(user == env_user)
+local function report(...)
+  helpers.warning(...)
+  helpers.message("This might not be an error, e.g. when using a chroot, which is why the tests will continue as normal.\n")
 end
 
-local env_home = apr.env_get 'HOME'
-if env_home then
-  -- Match result of apr.user_homepath_get() against $HOME.
-  local apr_home = assert(apr.user_homepath_get(user))
-  if apr_home ~= env_home then
-    helpers.warning("$HOME == %q while apr.user_homepath_get(%q) == %q (you probably changed $HOME?)\n", env_home, user, apr_home)
-  end
+-- Try to match the result of apr.user_get() against $USER.
+local env_user = apr.env_get 'USER' or ''
+if apr_user ~= env_user then
+  report("$USER == %q but apr.user_get() == %q\n", env_user, apr_user)
+  return false
+end
+
+-- Try to match the result of apr.user_homepath_get() against $HOME.
+local env_home = apr.env_get 'HOME' or ''
+local apr_home = assert(apr.user_homepath_get(apr_user))
+if apr_home ~= env_home then
+  report("$HOME == %q but apr.user_homepath_get(%q) == %q\n", env_home, apr_user, apr_home)
+  return false
 end
