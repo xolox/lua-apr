@@ -3,11 +3,15 @@
  Documentation generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: February 20, 2011
+ Last Change: February 23, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
 ]]
+
+-- We only need this for the version number.
+-- TODO Might as well extract it directly from apr.lua?
+local apr = require 'apr'
 
 -- Files containing documentation fragments (the individual lines enable
 -- automatic rebasing between git feature branches and the master branch).
