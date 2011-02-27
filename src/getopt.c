@@ -1,7 +1,7 @@
 /* Command argument parsing module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 20, 2011
+ * Last Change: February 25, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -66,12 +66,6 @@ int lua_apr_getopt(lua_State *L)
   if (silent)
     os->errfn = NULL;
 
-# define PUSH_OPTARG(L, S) \
-    if (s != NULL) \
-      lua_pushstring(L, s); \
-    else \
-      lua_pushboolean(L, 1)
-
   /* Parse options, save matched options in table #1. */
   lua_createtable(L, 0, optc);
   for (;;) {
@@ -97,7 +91,7 @@ int lua_apr_getopt(lua_State *L)
       lua_pop(L, 1); /* existing value */
     } else if (lua_istable(L, -1)) {
       /* Add argument to table of existing values. */
-      PUSH_OPTARG(L, s);
+      push_string_or_true(L, s);
       lua_rawseti(L, -2, lua_objlen(L, -2) + 1);
       lua_pop(L, 1); /* existing value */
     } else if (!lua_isnil(L, -1)) {
@@ -105,13 +99,13 @@ int lua_apr_getopt(lua_State *L)
       lua_newtable(L);
       lua_insert(L, -2);
       lua_rawseti(L, -2, 1);
-      PUSH_OPTARG(L, s);
+      push_string_or_true(L, s);
       lua_rawseti(L, -2, 2);
       lua_setfield(L, -2, buffer);
     } else {
       /* Set 1st argument value. */
       lua_pop(L, 1); /* pop nil result */
-      PUSH_OPTARG(L, s);
+      push_string_or_true(L, s);
       lua_setfield(L, -2, buffer);
     }
   }

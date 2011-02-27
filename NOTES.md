@@ -37,3 +37,13 @@ The SQLite 3 driver is included in the [Windows binaries](http://github.com/down
  4. Build the driver in the Windows SDK command prompt using the command `nmake /f apr_dbd_sqlite3.mak`
 
  5. To install the driver you can copy `sqlite3.dll` and `apr_dbd_sqlite3-1.dll` to Lua's installation directory
+
+### Building `libapreq2` on Windows
+
+I wasted a few hours getting `libapreq2` version 2.13 to build on Windows because of the following issues:
+
+ * The included makefile `libapreq2.mak` is full of syntax errors
+ * The makefile unconditionally includes the Apache module and consequently doesn't link without a full Apache build
+ * The build environment requires a specific flavor of Perl which I haven't gotten to work
+
+Eventually I decided to just rewrite the damned makefile and be done with it, enabling me to finally test the HTTP request parsing module on Windows (all tests passed the first time). I've included the [customized makefile](https://github.com/xolox/lua-apr/blob/master/etc/libapreq2.mak) in the Lua/APR git repository.

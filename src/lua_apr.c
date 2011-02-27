@@ -1,7 +1,7 @@
 /* Miscellaneous functions module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 22, 2011
+ * Last Change: February 26, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -33,15 +33,6 @@ lua_apr_objtype *lua_apr_types[] = {
 };
 
 /* luaopen_apr_core() initializes the binding and library. {{{1 */
-
-/* Enable redefining exporting of loader function, with sane defaults. */
-#ifndef LUA_APR_EXPORT
-# ifdef WIN32
-#  define LUA_APR_EXPORT __declspec(dllexport)
-# else
-#  define LUA_APR_EXPORT extern
-# endif
-#endif
 
 LUA_APR_EXPORT int luaopen_apr_core(lua_State *L)
 {
@@ -98,8 +89,16 @@ LUA_APR_EXPORT int luaopen_apr_core(lua_State *L)
     { "fnmatch", lua_apr_fnmatch },
     { "fnmatch_test", lua_apr_fnmatch_test },
 
-    /* getopt.c */
+    /* getopt.c -- command argument parsing. */
     { "getopt", lua_apr_getopt },
+
+#   if LUA_APR_ENABLE_APREQ
+    /* http.c -- HTTP request parsing. */
+    { "parse_headers", lua_apr_parse_headers },
+    { "parse_multipart", lua_apr_parse_multipart },
+    { "parse_cookie_header", lua_apr_parse_cookie_header },
+    { "parse_query_string", lua_apr_parse_query_string },
+#   endif
 
     /* io_dir.c -- directory manipulation. */
     { "temp_dir_get", lua_apr_temp_dir_get },

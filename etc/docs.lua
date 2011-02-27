@@ -3,7 +3,7 @@
  Documentation generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: February 23, 2011
+ Last Change: February 26, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -29,6 +29,7 @@ local SOURCES = [[
   io_net.c
   io_pipe.c
   getopt.c
+  http.c
   proc.c
   shm.c
   str.c
@@ -379,6 +380,10 @@ local bsignore = {
   ['apr.dbd'] = true,
   ['apr.os_default_encoding'] = true,
   ['apr.os_locale_encoding'] = true,
+  ['apr.parse_cookie_header'] = true,
+  ['apr.parse_headers'] = true,
+  ['apr.parse_multipart'] = true,
+  ['apr.parse_query_string'] = true,
   ['apr.platform_get'] = true,
   ['apr.proc_fork'] = true,
   ['apr.strfsize'] = true,

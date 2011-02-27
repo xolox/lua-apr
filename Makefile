@@ -1,7 +1,7 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: February 20, 2011
+# Last Change: February 27, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -16,6 +16,7 @@ LUA_SHAREDIR = $(LUA_DIR)/share/lua/5.1
 # Names of source / binary modules to install.
 SOURCE_MODULE = src/apr.lua
 BINARY_MODULE = core.so
+APREQ_BINARY = apreq.so
 
 # Names of source code files to compile & link (the individual lines enable
 # automatic rebasing between git feature branches and the master branch).
@@ -52,9 +53,6 @@ SOURCES = src/base64.c \
 		  src/xlate.c \
 		  src/xml.c
 
-# Names of compiled object files.
-OBJECTS = $(patsubst %.c,%.o,$(SOURCES))
-
 # If you're building Lua/APR with LuaRocks it should locate the external
 # dependencies automatically, otherwise we fall back to `pkg-config'. On
 # Debian/Ubuntu the Lua pkg-config file is called "lua5.1", on Arch Linux its
@@ -78,10 +76,23 @@ CFLAGS := $(CFLAGS) -fprofile-arcs -ftest-coverage
 LFLAGS := $(LFLAGS) -fprofile-arcs
 endif
 
+# Experimental support for HTTP request parsing using libapreq2.
+ifndef DISABLE_APREQ
+SOURCES := $(SOURCES) src/http.c
+CFLAGS := $(CFLAGS) $(shell apreq2-config --includes) -DLUA_APR_ENABLE_APREQ
+LFLAGS := $(LFLAGS) $(shell apreq2-config --link-ld)
+endif
+
+# Names of compiled object files.
+OBJECTS = $(patsubst %.c,%.o,$(SOURCES))
+
 # The build rules.
 
 $(BINARY_MODULE): $(OBJECTS) Makefile
-	$(CC) -shared -o $(BINARY_MODULE) $(OBJECTS) $(LFLAGS)
+	$(CC) -shared -o $@ $(OBJECTS) $(LFLAGS)
+
+$(APREQ_BINARY): etc/apreq_standalone.c Makefile
+	$(CC) -Wall -shared -o $@ $(CFLAGS) -fPIC etc/apreq_standalone.c $(LFLAGS)
 
 $(OBJECTS): %.o: %.c src/lua_apr.h Makefile
 	$(CC) -Wall -c $(CFLAGS) -fPIC $< -o $@
@@ -95,6 +106,7 @@ install: $(BINARY_MODULE)
 	cp test/*.lua $(LUA_SHAREDIR)/apr/test
 	mkdir -p $(LUA_LIBDIR)/apr
 	cp $(BINARY_MODULE) $(LUA_LIBDIR)/apr/$(BINARY_MODULE)
+	if [ -e $(APREQ_BINARY) ]; then cp $(APREQ_BINARY) $(LUA_LIBDIR)/$(APREQ_BINARY); fi
 
 uninstall:
 	rm -f $(LUA_SHAREDIR)/apr.lua
@@ -149,6 +161,7 @@ package: docs
 
 clean:
 	@rm -Rf $(BINARY_MODULE) $(OBJECTS) etc/coverage
+	@rm -f $(APREQ_BINARY) docs.md docs.html
 	@which lcov && lcov -z -d .
 	@rm -f src/*.gcov src/*.gcno
 

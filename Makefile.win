@@ -1,12 +1,13 @@
 # This is the Windows makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: February 20, 2011
+# Last Change: February 27, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
 # This makefile has been tested on Windows XP with NMAKE from the free
-# Microsoft Visual C++ 2010 Express tool chain.
+# Microsoft Visual C++ 2010 Express tool chain. You may want to change the
+# following settings:
 
 # The directories where "lua.h" and "lua51.lib" can be found (these defaults
 # are based on the directory structure used by Lua for Windows v5.1.4-40).
@@ -27,16 +28,18 @@ APU_LIBDIR = C:\lua-apr\apr-util\release
 # The directory where "libapriconv-1.lib" can be found.
 API_LIBDIR = C:\lua-apr\apr-iconv\release
 
-# Compiler and linker flags.
+# The directories where "apreq.h" and "libapreq-2.lib" can be found.
+APREQ_INCDIR = C:\lua-apr\libapreq2\include
+APREQ_LIBDIR = C:\lua-apr\libapreq2\win32\libs
+
+# You shouldn't need to change anything below here.
+
+BINARY_MODULE = core.dll
+APREQ_BINARY = apreq.dll
+
+# Compiler and linker flags composed from the above settings.
 CFLAGS = "/I$(LUA_INCDIR)" "/I$(APR_INCDIR)" "/I$(APU_INCDIR)" /D"_CRT_SECURE_NO_DEPRECATE"
 LFLAGS = "/LIBPATH:$(LUA_LINKDIR)" lua51.lib "/LIBPATH:$(APR_LIBDIR)" libapr-1.lib "/LIBPATH:$(APU_LIBDIR)" libaprutil-1.lib
-
-# Create debug builds by default but enable release builds
-# using the command line "NMAKE /f Makefile.win RELEASE=1".
-!IFNDEF RELEASE
-CFLAGS = $(CFLAGS) /Zi /Fd"core.pdb" /DDEBUG
-LFLAGS = $(LFLAGS) /debug
-!ENDIF
 
 # Names of compiled object files (the individual lines enable automatic
 # rebasing between git feature branches and the master branch).
@@ -73,10 +76,29 @@ OBJECTS = src\base64.obj \
 		  src\xlate.obj \
 		  src\xml.obj
 
+# Create debug builds by default but enable release builds
+# using the command line "NMAKE /f Makefile.win RELEASE=1".
+!IFNDEF RELEASE
+CFLAGS = $(CFLAGS) /Zi /Fd"core.pdb" /DDEBUG
+LFLAGS = $(LFLAGS) /debug
+!ENDIF
+
+# Experimental support for HTTP request parsing using libapreq2.
+!IFNDEF DISABLE_APREQ
+OBJECTS = $(OBJECTS) src\http.obj
+CFLAGS = $(CFLAGS) "/I$(APREQ_INCDIR)" /DLUA_APR_ENABLE_APREQ
+LFLAGS = $(LFLAGS) "/LIBPATH:$(APREQ_LIBDIR)" libapreq2.lib
+!ENDIF
+
 # Build rules.
 
-core.dll: $(OBJECTS)
+$(BINARY_MODULE): $(OBJECTS)
 	LINK /nologo /dll /out:$@ $(OBJECTS) $(LFLAGS)
+	IF EXIST $@.manifest MT -nologo -manifest $@.manifest -outputresource:$@;2
+
+$(APREQ_BINARY): etc\apreq_standalone.c
+	CD etc && CL /W3 /nologo /MD /D"WIN32" /D"LUA_BUILD_AS_DLL" $(CFLAGS) /TC /c apreq_standalone.c
+	LINK /nologo /dll /out:$@ etc\apreq_standalone.obj $(LFLAGS)
 	IF EXIST $@.manifest MT -nologo -manifest $@.manifest -outputresource:$@;2
 
 .c.obj:
@@ -85,25 +107,27 @@ core.dll: $(OBJECTS)
 src\errno.c: etc\errors.lua
 	lua etc\errors.lua > src\errno.c.new && move src\errno.c.new src\errno.c
 
-install: core.dll
+install: $(BINARY_MODULE)
 	COPY src\apr.lua "$(LUA_SHAREDIR)"
 	IF NOT EXIST "$(LUA_SHAREDIR)\apr" MD "$(LUA_SHAREDIR)\apr"
 	IF NOT EXIST "$(LUA_SHAREDIR)\apr\test" MD "$(LUA_SHAREDIR)\apr\test"
 	COPY test\*.lua "$(LUA_SHAREDIR)\apr\test"
 	IF NOT EXIST "$(LUA_LIBDIR)\apr" MD "$(LUA_LIBDIR)\apr"
-	COPY core.dll "$(LUA_LIBDIR)\apr"
+	COPY $(BINARY_MODULE) "$(LUA_LIBDIR)\apr"
 	COPY "$(APR_LIBDIR)\libapr-1.dll" "$(LUA_DIR)"
 	COPY "$(APU_LIBDIR)\libaprutil-1.dll" "$(LUA_DIR)"
 	COPY "$(API_LIBDIR)\libapriconv-1.dll" "$(LUA_DIR)"
+	IF EXIST "$(APREQ_LIBDIR)\libapreq2.dll" COPY "$(APREQ_LIBDIR)\libapreq2.dll" "$(LUA_DIR)"
 
 uninstall:
 	DEL "$(LUA_SHAREDIR)\apr.lua"
 	DEL "$(LUA_SHAREDIR)\apr"
-	DEL "$(LUA_LIBDIR)\apr\core.dll"
+	DEL "$(LUA_LIBDIR)\apr\$(BINARY_MODULE)"
 	RD "$(LUA_LIBDIR)\apr"
 	DEL "$(LUA_DIR)\libapr-1.dll"
 	DEL "$(LUA_DIR)\libaprutil-1.dll"
 	DEL "$(LUA_DIR)\libapriconv-1.dll"
+	IF EXIST "$(LUA_DIR)\libapreq2.dll" DEL "$(LUA_DIR)\libapreq2.dll"
 
 test: install
 	LUA -l apr.test
@@ -112,7 +136,8 @@ debug:
 	NTSD -g LUA -l apr.test
 
 clean:
-	DEL $(OBJECTS) core.dll core.lib core.exp core.pdb core.ilk 2>NUL
+	DEL $(OBJECTS) $(BINARY_MODULE) core.lib core.exp core.pdb core.ilk core.dll.manifest 2>NUL
+	DEL $(APREQ_BINARY) apreq.lib apreq.exp apreq.pdb apreq.ilk 2>NUL
 
 .PHONY: install uninstall test debug clean
 

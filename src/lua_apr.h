@@ -1,10 +1,13 @@
 /* Header file for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 19, 2011
+ * Last Change: February 26, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
+
+#ifndef LUA_APR_H
+#define LUA_APR_H
 
 /* Global headers. {{{1 */
 #include <assert.h>
@@ -22,6 +25,18 @@
 #include <apr_queue.h>
 
 /* Macro definitions. {{{1 */
+
+/* Enable redefining exporting of loader function, with sane defaults. */
+#ifndef LUA_APR_EXPORT
+# ifdef WIN32
+#  define LUA_APR_EXPORT __declspec(dllexport)
+# else
+#  define LUA_APR_EXPORT extern
+# endif
+#endif
+
+#define LUA_APR_POOL_KEY "Lua/APR memory pool"
+#define LUA_APR_POOL_MT "Lua/APR memory pool metamethods"
 
 /* FIXME Pushing onto the stack might not work in this scenario? */
 #define error_message_memory "memory allocation error"
@@ -64,6 +79,9 @@
 
 #define time_put(L, time) \
   lua_pushnumber(L, (lua_Number)time / APR_USEC_PER_SEC)
+
+#define push_string_or_true(L, s) \
+  (s != NULL && s[0] != '\0' ? lua_pushstring(L, s) : lua_pushboolean(L, 1))
 
 /* Debugging aids. {{{1 */
 
@@ -267,6 +285,12 @@ int lua_apr_fnmatch_test(lua_State*);
 /* getopt.c */
 int lua_apr_getopt(lua_State*);
 
+/* http.c */
+int lua_apr_parse_headers(lua_State*);
+int lua_apr_parse_multipart(lua_State*);
+int lua_apr_parse_cookie_header(lua_State*);
+int lua_apr_parse_query_string(lua_State*);
+
 /* io_dir.c */
 int lua_apr_temp_dir_get(lua_State*);
 int lua_apr_dir_make(lua_State*);
@@ -396,6 +420,6 @@ int lua_apr_xlate(lua_State*);
 /* xml.c */
 int lua_apr_xml(lua_State*);
 
+#endif
+
 /* vim: set ts=2 sw=2 et tw=79 fen fdm=marker : */
-
-
