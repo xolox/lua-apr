@@ -3,7 +3,7 @@
  Unit tests for the multi threading module of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: February 19, 2011
+ Last Change: February 27, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -13,7 +13,7 @@ local apr = require 'apr'
 local helpers = require 'apr.test.helpers'
 
 if not apr.thread_create then
-  helpers.warning "Thread queues module not available!\n"
+  helpers.warning "Multi threading module not available!\n"
   return false
 end
 

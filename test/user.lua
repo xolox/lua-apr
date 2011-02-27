@@ -3,7 +3,7 @@
  Unit tests for the user/group identification module of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: February 23, 2011
+ Last Change: February 27, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -27,15 +27,18 @@ local function report(...)
 end
 
 -- Try to match the result of apr.user_get() against $USER.
-local env_user = apr.env_get 'USER' or ''
+local env_user = apr.env_get 'USER' or apr.env_get 'USERNAME' or ''
 if apr_user ~= env_user then
   report("$USER == %q but apr.user_get() == %q\n", env_user, apr_user)
   return false
 end
 
 -- Try to match the result of apr.user_homepath_get() against $HOME.
-local env_home = apr.env_get 'HOME' or ''
-local apr_home = assert(apr.user_homepath_get(apr_user))
+local function normpath(p)
+  return assert(apr.filepath_merge('', p, 'native'))
+end
+local env_home = normpath(apr.env_get 'HOME' or apr.env_get 'USERPROFILE' or '')
+local apr_home = normpath(assert(apr.user_homepath_get(apr_user)))
 if apr_home ~= env_home then
   report("$HOME == %q but apr.user_homepath_get(%q) == %q\n", env_home, apr_user, apr_home)
   return false
