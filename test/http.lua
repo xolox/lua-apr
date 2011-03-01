@@ -156,3 +156,34 @@ Joe owes =80100.
 ]], 'multipart/form-data; charset="iso-8859-1"; boundary="AaB03x"'))
 
 assert(helpers.deepequal(expected, actual))
+
+-- Test apr.header_attribute() {{{1
+
+local header = 'text/plain; boundary="-foo-", charset=ISO-8859-1';
+local value, msg, code = apr.header_attribute(header, 'none')
+assert(code == 'NOATTR')
+local value, msg, code = apr.header_attribute(header, 'set')
+assert(code == 'NOATTR')
+assert(apr.header_attribute(header, 'boundary') == '-foo-')
+assert(apr.header_attribute(header, 'charset') == 'ISO-8859-1')
+
+local header = 'max-age=20; no-quote="...'
+assert(apr.header_attribute(header, 'max-age') == '20')
+local value, msg, code = apr.header_attribute(header, 'age')
+assert(code == 'BADSEQ')
+local value, msg, code = apr.header_attribute(header, 'no-quote')
+assert(code == 'BADSEQ')
+
+-- Test apr.uri_encode() and apr.uri_decode() {{{1
+
+local reserved = {
+  ['!'] = '%21', ['*'] = '%2A', ["'"] = '%27', ['('] = '%28', [')'] = '%29',
+  [';'] = '%3B', [':'] = '%3A', ['@'] = '%40', ['&'] = '%26', ['='] = '%3D',
+  ['+'] = '%2B', ['$'] = '%24', [','] = '%2C', ['/'] = '%2F', ['?'] = '%3F',
+  ['#'] = '%23', ['['] = '%5B', [']'] = '%5D'
+}
+
+for plain, encoded in pairs(reserved) do
+  assert(apr.uri_encode(plain) == encoded)
+  assert(apr.uri_encode(plain) == encoded)
+end

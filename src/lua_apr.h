@@ -1,7 +1,7 @@
 /* Header file for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 26, 2011
+ * Last Change: February 27, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -290,6 +290,9 @@ int lua_apr_parse_headers(lua_State*);
 int lua_apr_parse_multipart(lua_State*);
 int lua_apr_parse_cookie_header(lua_State*);
 int lua_apr_parse_query_string(lua_State*);
+int lua_apr_header_attribute(lua_State*);
+int lua_apr_uri_encode(lua_State*);
+int lua_apr_uri_decode(lua_State*);
 
 /* io_dir.c */
 int lua_apr_temp_dir_get(lua_State*);

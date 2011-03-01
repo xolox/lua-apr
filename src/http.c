@@ -52,13 +52,19 @@
  * [multipart]: http://en.wikipedia.org/wiki/MIME#Multipart_messages
  */
 
-/* TODO Bind apreq_parse_urlencoded() */
+/* TODO Bind the following functions:
+ *  - apreq_parse_urlencoded()
+ *  - apreq_quote()
+ *  - apreq_quote_once()
+ *  - apreq_charset_divine()
+ */
 
 #include "lua_apr.h"
 #include <apreq_error.h>
 #include <apreq_cookie.h>
 #include <apreq_param.h>
 #include <apreq_parser.h>
+#include <apreq_util.h>
 
 #define DEFAULT_TABLE_SIZE 10
 #define MULTIPART_BRIGADE_LIMIT (1024 ^ 2)
@@ -417,4 +423,78 @@ int lua_apr_parse_query_string(lua_State *L)
   lua_newtable(L);
   apr_table_do(push_scalars, L, table, NULL);
   return push_http_result(L, status, 1);
+}
+
+/* apr.header_attribute(header, name) -> value {{{1
+ *
+ * Search a header string for the value of a particular named attribute. On
+ * success the matched value is returned, otherwise nil followed by an error
+ * message is returned.
+ */
+
+int lua_apr_header_attribute(lua_State *L)
+{
+  apr_status_t status;
+  const char *header, *name, *value;
+  size_t namelen;
+  apr_size_t valuelen;
+
+  header = luaL_checkstring(L, 1);
+  name = luaL_checklstring(L, 2, &namelen);
+  status = apreq_header_attribute(header, name, namelen, &value, &valuelen);
+  if (status != APR_SUCCESS)
+    return push_http_error(L, status, 1);
+  lua_pushlstring(L, value, valuelen);
+  return 1;
+}
+
+/* apr.uri_encode(string) -> encoded {{{1
+ *
+ * Encode unsafe bytes in @string using [percent-encoding] [percenc] so that
+ * the string can be embedded in a [URI] [uri] query string.
+ *
+ * [percenc]: http://en.wikipedia.org/wiki/Percent-encoding
+ */
+
+int lua_apr_uri_encode(lua_State *L)
+{
+  apr_pool_t *pool;
+  const char *string, *encoded;
+  size_t length;
+
+  pool = to_pool(L);
+  string = luaL_checklstring(L, 1, &length);
+  encoded = apreq_escape(pool, string, length);
+  lua_pushstring(L, encoded);
+
+  return 1;
+}
+
+/* apr.uri_decode(encoded) -> string {{{1
+ *
+ * Decode all [percent-encoded] [percenc] bytes in the string @encoded.
+ */
+
+int lua_apr_uri_decode(lua_State *L)
+{
+  apr_status_t status;
+  apr_pool_t *pool;
+  const char *encoded;
+  char *string;
+  size_t enclen;
+  apr_size_t strlen;
+
+  pool = to_pool(L);
+  encoded = luaL_checklstring(L, 1, &enclen);
+  string = apr_palloc(pool, enclen + 1);
+  if (string == NULL)
+    return push_error_memory(L);
+  memcpy(string, encoded, enclen);
+
+  status = apreq_decode(string, &strlen, encoded, enclen);
+  if (status != APR_SUCCESS)
+    return push_error_status(L, status);
+
+  lua_pushlstring(L, string, strlen);
+  return 1;
 }

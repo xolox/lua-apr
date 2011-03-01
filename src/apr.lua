@@ -3,10 +3,10 @@
  Lua source code for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: February 26, 2011
+ Last Change: February 27, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
- Version: 0.16
+ Version: 0.16.1
 
  This Lua script is executed on require("apr"), loads the binary module using
  require("apr.core"), defines several library functions implemented on top of
@@ -15,7 +15,7 @@
 --]]
 
 local apr = require 'apr.core'
-apr._VERSION = '0.16'
+apr._VERSION = '0.16.1'
 
 -- apr.md5(input [, binary]) -> digest {{{1
 --
@@ -127,44 +127,6 @@ function apr.glob(pattern, ignorecase)
     end
     handle:close()
   end)
-end
-
--- apr.uri_encode(string) -> encoded {{{1
---
--- Encode all unsafe bytes in @string using [percent-encoding] [percenc] so
--- that the string can be embedded in a [URI] [uri] query string.
---
--- [percenc]: http://en.wikipedia.org/wiki/Percent-encoding
---
--- Part of the "Uniform resource identifier parsing" module.
-
-function apr.uri_encode(s)
-  local byte = string.byte
-  local format = string.format
-  return (s:gsub('[^A-Za-z0-9_.-]', function(c)
-    if c == ' ' then
-      return '+'
-    else
-      return format('%%%02x', byte(c))
-    end
-  end))
-end
-
--- apr.uri_decode(encoded) -> string {{{1
---
--- Decode all [percent-encoded] [percenc] bytes in the string @encoded.
---
--- [percenc]: http://en.wikipedia.org/wiki/Percent-encoding
---
--- Part of the "Uniform resource identifier parsing" module.
-
-function apr.uri_decode(s)
-  local char = string.char
-  local tonumber = tonumber
-  s = s:gsub('+', ' ')
-  return (s:gsub('%%(%x%x?)', function(code)
-    return char(tonumber(code, 16))
-  end))
 end
 
 -- apr.getopt(usage [, config ]) -> options, arguments {{{1

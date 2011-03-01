@@ -1,7 +1,7 @@
 /* Miscellaneous functions module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 26, 2011
+ * Last Change: February 27, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -98,6 +98,9 @@ LUA_APR_EXPORT int luaopen_apr_core(lua_State *L)
     { "parse_multipart", lua_apr_parse_multipart },
     { "parse_cookie_header", lua_apr_parse_cookie_header },
     { "parse_query_string", lua_apr_parse_query_string },
+    { "header_attribute", lua_apr_header_attribute },
+    { "uri_encode", lua_apr_uri_encode },
+    { "uri_decode", lua_apr_uri_decode },
 #   endif
 
     /* io_dir.c -- directory manipulation. */
