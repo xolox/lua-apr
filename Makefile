@@ -1,12 +1,16 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: February 27, 2011
+# Last Change: March 5, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
 # This makefile has been tested on Ubuntu Linux 10.04 after installing the
 # external dependencies using the `install_deps' target (see below).
+
+VERSION = 0.16.1
+RELEASE = 1
+PACKAGE = lua-apr-$(VERSION)-$(RELEASE)
 
 # Based on http://www.luarocks.org/en/Recommended_practices_for_Makefiles
 LUA_DIR = /usr/local
@@ -64,8 +68,8 @@ LFLAGS = $(shell pkg-config --libs apr-1) \
 		 $(shell pkg-config --libs apr-util-1)
 
 # Create debug builds by default but enable release
-# builds using the command line "make RELEASE=1".
-ifndef RELEASE
+# builds using the command line "make DO_RELEASE=1".
+ifndef DO_RELEASE
 CFLAGS := $(CFLAGS) -g -DDEBUG
 LFLAGS := $(LFLAGS) -g
 endif
@@ -86,20 +90,23 @@ endif
 # Names of compiled object files.
 OBJECTS = $(patsubst %.c,%.o,$(SOURCES))
 
-# The build rules.
-
+# Build the binary module.
 $(BINARY_MODULE): $(OBJECTS) Makefile
 	$(CC) -shared -o $@ $(OBJECTS) $(LFLAGS)
 
+# Build the standalone libapreq2 binding.
 $(APREQ_BINARY): etc/apreq_standalone.c Makefile
 	$(CC) -Wall -shared -o $@ $(CFLAGS) -fPIC etc/apreq_standalone.c $(LFLAGS)
 
+# Compile individual source code files to object files.
 $(OBJECTS): %.o: %.c src/lua_apr.h Makefile
 	$(CC) -Wall -c $(CFLAGS) -fPIC $< -o $@
 
+# Regenerate the error handling module.
 src/errno.c: etc/errors.lua Makefile
-	lua etc/errors.lua > src/errno.c.new && mv src/errno.c.new src/errno.c
+	lua etc/errors.lua > src/errno.c.new && mv -f src/errno.c.new src/errno.c
 
+# Install the Lua/APR binding under $LUA_DIR.
 install: $(BINARY_MODULE)
 	mkdir -p $(LUA_SHAREDIR)/apr/test
 	cp $(SOURCE_MODULE) $(LUA_SHAREDIR)/apr.lua
@@ -108,63 +115,115 @@ install: $(BINARY_MODULE)
 	cp $(BINARY_MODULE) $(LUA_LIBDIR)/apr/$(BINARY_MODULE)
 	if [ -e $(APREQ_BINARY) ]; then cp $(APREQ_BINARY) $(LUA_LIBDIR)/$(APREQ_BINARY); fi
 
+# Remove previously installed files.
 uninstall:
 	rm -f $(LUA_SHAREDIR)/apr.lua
 	rm -fR $(LUA_SHAREDIR)/apr/test
 	rm -fR $(LUA_LIBDIR)/apr
 
+# Run the test suite.
 test:
 	lua -lapr.test
 
+# Run the test suite under Valgrind to detect and analyze errors.
 valgrind:
 	valgrind -q --track-origins=yes --leak-check=full lua -lapr.test
 
+# Create or update test coverage report using "lcov".
 coverage:
 	[ -d etc/coverage ] || mkdir etc/coverage
 	rm -f src/errno.gcda src/errno.gcno
 	lcov -d src -b . --capture --output-file etc/coverage/lua-apr.info
 	genhtml -o etc/coverage etc/coverage/lua-apr.info
 
+# Generate HTML documentation from Markdown embedded in source code.
 docs: etc/docs.lua $(SOURCE_MODULE) $(SOURCES)
 	@echo Generating documentation..
 	@lua etc/docs.lua docs.md docs.html
 
+# Install the build dependencies using Debian/Ubuntu packages.
 # FIXME The libreadline-dev isn't really needed here is it?!
 install_deps:
-	apt-get install libapr1 libapr1-dev \
-		libaprutil1 libaprutil1-dev libaprutil1-dbd-sqlite3 \
-		lua5.1 liblua5.1-0 liblua5.1-0-dev libreadline-dev \
+	apt-get install libapr1 libapr1-dev libaprutil1 libaprutil1-dev \
+		libaprutil1-dbd-sqlite3 libapreq2 libapreq2-dev lua5.1 \
+		liblua5.1-0 liblua5.1-0-dev libreadline-dev \
 		liblua5.1-markdown0
 
-ZIPNAME = lua-apr-0.14.2-1
+# Prepare a source ZIP archive and a Debian package 
+package: zip_package deb_package
 
-package: docs
+# Create a profiling build to run the test suite and generate documentation
+# including test coverage, then create a clean build without profiling.
+package_prerequisites:
+	@make clean
+	@make PROFILING=1
+	@sudo make install
+	@make test docs
+	@make clean
+	@make DO_RELEASE=1
+
+# Prepare a source ZIP archive from which Lua/APR can be build.
+zip_package: package_prerequisites
 	@echo Packaging sources
-	@rm -f $(ZIPNAME).zip
-	@mkdir -p $(ZIPNAME)/doc
-	@cp docs.html $(ZIPNAME)/doc/apr.html
-	@mkdir -p $(ZIPNAME)/etc
-	@cp -a etc/docs.lua etc/errors.lua $(ZIPNAME)/etc
-	@mkdir -p $(ZIPNAME)/benchmarks
-	@cp -a benchmarks/* $(ZIPNAME)/benchmarks
-	@mkdir -p $(ZIPNAME)/examples
-	@cp -a examples/*.lua $(ZIPNAME)/examples
-	@mkdir -p $(ZIPNAME)/src
-	@cp -a src/lua_apr.h $(SOURCES) $(SOURCE_MODULE) $(ZIPNAME)/src
-	@mkdir -p $(ZIPNAME)/test
-	@cp -a test/*.lua $(ZIPNAME)/test
-	@cp Makefile Makefile.win make.cmd NOTES.md README.md $(ZIPNAME)
-	@zip $(ZIPNAME).zip -r $(ZIPNAME)
-	@rm -R $(ZIPNAME)
+	@rm -f $(PACKAGE).zip
+	@mkdir -p $(PACKAGE)/doc
+	@cp docs.html $(PACKAGE)/doc/apr.html
+	@mkdir -p $(PACKAGE)/etc
+	@cp -a etc/docs.lua etc/errors.lua $(PACKAGE)/etc
+	@mkdir -p $(PACKAGE)/benchmarks
+	@cp -a benchmarks/* $(PACKAGE)/benchmarks
+	@mkdir -p $(PACKAGE)/examples
+	@cp -a examples/*.lua $(PACKAGE)/examples
+	@mkdir -p $(PACKAGE)/src
+	@cp -a src/lua_apr.h $(SOURCES) $(SOURCE_MODULE) $(PACKAGE)/src
+	@mkdir -p $(PACKAGE)/test
+	@cp -a test/*.lua $(PACKAGE)/test
+	@cp Makefile Makefile.win make.cmd NOTES.md README.md $(PACKAGE)
+	@zip $(PACKAGE).zip -r $(PACKAGE)
+	@rm -R $(PACKAGE)
 	@echo Calculating MD5 sum for LuaRocks
-	@md5sum $(ZIPNAME).zip
+	@md5sum $(PACKAGE).zip
 
+# Create a Debian package using "checkinstall".
+deb_package: package_prerequisites
+	@echo "Lua/APR is a binding to the Apache Portable Runtime (APR) library." > description-pak
+	@echo "APR powers software such as the Apache webserver and Subversion and" >> description-pak
+	@echo "Lua/APR makes the APR operating system interfaces available to Lua." >> description-pak
+	@checkinstall \
+		--default \
+		--backup=no \
+		--type=debian \
+		--pkgname=lua-apr \
+		--pkgversion=$(VERSION) \
+		--pkgrelease=$(RELEASE) \
+		--pkglicense=MIT \
+		--pkggroup=interpreters \
+		'--requires=libapr1,libaprutil1,libaprutil1-dbd-sqlite3,libapreq2' \
+		'--maintainer="Peter Odding <peter@peterodding.com>"' \
+		make install LUA_DIR=/usr
+	@rm -R description-pak doc-pak/
+
+# Create a "trivial repository" for the Debian package generated above
+# (hosted online at http://peterodding.com/code/lua/apr/packages/).
+deb_repo: deb_package
+	@[ -d deb-repo ] && rm deb-repo/* || mkdir -p deb-repo
+	@mv *.deb deb-repo
+	@cd deb-repo && ( \
+		dpkg-scanpackages . | sed 's@: \./@: @' > Packages; \
+		cat Packages | gzip > Packages.gz; \
+		LANG= apt-ftparchive release . > Release.tmp; \
+		mv Release.tmp Release; \
+		gpg -abs -o Release.gpg Release; \
+	)
+
+# Clean generated files from working directory.
 clean:
 	@rm -Rf $(BINARY_MODULE) $(OBJECTS) etc/coverage
 	@rm -f $(APREQ_BINARY) docs.md docs.html
 	@which lcov && lcov -z -d .
 	@rm -f src/*.gcov src/*.gcno
 
-.PHONY: install uninstall test valgrind coverage docs install_deps package clean
+.PHONY: install uninstall test valgrind coverage docs install_deps package \
+	package_prerequisites zip_package deb_package deb_repo clean
 
 # vim: ts=4 sw=4 noet

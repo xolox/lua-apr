@@ -28,9 +28,19 @@ The [Lua/APR binding](http://peterodding.com/code/lua/apr/) aims to bring most o
  * [Character encoding translation](http://peterodding.com/code/lua/apr/docs/#character_encoding_translation)
  * [XML parsing](http://peterodding.com/code/lua/apr/docs/#xml_parsing)
 
-## How to download, build & install the module
+## How to get and install the module
 
 There are [Windows binaries](http://peterodding.com/code/lua/apr/downloads/lua-apr-0.14.2-win32.zip) available that have been tested with [Lua for Windows](http://code.google.com/p/luaforwindows/) v5.1.4-40. You can also build the Lua/APR binding yourself. Here are your options:
+
+### Install the Debian/Ubuntu package
+
+I've setup an experimental Debian package repository to make it easier to install the Lua/APR binding on Debian and Ubuntu. The following commands should help you get started ([see here for a detailed explanation](http://peterodding.com/code/lua/apr/packages/)):
+
+    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 6CD27CBF
+    sudo sh -c 'echo deb http://peterodding.com/code/lua/apr/packages ./ >> /etc/apt/sources.list'
+    sudo apt-get update
+    sudo apt-get install --no-install-recommends lua-apr
+    lua -lapr.test
 
 ### Build on UNIX using LuaRocks
 
@@ -62,13 +72,13 @@ If you don't have LuaRocks installed the following shell commands should help yo
     $ sudo make install # installs apr.lua and apr/core.so in /usr/local
     $ lua -lapr.test # runs the test suite
 
-The makefile creates a debug build by default. Use `sudo make install RELEASE=1` to create a release build instead. Just be sure to run `make clean` when switching between debug/release mode to avoid linking incompatible object files.
+The makefile creates a debug build by default. Use `sudo make install DO_RELEASE=1` to create a release build instead. Just be sure to run `make clean` when switching between debug/release mode to avoid linking incompatible object files.
 
 ### Build on Windows using makefile
 
 A makefile for Microsoft Windows is included in the repository. It has been tested on Windows XP with `NMAKE` from the free [Microsoft Visual C++ Express](http://www.microsoft.com/express/Downloads/#2010-Visual-CPP) 2010 tool chain. If you don't have git installed you can [download the latest sources](http://github.com/xolox/lua-apr/zipball/master) directly from GitHub as a ZIP file. Please note that the Windows makefile only builds the Lua/APR binding, you need to build APR yourself (see the [instructions](http://apr.apache.org/compiling_win32.html)).
 
-The makefile creates a debug build by default. Use `NMAKE /f Makefile.win RELEASE=1` to create a release build instead. Just be sure to run `NMAKE /f Makefile.win clean` when switching between debug/release mode to avoid linking incompatible object files.
+The makefile creates a debug build by default. Use `NMAKE /f Makefile.win DO_RELEASE=1` to create a release build instead. Just be sure to run `NMAKE /f Makefile.win clean` when switching between debug/release mode to avoid linking incompatible object files.
 
 ## Status
 
