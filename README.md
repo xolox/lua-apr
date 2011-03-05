@@ -1,6 +1,10 @@
-# Apache Portable Runtime <br> binding for Lua
+# Apache Portable Runtime binding for Lua
 
-The [Lua/APR binding](http://peterodding.com/code/lua/apr/) aims to bring most of the functionality in the [Apache Portable Runtime](http://en.wikipedia.org/wiki/Apache_Portable_Runtime) library to the small and flexible programming language [Lua](http://en.wikipedia.org/wiki/Lua_%28programming_language%29). Thus far the following modules have been implemented (the following links take you straight to the relevant documentation):
+The [Lua/APR binding][homepage] aims to bring most of the functionality in the [Apache Portable Runtime][wp_apr] library to the small and flexible programming language [Lua][wp_lua]. Thus far the following modules have been implemented (the following links take you straight to the relevant documentation):
+
+[homepage]: http://peterodding.com/code/lua/apr/
+[wp_apr]: http://en.wikipedia.org/wiki/Apache_Portable_Runtime
+[wp_lua]: http://en.wikipedia.org/wiki/Lua_(programming_language)
 
  * [Base64 encoding](http://peterodding.com/code/lua/apr/docs/#base64_encoding)
  * [Cryptography routines](http://peterodding.com/code/lua/apr/docs/#cryptography_routines)
@@ -30,11 +34,14 @@ The [Lua/APR binding](http://peterodding.com/code/lua/apr/) aims to bring most o
 
 ## How to get and install the module
 
-There are [Windows binaries](http://peterodding.com/code/lua/apr/downloads/lua-apr-0.14.2-win32.zip) available that have been tested with [Lua for Windows](http://code.google.com/p/luaforwindows/) v5.1.4-40. You can also build the Lua/APR binding yourself. Here are your options:
+There are [Windows binaries][winbin] available that have been tested with [Lua for Windows][lfw] v5.1.4-40. You can also build the Lua/APR binding yourself. Here are your options:
+
+[winbin]: http://peterodding.com/code/lua/apr/downloads/lua-apr-0.14.2-win32.zip
+[lfw]: http://code.google.com/p/luaforwindows/
 
 ### Install the Debian/Ubuntu package
 
-I've setup an experimental Debian package repository to make it easier to install the Lua/APR binding on Debian and Ubuntu. The following commands should help you get started ([see here for a detailed explanation](http://peterodding.com/code/lua/apr/packages/)):
+I've setup an experimental Debian package repository to make it easier to install the Lua/APR binding on Debian and Ubuntu. The following commands should help you get started ([see here for a detailed explanation][debrepo]):
 
     sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 6CD27CBF
     sudo sh -c 'echo deb http://peterodding.com/code/lua/apr/packages ./ >> /etc/apt/sources.list'
@@ -42,9 +49,11 @@ I've setup an experimental Debian package repository to make it easier to instal
     sudo apt-get install --no-install-recommends lua-apr
     lua -lapr.test
 
+[debrepo]: http://peterodding.com/code/lua/apr/packages/
+
 ### Build on UNIX using LuaRocks
 
-The easiest way to download, build & install the Lua/APR binding is to use [LuaRocks](http://luarocks.org/):
+The easiest way to download, build & install the Lua/APR binding is to use [LuaRocks] [lr]:
 
     $ luarocks install http://peterodding.com/code/lua/apr/downloads/lua-apr-0.14.2-1.rockspec
 
@@ -55,6 +64,8 @@ If you have git installed you can also download and install the latest sources u
 After installing the library you can run the test suite using the following command:
 
     $ lua -lapr.test
+
+[lr]: http://luarocks.org/
 
 ### Build on UNIX using makefile
 
@@ -76,15 +87,21 @@ The makefile creates a debug build by default. Use `sudo make install DO_RELEASE
 
 ### Build on Windows using makefile
 
-A makefile for Microsoft Windows is included in the repository. It has been tested on Windows XP with `NMAKE` from the free [Microsoft Visual C++ Express](http://www.microsoft.com/express/Downloads/#2010-Visual-CPP) 2010 tool chain. If you don't have git installed you can [download the latest sources](http://github.com/xolox/lua-apr/zipball/master) directly from GitHub as a ZIP file. Please note that the Windows makefile only builds the Lua/APR binding, you need to build APR yourself (see the [instructions](http://apr.apache.org/compiling_win32.html)).
+A makefile for Microsoft Windows is included in the repository. It has been tested on Windows XP with `NMAKE` from the free [Microsoft Visual C++ Express][mscv] 2010 tool chain. If you don't have git installed you can [download the latest sources][autozip] directly from GitHub as a ZIP file. Please note that the Windows makefile only builds the Lua/APR binding, you need to build APR yourself (see the [instructions][apr_build]).
 
 The makefile creates a debug build by default. Use `NMAKE /f Makefile.win DO_RELEASE=1` to create a release build instead. Just be sure to run `NMAKE /f Makefile.win clean` when switching between debug/release mode to avoid linking incompatible object files.
+
+[msvc]: http://www.microsoft.com/express/Downloads/#2010-Visual-CPP
+[autozip]: http://github.com/xolox/lua-apr/zipball/master
+[apr_build]: http://apr.apache.org/compiling_win32.html
 
 ## Status
 
 The following functionality has not been implemented yet but is on the to-do list:
 
- * **Encrypted network communication** (unfortunately this isn't provided by APR so [io_net.c](https://github.com/xolox/lua-apr/blob/master/src/io_net.c) could get messy…)
+ * **Encrypted network communication** (unfortunately this isn't provided by APR so [io_net.c][io_net] could get messy…)
+
+[io_net]: https://github.com/xolox/lua-apr/blob/master/src/io_net.c
 
 ## Contact
 
@@ -93,4 +110,4 @@ If you have questions, bug reports, suggestions, etc. the author can be contacte
 ## License
 
 This software is licensed under the [MIT license](http://en.wikipedia.org/wiki/MIT_License).  
-© 2011 Peter Odding &lt;<peter@peterodding.com>&gt; and zhiguo zhao &lt;<zhaozg@gmail.com>&gt;.
+© 2011 Peter Odding (<peter@peterodding.com>) and zhiguo zhao (<zhaozg@gmail.com>).
