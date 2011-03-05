@@ -9,7 +9,7 @@
 # external dependencies using the `install_deps' target (see below).
 
 VERSION = 0.16.1
-RELEASE = 1
+RELEASE = 2
 PACKAGE = lua-apr-$(VERSION)-$(RELEASE)
 
 # Based on http://www.luarocks.org/en/Recommended_practices_for_Makefiles
@@ -202,19 +202,6 @@ deb_package: package_prerequisites
 		'--maintainer="Peter Odding <peter@peterodding.com>"' \
 		make install LUA_DIR=/usr
 	@rm -R description-pak doc-pak/
-
-# Create a "trivial repository" for the Debian package generated above
-# (hosted online at http://peterodding.com/code/lua/apr/packages/).
-deb_repo: deb_package
-	@[ -d deb-repo ] && rm deb-repo/* || mkdir -p deb-repo
-	@mv *.deb deb-repo
-	@cd deb-repo && ( \
-		dpkg-scanpackages . | sed 's@: \./@: @' > Packages; \
-		cat Packages | gzip > Packages.gz; \
-		LANG= apt-ftparchive release . > Release.tmp; \
-		mv Release.tmp Release; \
-		gpg -abs -o Release.gpg Release; \
-	)
 
 # Clean generated files from working directory.
 clean:
