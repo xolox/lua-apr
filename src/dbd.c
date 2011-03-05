@@ -3,7 +3,7 @@
  * Authors:
  *  - zhiguo zhao <zhaozg@gmail.com>
  *  - Peter Odding <peter@peterodding.com>
- * Last Change: February 19, 2011
+ * Last Change: March 5, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -52,7 +52,7 @@
  *
  * Having identified the problem, finding a workaround was easy:
  *
- *     $ export LD_PRELOAD='/usr/lib/libapr-1.so:/usr/lib/libaprutil-1.so'
+ *     $ export LD_PRELOAD='/usr/lib/libapr-1.so.0:/usr/lib/libaprutil-1.so.0'
  *     $ lua -e "print(require('apr').dbd('sqlite3'))"
  *     database driver (0x853bdfc)
  *

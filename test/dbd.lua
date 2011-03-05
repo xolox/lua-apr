@@ -3,7 +3,7 @@
  Unit tests for the relational database module of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: February 11, 2011
+ Last Change: March 5, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -12,13 +12,15 @@
 local apr = require 'apr'
 local helpers = require 'apr.test.helpers'
 
--- See the DBD module documentation for why this hack is here.
-local libs = { '/usr/lib/libapr-1.so', '/usr/lib/libaprutil-1.so' }
-if apr.env_get 'LD_PRELOAD' == nil
-    and apr.stat(libs[1], 'type') == 'file'
-    and apr.stat(libs[2], 'type') == 'file' then
-  assert(apr.env_set('LD_PRELOAD', apr.filepath_list_merge(libs)))
+-- XXX This hack is needed to make the tests pass on Ubuntu 10.04 and probably
+-- also other versions of Ubuntu and Debian? The Lua/APR documentation for the
+-- DBD module contains some notes about this, here's a direct link:
+-- http://peterodding.com/code/lua/apr/docs/#debugging_dso_load_failed_errors
+local libs = apr.filepath_list_split(apr.env_get 'LD_PRELOAD' or '')
+for _, libname in ipairs { '/usr/lib/libapr-1.so.0', '/usr/lib/libaprutil-1.so.0' } do
+  if apr.stat(libname, 'type') == 'file' then table.insert(libs, libname) end
 end
+assert(apr.env_set('LD_PRELOAD', apr.filepath_list_merge(libs)))
 
 local child = assert(apr.proc_create 'lua')
 assert(child:cmdtype_set 'shellcmd/env')
