@@ -220,7 +220,7 @@ deb_repo: deb_package
 clean:
 	@rm -Rf $(BINARY_MODULE) $(OBJECTS) etc/coverage
 	@rm -f $(APREQ_BINARY) docs.md docs.html
-	@which lcov && lcov -z -d .
+	@if which lcov; then lcov -z -d .; fi
 	@rm -f src/*.gcov src/*.gcno
 
 .PHONY: install uninstall test valgrind coverage docs install_deps package \
