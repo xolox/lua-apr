@@ -3,7 +3,7 @@
  Unit tests for the time routines module of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: February 11, 2011
+ Last Change: March 5, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -16,7 +16,7 @@ local apr = require 'apr'
 local now = 1032030336186711 / 1000000
 
 -- Check that apr.time_now() more or less matches os.time()
-assert(math.abs(os.time() - apr.time_now()) <= 1)
+assert(math.abs(os.time() - apr.time_now()) <= 2)
 
 -- apr.time_explode() using apr_time_exp_lt()
 local posix_exp = os.date('*t', now)
