@@ -1,7 +1,7 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: March 5, 2011
+# Last Change: March 6, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -9,13 +9,16 @@
 # external dependencies using the `install_deps' target (see below).
 
 VERSION = 0.16.1
-RELEASE = 2
+RELEASE = 3
 PACKAGE = lua-apr-$(VERSION)-$(RELEASE)
 
 # Based on http://www.luarocks.org/en/Recommended_practices_for_Makefiles
 LUA_DIR = /usr/local
 LUA_LIBDIR = $(LUA_DIR)/lib/lua/5.1
 LUA_SHAREDIR = $(LUA_DIR)/share/lua/5.1
+
+# Location for generated HTML documentation.
+LUA_APR_DOCS = $(LUA_DIR)/share/doc/lua-apr
 
 # Names of source / binary modules to install.
 SOURCE_MODULE = src/apr.lua
@@ -114,6 +117,12 @@ install: $(BINARY_MODULE)
 	mkdir -p $(LUA_LIBDIR)/apr
 	cp $(BINARY_MODULE) $(LUA_LIBDIR)/apr/$(BINARY_MODULE)
 	if [ -e $(APREQ_BINARY) ]; then cp $(APREQ_BINARY) $(LUA_LIBDIR)/$(APREQ_BINARY); fi
+	make docs
+	if [ ! -d $(LUA_APR_DOCS) ]; then mkdir -p $(LUA_APR_DOCS); fi
+	cp docs.html $(LUA_APR_DOCS)/
+	lua etc/wrap.lua < README.md > $(LUA_APR_DOCS)/readme.html
+	lua etc/wrap.lua < NOTES.md > $(LUA_APR_DOCS)/notes.html
+	lua etc/wrap.lua < TODO.md > $(LUA_APR_DOCS)/todo.html
 
 # Remove previously installed files.
 uninstall:
@@ -138,16 +147,17 @@ coverage:
 
 # Generate HTML documentation from Markdown embedded in source code.
 docs: etc/docs.lua $(SOURCE_MODULE) $(SOURCES)
-	@echo Generating documentation..
-	@lua etc/docs.lua docs.md docs.html
+	lua etc/docs.lua > docs.md
+	lua etc/wrap.lua < docs.md > docs.html
 
 # Install the build dependencies using Debian/Ubuntu packages.
 # FIXME The libreadline-dev isn't really needed here is it?!
 install_deps:
 	apt-get install libapr1 libapr1-dev libaprutil1 libaprutil1-dev \
 		libaprutil1-dbd-sqlite3 libapreq2 libapreq2-dev lua5.1 \
-		liblua5.1-0 liblua5.1-0-dev libreadline-dev \
-		liblua5.1-markdown0
+		liblua5.1-0 liblua5.1-0-dev libreadline-dev luarocks
+	luarocks install lua-discount
+	luarocks install http://peterodding.com/code/lua/lxsh/downloads/lxsh-0.6.1-1.rockspec
 
 # Prepare a source ZIP archive and a Debian package 
 package: zip_package deb_package
@@ -155,41 +165,40 @@ package: zip_package deb_package
 # Create a profiling build to run the test suite and generate documentation
 # including test coverage, then create a clean build without profiling.
 package_prerequisites:
-	@make clean
-	@make PROFILING=1
-	@sudo make install
-	@make test docs
-	@make clean
-	@make DO_RELEASE=1
+	make clean
+	make PROFILING=1
+	sudo make install
+	make test docs
+	make clean
+	make DO_RELEASE=1
 
 # Prepare a source ZIP archive from which Lua/APR can be build.
 zip_package: package_prerequisites
-	@echo Packaging sources
-	@rm -f $(PACKAGE).zip
-	@mkdir -p $(PACKAGE)/doc
-	@cp docs.html $(PACKAGE)/doc/apr.html
-	@mkdir -p $(PACKAGE)/etc
-	@cp -a etc/docs.lua etc/errors.lua $(PACKAGE)/etc
-	@mkdir -p $(PACKAGE)/benchmarks
-	@cp -a benchmarks/* $(PACKAGE)/benchmarks
-	@mkdir -p $(PACKAGE)/examples
-	@cp -a examples/*.lua $(PACKAGE)/examples
-	@mkdir -p $(PACKAGE)/src
-	@cp -a src/lua_apr.h $(SOURCES) $(SOURCE_MODULE) $(PACKAGE)/src
-	@mkdir -p $(PACKAGE)/test
-	@cp -a test/*.lua $(PACKAGE)/test
-	@cp Makefile Makefile.win make.cmd NOTES.md README.md $(PACKAGE)
-	@zip $(PACKAGE).zip -r $(PACKAGE)
-	@rm -R $(PACKAGE)
-	@echo Calculating MD5 sum for LuaRocks
-	@md5sum $(PACKAGE).zip
+	rm -f $(PACKAGE).zip
+	mkdir -p $(PACKAGE)/doc
+	cp docs.html $(PACKAGE)/doc/apr.html
+	mkdir -p $(PACKAGE)/etc
+	cp -a etc/docs.lua etc/errors.lua $(PACKAGE)/etc
+	mkdir -p $(PACKAGE)/benchmarks
+	cp -a benchmarks/* $(PACKAGE)/benchmarks
+	mkdir -p $(PACKAGE)/examples
+	cp -a examples/*.lua $(PACKAGE)/examples
+	mkdir -p $(PACKAGE)/src
+	cp -a src/lua_apr.h $(SOURCES) $(SOURCE_MODULE) $(PACKAGE)/src
+	mkdir -p $(PACKAGE)/test
+	cp -a test/*.lua $(PACKAGE)/test
+	cp Makefile Makefile.win make.cmd NOTES.md README.md $(PACKAGE)
+	zip $(PACKAGE).zip -r $(PACKAGE)
+	rm -R $(PACKAGE)
+	@echo 'MD5 sum for LuaRocks:'
+	md5sum $(PACKAGE).zip
 
 # Create a Debian package using "checkinstall".
 deb_package: package_prerequisites
 	@echo "Lua/APR is a binding to the Apache Portable Runtime (APR) library." > description-pak
 	@echo "APR powers software such as the Apache webserver and Subversion and" >> description-pak
 	@echo "Lua/APR makes the APR operating system interfaces available to Lua." >> description-pak
-	@checkinstall \
+	checkinstall \
 		--default \
 		--backup=no \
 		--type=debian \
@@ -205,10 +214,10 @@ deb_package: package_prerequisites
 
 # Clean generated files from working directory.
 clean:
-	@rm -Rf $(BINARY_MODULE) $(OBJECTS) etc/coverage
-	@rm -f $(APREQ_BINARY) docs.md docs.html
-	@if which lcov; then lcov -z -d .; fi
-	@rm -f src/*.gcov src/*.gcno
+	rm -Rf $(BINARY_MODULE) $(OBJECTS) etc/coverage
+	rm -f $(APREQ_BINARY) docs.md docs.html
+	if which lcov; then lcov -z -d .; fi
+	rm -f src/*.gcov src/*.gcno
 
 .PHONY: install uninstall test valgrind coverage docs install_deps package \
 	package_prerequisites zip_package deb_package deb_repo clean
