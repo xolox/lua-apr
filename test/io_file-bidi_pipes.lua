@@ -1,4 +1,8 @@
-local apr = assert(require 'apr')
+local status, apr = pcall(require, 'apr')
+if not status then
+  pcall(require, 'luarocks.require')
+  apr = require 'apr'
+end
 local stdin = assert(apr.pipe_open_stdin())
 local stdout = assert(apr.pipe_open_stdout())
 local stderr = assert(apr.pipe_open_stderr())

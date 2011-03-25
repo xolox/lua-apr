@@ -3,13 +3,17 @@
  Unit tests for the relational database module of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: March 5, 2011
+ Last Change: March 27, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
 --]]
 
-local apr = require 'apr'
+local status, apr = pcall(require, 'apr')
+if not status then
+  pcall(require, 'luarocks.require')
+  apr = require 'apr'
+end
 local helpers = require 'apr.test.helpers'
 
 -- XXX This hack is needed to make the tests pass on Ubuntu 10.04 and probably

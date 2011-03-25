@@ -3,7 +3,7 @@
  Driver script for the unit tests of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: February 27, 2011
+ Last Change: March 27, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -12,8 +12,11 @@
 -- TODO Cleanup and extend the tests for `filepath.c'.
 -- TODO Add tests for file:seek() (tricky to get right!)
 -- TODO Add tests for apr.glob()!
-
-local apr = require 'apr'
+local status, apr = pcall(require, 'apr')
+if not status then
+  pcall(require, 'luarocks.require')
+  apr = require 'apr'
+end
 local helpers = require 'apr.test.helpers'
 
 -- Names of modules for which tests have been written (the individual lines
@@ -47,20 +50,20 @@ local modules = {
 }
 
 for _, testname in ipairs(modules) do
-  helpers.message("Running %s tests ..", testname)
-  local modname = string.format('%s.%s', ..., testname)
+  local modname = (...) .. '.' .. testname
   package.loaded[modname] = nil
+  helpers.message("Running %s tests: ", testname)
   if require(modname) then
-    helpers.message("Running %s tests: OK\n", testname)
+    helpers.message "OK\n"
   else
-    helpers.message("Running %s tests: Failed!\n", testname)
+    helpers.message "Failed!\n"
   end
   package.loaded[modname] = nil
   -- Garbage collect unreferenced objects before testing the next module.
   collectgarbage 'collect'
   collectgarbage 'collect'
 end
-helpers.message("Done!\n")
+helpers.message "Done!\n"
 
 -- Exit the interpreter (started with lua -lapr.test).
 os.exit()

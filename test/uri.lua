@@ -3,13 +3,17 @@
  Unit tests for the URI parsing module of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: February 27, 2011
+ Last Change: March 27, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
 --]]
 
-local apr = require 'apr'
+local status, apr = pcall(require, 'apr')
+if not status then
+  pcall(require, 'luarocks.require')
+  apr = require 'apr'
+end
 local hostinfo = 'scheme://user:pass@host:80'
 local pathinfo = '/path/file?query-param=value#fragment'
 local input = hostinfo .. pathinfo

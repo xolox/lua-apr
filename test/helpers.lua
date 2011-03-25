@@ -9,7 +9,11 @@
 
 --]]
 
-local apr = require 'apr'
+local status, apr = pcall(require, 'apr')
+if not status then
+  pcall(require, 'luarocks.require')
+  apr = require 'apr'
+end
 local helpers = {}
 
 function print(...)
@@ -21,7 +25,7 @@ function print(...)
 end
 
 function helpers.message(s, ...) -- {{{1
-  io.stderr:write('\r', string.format(s, ...))
+  io.stderr:write(string.format(s, ...))
   io.stderr:flush()
 end
 

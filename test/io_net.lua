@@ -3,13 +3,17 @@
  Unit tests for the network I/O handling module of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: February 11, 2011
+ Last Change: March 27, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
 --]]
 
-local apr = require 'apr'
+local status, apr = pcall(require, 'apr')
+if not status then
+  pcall(require, 'luarocks.require')
+  apr = require 'apr'
+end
 local helpers = require 'apr.test.helpers'
 
 -- Test apr.hostname_get(), apr.host_to_addr() and apr.addr_to_host().

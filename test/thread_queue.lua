@@ -3,13 +3,17 @@
  Unit tests for the thread queues module of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: February 19, 2011
+ Last Change: March 27, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
 --]]
 
-local apr = require 'apr'
+local status, apr = pcall(require, 'apr')
+if not status then
+  pcall(require, 'luarocks.require')
+  apr = require 'apr'
+end
 local helpers = require 'apr.test.helpers'
 
 if not apr.thread_queue then
@@ -25,8 +29,11 @@ assert(not queue:trypop())
 
 -- Pass the thread queue to a thread.
 local thread = assert(apr.thread_create([[
-  pcall(require, 'luarocks.require')
-  local apr = require 'apr'
+  local status, apr = pcall(require, 'apr')
+  if not status then
+    pcall(require, 'luarocks.require')
+    apr = require 'apr'
+  end
   local queue = ...
   -- Scalar values.
   assert(queue:push(nil))

@@ -1,4 +1,8 @@
-local apr = assert(require 'apr')
+local status, apr = pcall(require, 'apr')
+if not status then
+  pcall(require, 'luarocks.require')
+  apr = require 'apr'
+end
 local valid_key = 'LUA_APR_MAGIC_ENV_KEY'
 local invalid_key = 'LUA_APR_INVALID_ENV_KEY'
 assert(apr.env_get(valid_key) == apr._VERSION)

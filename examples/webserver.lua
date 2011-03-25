@@ -3,7 +3,7 @@
   Example: Single threaded webserver
 
   Author: Peter Odding <peter@peterodding.com>
-  Last Change: February 19, 2011
+  Last Change: March 6, 2011
   Homepage: http://peterodding.com/code/lua/apr/
   License: MIT
 
@@ -24,15 +24,16 @@
 ]]
 
 local port_number = tonumber(arg[1]) or 8080
+local bind_address = arg[2] or '*'
 
 -- Load the Lua/APR binding.
 local apr = require 'apr'
 
 -- Initialize the server socket.
 local server = assert(apr.socket_create())
-assert(server:bind('*', port_number))
+assert(server:bind(bind_address, port_number))
 assert(server:listen(1))
-print("Running webserver on http://localhost:" .. port_number .. " ..")
+print("Running webserver on http://" .. bind_address .. ":" .. port_number .. " ..")
 
 -- Wait for clients to serve.
 local visitor = 1

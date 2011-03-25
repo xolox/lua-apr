@@ -9,7 +9,11 @@
 
 --]]
 
-local apr = require 'apr'
+local status, apr = pcall(require, 'apr')
+if not status then
+  pcall(require, 'luarocks.require')
+  apr = require 'apr'
+end
 local helpers = require 'apr.test.helpers'
 
 -- Test apr.filepath_root(). {{{1

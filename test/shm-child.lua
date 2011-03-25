@@ -1,4 +1,8 @@
-local apr = require 'apr'
+local status, apr = pcall(require, 'apr')
+if not status then
+  pcall(require, 'luarocks.require')
+  apr = require 'apr'
+end
 local shm_file = assert(apr.shm_attach(arg[1]))
 local tmp_file = assert(io.open(arg[2]))
 assert(shm_file:write(tmp_file:read('*a')))

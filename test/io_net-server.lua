@@ -1,4 +1,8 @@
-local apr = assert(require 'apr')
+local status, apr = pcall(require, 'apr')
+if not status then
+  pcall(require, 'luarocks.require')
+  apr = require 'apr'
+end
 local server = assert(apr.socket_create())
 assert(server:bind('*', arg[1]))
 assert(server:listen(1))

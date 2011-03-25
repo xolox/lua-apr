@@ -3,13 +3,17 @@
  Unit tests for the multi threading module of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: February 27, 2011
+ Last Change: March 27, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
 --]]
 
-local apr = require 'apr'
+local status, apr = pcall(require, 'apr')
+if not status then
+  pcall(require, 'luarocks.require')
+  apr = require 'apr'
+end
 local helpers = require 'apr.test.helpers'
 
 if not apr.thread_create then
@@ -34,18 +38,22 @@ assert(helpers.readfile(threadfile) == 'hello world!')
 
 -- Test module loading and multiple return values.
 local thread = assert(apr.thread_create [[
-  -- Gotcha: The Lua/APR binding might be installed through
-  -- LuaRocks which hasn't been initialized in this Lua state.
-  pcall(require, 'luarocks.require')
-  local apr = require 'apr'
+  local status, apr = pcall(require, 'apr')
+  if not status then
+    pcall(require, 'luarocks.require')
+    apr = require 'apr'
+  end
   return apr.version_get()
 ]])
 helpers.checktuple({ true, apr.version_get() }, assert(thread:join()))
 
 -- Test thread:status()
 local thread = assert(apr.thread_create [[
-  pcall(require, 'luarocks.require')
-  local apr = require 'apr'
+  local status, apr = pcall(require, 'apr')
+  if not status then
+    pcall(require, 'luarocks.require')
+    apr = require 'apr'
+  end
   apr.sleep(2)
 ]])
 apr.sleep(1)

@@ -1,6 +1,11 @@
 -- Based on http://svn.apache.org/viewvc/apr/apr/trunk/test/testdbd.c?view=markup
 
-local apr = require 'apr'
+local status, apr = pcall(require, 'apr')
+if not status then
+  pcall(require, 'luarocks.require')
+  apr = require 'apr'
+end
+
 local helpers = require 'apr.test.helpers'
 local driver = assert(apr.dbd 'sqlite3')
 assert(driver:open ':memory:')

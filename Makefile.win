@@ -90,23 +90,27 @@ CFLAGS = $(CFLAGS) "/I$(APREQ_INCDIR)" /DLUA_APR_ENABLE_APREQ
 LFLAGS = $(LFLAGS) "/LIBPATH:$(APREQ_LIBDIR)" libapreq2.lib
 !ENDIF
 
-# Build rules.
+# Build the binary module.
+$(BINARY_MODULE): $(OBJECTS) Makefile
+	@LINK /nologo /dll /out:$@ $(OBJECTS) $(LFLAGS)
+	@IF EXIST $@.manifest MT -nologo -manifest $@.manifest -outputresource:$@;2
 
-$(BINARY_MODULE): $(OBJECTS)
-	LINK /nologo /dll /out:$@ $(OBJECTS) $(LFLAGS)
-	IF EXIST $@.manifest MT -nologo -manifest $@.manifest -outputresource:$@;2
-
+# Build the standalone libapreq2 binding.
 $(APREQ_BINARY): etc\apreq_standalone.c
 	CD etc && CL /W3 /nologo /MD /D"WIN32" /D"LUA_BUILD_AS_DLL" $(CFLAGS) /TC /c apreq_standalone.c
 	LINK /nologo /dll /out:$@ etc\apreq_standalone.obj $(LFLAGS)
 	IF EXIST $@.manifest MT -nologo -manifest $@.manifest -outputresource:$@;2
 
+# Compile individual source code files to object files.
+$(OBJECTS): Makefile
 .c.obj:
-	CL /W3 /nologo /MD /D"WIN32" /D"LUA_BUILD_AS_DLL" $(CFLAGS) /TC /c $< /Fo$@
+	@CL /W3 /nologo /MD /D"WIN32" /D"LUA_BUILD_AS_DLL" $(CFLAGS) /TC /c $< /Fo$@ >NUL
 
+# Always try to regenerate the error handling module.
 src\errno.c: etc\errors.lua
-	lua etc\errors.lua > src\errno.c.new && move src\errno.c.new src\errno.c || EXIT /B 0
+	@LUA etc\errors.lua > src\errno.c.new && MOVE src\errno.c.new src\errno.c || EXIT /B 0
 
+# Install the Lua/APR binding and external dependencies.
 install: $(BINARY_MODULE)
 	COPY src\apr.lua "$(LUA_SHAREDIR)"
 	IF NOT EXIST "$(LUA_SHAREDIR)\apr" MD "$(LUA_SHAREDIR)\apr"
@@ -119,9 +123,12 @@ install: $(BINARY_MODULE)
 	COPY "$(API_LIBDIR)\libapriconv-1.dll" "$(LUA_DIR)"
 	IF EXIST "$(APREQ_LIBDIR)\libapreq2.dll" COPY "$(APREQ_LIBDIR)\libapreq2.dll" "$(LUA_DIR)"
 
+# Remove previously installed files.
 uninstall:
 	DEL "$(LUA_SHAREDIR)\apr.lua"
-	DEL "$(LUA_SHAREDIR)\apr"
+	DEL "$(LUA_SHAREDIR)\apr\test\*.lua"
+	RD "$(LUA_SHAREDIR)\apr\test"
+	RD "$(LUA_SHAREDIR)\apr"
 	DEL "$(LUA_LIBDIR)\apr\$(BINARY_MODULE)"
 	RD "$(LUA_LIBDIR)\apr"
 	DEL "$(LUA_DIR)\libapr-1.dll"
@@ -129,12 +136,15 @@ uninstall:
 	DEL "$(LUA_DIR)\libapriconv-1.dll"
 	IF EXIST "$(LUA_DIR)\libapreq2.dll" DEL "$(LUA_DIR)\libapreq2.dll"
 
+# Run the test suite.
 test: install
 	LUA -l apr.test
 
+# Debug the test suite using NTSD.
 debug:
 	NTSD -g LUA -l apr.test
 
+# Clean generated files from working directory.
 clean:
 	DEL $(OBJECTS) $(BINARY_MODULE) core.lib core.exp core.pdb core.ilk core.dll.manifest 2>NUL
 	DEL $(APREQ_BINARY) apreq.lib apreq.exp apreq.pdb apreq.ilk 2>NUL

@@ -71,7 +71,7 @@ local function getmodule(name, file, header)
   return value
 end
 
-local function message(string, ...)
+local function message(...)
   io.stderr:write(fmt(...), '\n')
 end
 
@@ -207,9 +207,7 @@ for filename in SOURCES:gmatch '%S+' do
     local pattern = '\n/%*([^\n]-%->.-)%*/\n\n%w[^\n]- ([%w_]+)%([^\n]-%)\n(%b{})'
     for docblock, funcname, funcbody in source:gmatch(pattern) do
       local signature, description = docblock:match '^([^\n]- %-> [^\n]+)(\n.-)$'
-      if not signature then
-        message("%s: Function %s doesn't have a signature?!", filename, funcname)
-      else
+      if signature then
         description = mungedesc(signature, description)
         local by = funcbody:find 'luaL_checklstring' or funcbody:find 'datum_check' or funcbody:find 'lua_pushlstring'
         local bn = funcbody:find 'luaL_checkstring' or funcbody:find 'lua_tostring' or funcbody:find 'luaL_optstring' or funcbody:find 'lua_pushstring'

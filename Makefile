@@ -95,17 +95,17 @@ OBJECTS = $(patsubst %.c,%.o,$(SOURCES))
 
 # Build the binary module.
 $(BINARY_MODULE): $(OBJECTS) Makefile
-	$(CC) -shared -o $@ $(OBJECTS) $(LFLAGS)
+	@$(CC) -shared -o $@ $(OBJECTS) $(LFLAGS)
 
 # Build the standalone libapreq2 binding.
 $(APREQ_BINARY): etc/apreq_standalone.c Makefile
-	$(CC) -Wall -shared -o $@ $(CFLAGS) -fPIC etc/apreq_standalone.c $(LFLAGS)
+	@$(CC) -Wall -shared -o $@ $(CFLAGS) -fPIC etc/apreq_standalone.c $(LFLAGS)
 
 # Compile individual source code files to object files.
 $(OBJECTS): %.o: %.c src/lua_apr.h Makefile
-	$(CC) -Wall -c $(CFLAGS) -fPIC $< -o $@
+	@$(CC) -Wall -c $(CFLAGS) -fPIC $< -o $@
 
-# Regenerate the error handling module.
+# Always try to regenerate the error handling module.
 src/errno.c: etc/errors.lua Makefile
 	lua etc/errors.lua > src/errno.c.new && mv -f src/errno.c.new src/errno.c || true
 
@@ -117,7 +117,7 @@ install: $(BINARY_MODULE)
 	mkdir -p $(LUA_LIBDIR)/apr
 	cp $(BINARY_MODULE) $(LUA_LIBDIR)/apr/$(BINARY_MODULE)
 	if [ -e $(APREQ_BINARY) ]; then cp $(APREQ_BINARY) $(LUA_LIBDIR)/$(APREQ_BINARY); fi
-	make docs
+	make --no-print-directory docs
 	if [ ! -d $(LUA_APR_DOCS) ]; then mkdir -p $(LUA_APR_DOCS); fi
 	cp docs.html $(LUA_APR_DOCS)/
 	lua etc/wrap.lua < README.md > $(LUA_APR_DOCS)/readme.html
@@ -131,8 +131,8 @@ uninstall:
 	rm -fR $(LUA_LIBDIR)/apr
 
 # Run the test suite.
-test:
-	lua -lapr.test
+test: $(BINARY_MODULE)
+	@lua -lapr.test
 
 # Run the test suite under Valgrind to detect and analyze errors.
 valgrind:
@@ -147,8 +147,8 @@ coverage:
 
 # Generate HTML documentation from Markdown embedded in source code.
 docs: etc/docs.lua $(SOURCE_MODULE) $(SOURCES)
-	lua etc/docs.lua > docs.md
-	lua etc/wrap.lua < docs.md > docs.html
+	@lua etc/docs.lua > docs.md
+	@lua etc/wrap.lua < docs.md > docs.html
 
 # Install the build dependencies using Debian/Ubuntu packages.
 # FIXME The libreadline-dev isn't really needed here is it?!
