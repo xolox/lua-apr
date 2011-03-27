@@ -1,7 +1,7 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: March 6, 2011
+# Last Change: March 27, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -107,7 +107,7 @@ $(OBJECTS): %.o: %.c src/lua_apr.h Makefile
 
 # Regenerate the error handling module.
 src/errno.c: etc/errors.lua Makefile
-	lua etc/errors.lua > src/errno.c.new && mv -f src/errno.c.new src/errno.c
+	lua etc/errors.lua > src/errno.c.new && mv -f src/errno.c.new src/errno.c || true
 
 # Install the Lua/APR binding under $LUA_DIR.
 install: $(BINARY_MODULE)

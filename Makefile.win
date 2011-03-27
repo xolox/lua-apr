@@ -1,7 +1,7 @@
 # This is the Windows makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: February 27, 2011
+# Last Change: March 27, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -105,7 +105,7 @@ $(APREQ_BINARY): etc\apreq_standalone.c
 	CL /W3 /nologo /MD /D"WIN32" /D"LUA_BUILD_AS_DLL" $(CFLAGS) /TC /c $< /Fo$@
 
 src\errno.c: etc\errors.lua
-	lua etc\errors.lua > src\errno.c.new && move src\errno.c.new src\errno.c
+	lua etc\errors.lua > src\errno.c.new && move src\errno.c.new src\errno.c || EXIT /B 0
 
 install: $(BINARY_MODULE)
 	COPY src\apr.lua "$(LUA_SHAREDIR)"

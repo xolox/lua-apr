@@ -3,7 +3,7 @@
  Error handling code generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: February 20, 2011
+ Last Change: March 26, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -46,16 +46,14 @@ local ignored = {
 
 local function check(path)
   io.stderr:write("Looking for headers at ", path, " .. ")
-  local status, msg = io.input(path)
-  if status then
-    io.stderr:write "Found them!\n"
-    return true
-  end
-  io.stderr:write("\nFailed to open headers: ", msg, "\n")
+  local status = pcall(io.input, path)
+  io.stderr:write(status and "Found them!\n" or "Failed!\n")
+  return status
 end
 
 if not (check '/usr/include/apr-1.0/apr_errno.h' -- Debian / Ubuntu
-     or check '/usr/include/apr-1/apr_errno.h') then -- Arch Linux / Mac OS X
+     or check '/usr/include/apr-1/apr_errno.h' -- Arch Linux / Mac OS X
+     or check '/usr/local/include/apr-1/apr_errno.h') then -- FreeBSD
   io.stderr:write [[
 Failed to determine where apr_errno.h is defined! This means the error
 handling module can't be regenerated, but don't worry: The Lua/APR
