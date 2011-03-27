@@ -59,6 +59,7 @@ OBJECTS = src\base64.obj \
 		  src\io_net.obj \
 		  src\io_pipe.obj \
 		  src\lua_apr.obj \
+		  src\memcache.obj \
 		  src\memory_pool.obj \
 		  src\object.obj \
 		  src\permissions.obj \
@@ -104,7 +105,7 @@ $(APREQ_BINARY): etc\apreq_standalone.c
 # Compile individual source code files to object files.
 $(OBJECTS): Makefile
 .c.obj:
-	@CL /W3 /nologo /MD /D"WIN32" /D"LUA_BUILD_AS_DLL" $(CFLAGS) /TC /c $< /Fo$@ >NUL
+	@CL /W3 /nologo /MD /D"WIN32" /D"LUA_BUILD_AS_DLL" $(CFLAGS) /TC /c $< /Fo$@
 
 # Always try to regenerate the error handling module.
 src\errno.c: etc\errors.lua

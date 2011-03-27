@@ -1,7 +1,7 @@
 /* Miscellaneous functions module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 27, 2011
+ * Last Change: March 27, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -26,6 +26,8 @@ lua_apr_objtype *lua_apr_types[] = {
   &lua_apr_dbd_type,
   &lua_apr_dbr_type,
   &lua_apr_dbp_type,
+  &lua_apr_memcache_type,
+  &lua_apr_memcache_server_type,
   &lua_apr_md5_type,
   &lua_apr_sha1_type,
   &lua_apr_xml_type,
@@ -194,6 +196,9 @@ LUA_APR_EXPORT int luaopen_apr_core(lua_State *L)
     /* xml.c -- XML parsing. */
     { "xml", lua_apr_xml },
 
+    /* memcache.c -- memcached client. */
+    { "memcache", lua_apr_memcache },
+
     { NULL, NULL }
   };
 
@@ -337,6 +342,8 @@ int lua_apr_os_locale_encoding(lua_State *L)
  *  - `'database driver'`
  *  - `'prepared statement'`
  *  - `'result set'`
+ *  - `'memcache client'`
+ *  - `'memcache server'`
  *  - `'md5 context'`
  *  - `'sha1 context'`
  *  - `'xml parser'`

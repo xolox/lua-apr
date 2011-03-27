@@ -18,6 +18,7 @@ The [Lua/APR binding][homepage] aims to bring most of the functionality in the [
  * [File I/O handling](http://peterodding.com/code/lua/apr/docs/#file_i_o_handling)
  * [Network I/O handling](http://peterodding.com/code/lua/apr/docs/#network_i_o_handling)
  * [Pipe I/O handling](http://peterodding.com/code/lua/apr/docs/#pipe_i_o_handling)
+ * [Memcached client](http://peterodding.com/code/lua/apr/docs/#memcached_client)
  * [Command argument parsing](http://peterodding.com/code/lua/apr/docs/#command_argument_parsing)
  * [HTTP request parsing](http://peterodding.com/code/lua/apr/docs/#http_request_parsing)
  * [Process handling](http://peterodding.com/code/lua/apr/docs/#process_handling)
@@ -36,7 +37,7 @@ The [Lua/APR binding][homepage] aims to bring most of the functionality in the [
 
 There are [Windows binaries][winbin] available that have been tested with [Lua for Windows][lfw] v5.1.4-40. You can also build the Lua/APR binding yourself. Here are your options:
 
-[winbin]: http://peterodding.com/code/lua/apr/downloads/lua-apr-0.14.2-win32.zip
+[winbin]: http://peterodding.com/code/lua/apr/downloads/lua-apr-0.17-win32.zip
 [lfw]: http://code.google.com/p/luaforwindows/
 
 ### Install the Debian/Ubuntu package
@@ -55,7 +56,7 @@ I've setup an experimental Debian package repository to make it easier to instal
 
 The easiest way to download, build & install the Lua/APR binding is to use [LuaRocks] [lr]:
 
-    $ luarocks install http://peterodding.com/code/lua/apr/downloads/lua-apr-0.14.2-1.rockspec
+    $ luarocks install http://peterodding.com/code/lua/apr/downloads/lua-apr-0.17-1.rockspec
 
 If you have git installed you can also download and install the latest sources using the following command:
 
@@ -74,9 +75,9 @@ If you don't have LuaRocks installed the following shell commands should help yo
     $ if which git; then # Get the latest sources using `git'?
     $   git clone git://github.com/xolox/lua-apr.git
     $ else # Or get the most recently released archive using `wget'.
-    $   wget http://peterodding.com/code/lua/apr/downloads/lua-apr-0.14.2-1.zip
-    $   unzip lua-apr-0.14.2-1.zip
-    $   mv lua-apr-0.14.2-1 lua-apr
+    $   wget http://peterodding.com/code/lua/apr/downloads/lua-apr-0.17-1.zip
+    $   unzip lua-apr-0.17-1.zip
+    $   mv lua-apr-0.17-1 lua-apr
     $ fi
     $ cd lua-apr
     $ sudo make install_deps # installs build & runtime dependencies for Debian/Ubuntu
@@ -100,6 +101,7 @@ The makefile creates a debug build by default. Use `NMAKE /f Makefile.win DO_REL
 The following functionality has not been implemented yet but is on the to-do list:
 
  * **Encrypted network communication** (unfortunately this isn't provided by APR so [io_net.c][io_net] could get messy…)
+ * zhiguo zhao contributed an **LDAP** module which will soon be integrated in the Lua/APR binding
 
 [io_net]: https://github.com/xolox/lua-apr/blob/master/src/io_net.c
 

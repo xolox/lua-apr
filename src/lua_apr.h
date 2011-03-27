@@ -1,7 +1,7 @@
 /* Header file for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 27, 2011
+ * Last Change: March 27, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -215,6 +215,8 @@ extern lua_apr_objtype lua_apr_dbp_type;
 extern lua_apr_objtype lua_apr_md5_type;
 extern lua_apr_objtype lua_apr_sha1_type;
 extern lua_apr_objtype lua_apr_xml_type;
+extern lua_apr_objtype lua_apr_memcache_type;
+extern lua_apr_objtype lua_apr_memcache_server_type;
 
 /* Prototypes. {{{1 */
 
@@ -422,6 +424,9 @@ int lua_apr_xlate(lua_State*);
 
 /* xml.c */
 int lua_apr_xml(lua_State*);
+
+/* memcache */
+int lua_apr_memcache(lua_State *L);
 
 #endif
 

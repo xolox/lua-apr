@@ -35,6 +35,7 @@ local modules = {
   'io_dir',
   'io_file',
   'io_net',
+  'memcache',
   'misc',
   'proc',
   'shm',

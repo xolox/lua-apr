@@ -5,7 +5,7 @@
  Multi platform build bot for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: March 20, 2011
+ Last Change: March 27, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -146,11 +146,11 @@ end
 function start_server(port) -- {{{1
   -- Open a TCP server socket and wait for commands from another build bot.
   local server = assert(apr.socket_create('tcp', 'inet'))
-  local host = apr.host_to_addr(apr.hostname_get())
-  assert(server:bind(host, port))
+  local localhost = apr.host_to_addr(apr.hostname_get())
+  assert(server:bind('*', port))
   assert(server:listen(1))
   while true do
-    printf("Build bot listening on %s:%i ..", host, port)
+    printf("Build bot listening on %s:%i ..", localhost, port)
     local client = assert(server:accept())
     for line in local_build() do
       printf('%s', line)

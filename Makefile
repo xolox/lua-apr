@@ -1,15 +1,15 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: March 27, 2011
+# Last Change: March 28, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
 # This makefile has been tested on Ubuntu Linux 10.04 after installing the
 # external dependencies using the `install_deps' target (see below).
 
-VERSION = 0.16.1
-RELEASE = 3
+VERSION = 0.17
+RELEASE = 1
 PACKAGE = lua-apr-$(VERSION)-$(RELEASE)
 
 # Based on http://www.luarocks.org/en/Recommended_practices_for_Makefiles
@@ -43,6 +43,7 @@ SOURCES = src/base64.c \
 		  src/io_net.c \
 		  src/io_pipe.c \
 		  src/lua_apr.c \
+		  src/memcache.c \
 		  src/memory_pool.c \
 		  src/object.c \
 		  src/permissions.c \

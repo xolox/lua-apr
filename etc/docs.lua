@@ -3,7 +3,7 @@
  Documentation generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: March 6, 2011
+ Last Change: March 28, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -28,6 +28,7 @@ local SOURCES = [[
   io_file.c
   io_net.c
   io_pipe.c
+  memcache.c
   getopt.c
   http.c
   proc.c
@@ -301,6 +302,7 @@ local function sig2privfun(s)
     s = s:gsub('^prepared_statement_', 'dbp_')
     s = s:gsub('^result_set_', 'dbr_')
     s = s:gsub('^xml_parser_', 'xml_')
+    s = s:gsub('^mc_client_', 'mc_')
     return s
   end
 end
@@ -394,6 +396,19 @@ local bsignore = {
   ['driver:driver'] = true,
   ['driver:transaction_mode'] = true,
   ['file:lock'] = true,
+  ['mc_client:add'] = true,
+  ['mc_client:add_server'] = true,
+  ['mc_client:add_server'] = true,
+  ['mc_client:decr'] = true,
+  ['mc_client:delete'] = true,
+  ['mc_client:find_server'] = true,
+  ['mc_client:find_server'] = true,
+  ['mc_client:get'] = true,
+  ['mc_client:incr'] = true,
+  ['mc_client:replace'] = true,
+  ['mc_client:set'] = true,
+  ['mc_client:stats'] = true,
+  ['mc_client:version'] = true,
   ['md5_context:digest'] = true,
   ['sha1_context:digest'] = true,
   ['socket:listen'] = true,
