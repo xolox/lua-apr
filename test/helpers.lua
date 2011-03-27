@@ -3,7 +3,7 @@
  Test infrastructure for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: February 18, 2011
+ Last Change: March 27, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -58,9 +58,10 @@ function helpers.checktuple(expected, ...) -- {{{1
   for i = 1, #expected do assert(expected[i] == select(i, ...)) end
 end
 
+local testscripts = apr.filepath_parent(helpers.filedefined())
+
 function helpers.scriptpath(name) -- {{{1
-  local directory = apr.filepath_parent(helpers.filedefined())
-  return assert(apr.filepath_merge(directory, name))
+  return assert(apr.filepath_merge(testscripts, name))
 end
 
 function helpers.wait_for(signalfile, timeout) -- {{{1

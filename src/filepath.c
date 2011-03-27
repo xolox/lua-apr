@@ -1,7 +1,7 @@
 /* File path manipulation module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: January 2, 2011
+ * Last Change: March 27, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -73,22 +73,57 @@ int lua_apr_filepath_root(lua_State *L)
 
 int lua_apr_filepath_parent(lua_State *L)
 {
+  apr_pool_t *memory_pool;
   apr_status_t status;
   apr_int32_t flags;
-  const char *name;
-  char *path;
+  const char *input, *root, *path, *name;
+  size_t length;
+  char *buffer;
 
-  path = (char*)luaL_checkstring(L, 1);
+  memory_pool = to_pool(L);
+  input = path = luaL_checkstring(L, 1);
   flags = check_options(L, 2);
 
-  if (flags != 0) {
-    status = apr_filepath_merge(&path, NULL, path, flags, to_pool(L));
+  /* Check if the path is rooted because we don't want to damage the root. */
+  status = apr_filepath_root(&root, &input, flags, memory_pool);
+  if (status == APR_SUCCESS || APR_STATUS_IS_INCOMPLETE(status))
+    path = input;
+  else
+    root = NULL;
+
+  /* Copy the path to a writable buffer. */
+  if (flags == 0) {
+    buffer = apr_pstrdup(memory_pool, path);
+  } else {
+    /* In the process we normalize the path as well. */
+    status = apr_filepath_merge(&buffer, NULL, path, flags, memory_pool);
     if (status != APR_SUCCESS)
       return push_error_status(L, status);
   }
 
-  name = apr_filepath_name_get(path);
-  lua_pushlstring(L, path, name - path);
+  /* Ignore empty trailing path segments so we don't return an empty name (2nd
+   * return value) unless the 1st return value is a root path. On UNIX we don't
+   * want to strip the leading "/" so the first character is ignored. */
+  length = strlen(buffer);
+  while (length > 0)
+      if (buffer[length - 1] == '/')
+        length--;
+# ifdef WIN32
+      else if (buffer[length - 1] == '\\')
+        length--;
+# endif
+      else
+        break;
+
+  /* Recombine root and path. */
+  buffer[length] = '\0';
+  status = apr_filepath_merge(&buffer, root, buffer, flags, memory_pool);
+  if (status != APR_SUCCESS)
+    return push_error_status(L, status);
+
+  /* Finally we're ready to get the parent path... */
+  name = apr_filepath_name_get(buffer);
+  lua_pushlstring(L, buffer, name - buffer);
   lua_pushstring(L, name);
 
   return 2;
@@ -154,6 +189,8 @@ int lua_apr_filepath_name(lua_State *L)
  *
  * This function can be used to generate absolute file paths as follows:
  *
+ *     apr.filepath_merge('.', 'filepath.c', 'not-relative')
+ *     -- the above is equivalent to the below:
  *     apr.filepath_merge(apr.filepath_get(), 'filepath.c', 'not-relative')
  *
  */
@@ -180,6 +217,8 @@ int lua_apr_filepath_merge(lua_State *L)
   memory_pool = to_pool(L);
   root = luaL_checkstring(L, 1);
   path = luaL_checkstring(L, 2);
+  if (strcmp(root, ".") == 0)
+    root = NULL;
 
   for (arg = 3, flags = 0; !lua_isnoneornil(L, arg); arg++)
     flags |= values[luaL_checkoption(L, arg, 0, options)];
