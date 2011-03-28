@@ -65,30 +65,32 @@ SOURCES = src/base64.c \
 # dependencies automatically, otherwise we fall back to `pkg-config'. On
 # Debian/Ubuntu the Lua pkg-config file is called "lua5.1", on Arch Linux its
 # just "lua".
-CFLAGS = $(shell pkg-config --cflags lua5.1 --silence-errors || pkg-config --cflags lua) \
-		 $(shell pkg-config --cflags apr-1) \
-		 $(shell pkg-config --cflags apr-util-1)
-LFLAGS = $(shell pkg-config --libs apr-1) \
-		 $(shell pkg-config --libs apr-util-1)
+CFLAGS += $(shell pkg-config --cflags lua5.1 --silence-errors || pkg-config --cflags lua) \
+		  $(shell pkg-config --cflags apr-1) \
+		  $(shell pkg-config --cflags apr-util-1)
+LFLAGS += $(shell pkg-config --libs apr-1) \
+		  $(shell pkg-config --libs apr-util-1)
 
 # Create debug builds by default but enable release
 # builds using the command line "make DO_RELEASE=1".
 ifndef DO_RELEASE
-CFLAGS := $(CFLAGS) -g -DDEBUG
-LFLAGS := $(LFLAGS) -g
+CFLAGS += -g -DDEBUG
+LFLAGS += -g
 endif
 
 # Enable profiling with "make PROFILING=1".
 ifdef PROFILING
-CFLAGS := $(CFLAGS) -fprofile-arcs -ftest-coverage
-LFLAGS := $(LFLAGS) -fprofile-arcs
+CFLAGS += -fprofile-arcs -ftest-coverage
+LFLAGS += -fprofile-arcs
 endif
 
 # Experimental support for HTTP request parsing using libapreq2.
 ifndef DISABLE_APREQ
-SOURCES := $(SOURCES) src/http.c
-CFLAGS := $(CFLAGS) $(shell apreq2-config --includes) -DLUA_APR_ENABLE_APREQ
-LFLAGS := $(LFLAGS) $(shell apreq2-config --link-ld)
+SOURCES += src/http.c
+CFLAGS += $(shell apreq2-config --includes)
+LFLAGS += $(shell apreq2-config --link-ld)
+else
+CFLAGS += -DLUA_APR_DISABLE_APREQ
 endif
 
 # Names of compiled object files.
@@ -108,7 +110,7 @@ $(OBJECTS): %.o: %.c src/lua_apr.h Makefile
 
 # Always try to regenerate the error handling module.
 src/errno.c: etc/errors.lua Makefile
-	lua etc/errors.lua > src/errno.c.new && mv -f src/errno.c.new src/errno.c || true
+	@lua etc/errors.lua > src/errno.c.new && mv -f src/errno.c.new src/errno.c || true
 
 # Install the Lua/APR binding under $LUA_DIR.
 install: $(BINARY_MODULE)
@@ -168,8 +170,8 @@ package: zip_package deb_package
 package_prerequisites:
 	make clean
 	make PROFILING=1
-	sudo make install
-	make test docs
+	lua etc/buildbot.lua --local
+	make docs
 	make clean
 	make DO_RELEASE=1
 
@@ -178,8 +180,11 @@ zip_package: package_prerequisites
 	rm -f $(PACKAGE).zip
 	mkdir -p $(PACKAGE)/doc
 	cp docs.html $(PACKAGE)/doc/apr.html
+	lua etc/wrap.lua < README.md > $(PACKAGE)/doc/readme.html
+	lua etc/wrap.lua < NOTES.md > $(PACKAGE)/doc/notes.html
+	lua etc/wrap.lua < TODO.md > $(PACKAGE)/doc/todo.html
 	mkdir -p $(PACKAGE)/etc
-	cp -a etc/docs.lua etc/errors.lua $(PACKAGE)/etc
+	cp -a etc/buildbot.lua etc/docs.lua etc/errors.lua etc/wrap.lua $(PACKAGE)/etc
 	mkdir -p $(PACKAGE)/benchmarks
 	cp -a benchmarks/* $(PACKAGE)/benchmarks
 	mkdir -p $(PACKAGE)/examples
@@ -188,7 +193,7 @@ zip_package: package_prerequisites
 	cp -a src/lua_apr.h $(SOURCES) $(SOURCE_MODULE) $(PACKAGE)/src
 	mkdir -p $(PACKAGE)/test
 	cp -a test/*.lua $(PACKAGE)/test
-	cp Makefile Makefile.win make.cmd NOTES.md README.md $(PACKAGE)
+	cp Makefile Makefile.win make.cmd README.md NOTES.md TODO.md $(PACKAGE)
 	zip $(PACKAGE).zip -r $(PACKAGE)
 	rm -R $(PACKAGE)
 	@echo 'MD5 sum for LuaRocks:'
@@ -216,7 +221,7 @@ deb_package: package_prerequisites
 # Clean generated files from working directory.
 clean:
 	rm -Rf $(BINARY_MODULE) $(OBJECTS) etc/coverage
-	rm -f $(APREQ_BINARY) docs.md docs.html
+	rm -f $(APREQ_BINARY)
 	if which lcov; then lcov -z -d .; fi
 	rm -f src/*.gcov src/*.gcno
 
