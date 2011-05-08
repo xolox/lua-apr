@@ -35,8 +35,10 @@ The [Lua/APR binding][homepage] aims to bring most of the functionality in the [
 
 ## How to get and install the module
 
-There are [Windows binaries][winbin] available that have been tested with [Lua for Windows][lfw] v5.1.4-40. You can also build the Lua/APR binding yourself. Here are your options:
+You can find the source code of the most recently released version under [downloads][srcdl]. The source code is also available online in the [GitHub repository][github]. There are [Windows binaries][winbin] available that have been tested with [Lua for Windows][lfw] v5.1.4-40. You can also build the Lua/APR binding yourself. Here are your options:
 
+[srcdl]: http://peterodding.com/code/lua/apr/downloads
+[github]: http://github.com/xolox/lua-apr
 [winbin]: http://peterodding.com/code/lua/apr/downloads/lua-apr-0.17-win32.zip
 [lfw]: http://code.google.com/p/luaforwindows/
 
