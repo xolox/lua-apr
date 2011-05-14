@@ -1,7 +1,7 @@
 /* Buffered I/O interface for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 12, 2011
+ * Last Change: May 14, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -108,11 +108,10 @@ static apr_status_t grow_buffer(lua_apr_buffer *B)
 
 /* fill_buffer() {{{2 */
 
-static apr_status_t fill_buffer(lua_apr_readbuf *input)
+static apr_status_t fill_buffer(lua_apr_readbuf *input, apr_size_t len)
 {
   lua_apr_buffer *B = &input->buffer;
   apr_status_t status = APR_SUCCESS;
-  apr_size_t len;
 
   /* Don't do anything for unmanaged buffers. */
   if (B->unmanaged)
@@ -126,7 +125,9 @@ static apr_status_t fill_buffer(lua_apr_readbuf *input)
     status = grow_buffer(B);
 
   /* Add more data to buffer. */
-  len = SPACE(B);
+  len -= AVAIL(B);
+  if (len > SPACE(B))
+    len = SPACE(B);
   status = input->read(input->object, &B->data[B->limit], &len);
   if (status == APR_SUCCESS)
     B->limit += len;
@@ -167,7 +168,7 @@ static apr_status_t read_line(lua_State *L, lua_apr_readbuf *input)
     /* Skip scanned input on next iteration. */
     offset = AVAIL(B);
     /* Get more input. */
-    status = fill_buffer(input);
+    status = fill_buffer(input, LUA_APR_BUFSIZE);
   } while (SUCCESS_OR_EOF(&input->buffer, status));
 
   return status;
@@ -211,7 +212,7 @@ static apr_status_t read_number(lua_State *L, lua_apr_readbuf *input)
       break;
     }
     /* Get more input. */
-    status = fill_buffer(input);
+    status = fill_buffer(input, LUA_APR_BUFSIZE);
   } while (SUCCESS_OR_EOF(&input->buffer, status));
 
   return status;
@@ -227,8 +228,8 @@ static apr_status_t read_chars(lua_State *L, lua_apr_readbuf *input, apr_size_t 
   if (!B->unmanaged)
     /* XXX The <= comparison is intended to make sure we read enough bytes to
      * successfully convert \r\n to \n even when at the end of the buffer. */
-    while (AVAIL(B) <= n && status == APR_SUCCESS)
-      status = fill_buffer(input);
+    while (AVAIL(B) < n && status == APR_SUCCESS)
+      status = fill_buffer(input, n);
 
   if (AVAIL(B) > 0) {
     /* TODO binary_to_text() may not need to be called again! */
@@ -253,7 +254,7 @@ static apr_status_t read_all(lua_State *L, lua_apr_readbuf *input)
 
   if (!B->unmanaged) {
     do {
-      status = fill_buffer(input);
+      status = fill_buffer(input, APR_SIZE_MAX);
     } while (status == APR_SUCCESS);
     if (input->text_mode)
       binary_to_text(B);
