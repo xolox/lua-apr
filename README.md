@@ -1,6 +1,6 @@
 # Apache Portable Runtime binding for Lua
 
-The [Lua/APR binding][homepage] aims to bring most of the functionality in the [Apache Portable Runtime][wp_apr] library to the small and flexible programming language [Lua][wp_lua]. Thus far the following modules have been implemented (the following links take you straight to the relevant documentation):
+[Lua/APR][homepage] is a binding of the [Apache Portable Runtime][wp_apr] (APR) for the [Lua programming language][wp_lua]. APR powers software such as the Apache webserver and Subversion and Lua/APR makes the APR operating system interfaces available to Lua, serving as an extended standard library. Thus far the following modules have been implemented (the following links take you straight to the relevant documentation):
 
 [homepage]: http://peterodding.com/code/lua/apr/
 [wp_apr]: http://en.wikipedia.org/wiki/Apache_Portable_Runtime

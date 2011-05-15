@@ -9,7 +9,7 @@
 # external dependencies using the `install_deps' target (see below).
 
 VERSION = 0.17.5
-RELEASE = 1
+RELEASE = 2
 PACKAGE = lua-apr-$(VERSION)-$(RELEASE)
 
 # Based on http://www.luarocks.org/en/Recommended_practices_for_Makefiles
