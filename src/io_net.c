@@ -1,7 +1,7 @@
 /* Network I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 19, 2011
+ * Last Change: May 15, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -510,16 +510,18 @@ static int socket_opt_set(lua_State *L)
   return push_status(L, status);
 }
 
-/* socket:addr_get([type]) -> ip_address [, hostname] {{{1
+/* socket:addr_get([type]) -> ip_address, port [, hostname] {{{1
  *
- * Get one of the addresses associated with @socket, according to @type:
+ * Get one of the IP-address / port pairs associated with @socket, according to
+ * @type:
  *
- *  - `'local'` to get the address to which the socket is bound locally
- *  - `'remote'` to get the address of the peer to which the socket is connected (this is the default)
+ *  - `'local'` to get the address/port to which the socket is bound locally
+ *  - `'remote'` to get the address/port of the peer to which the socket is
+ *    connected (this is the default)
  *
- * On success the local or remote IP-address is returned as a string, otherwise
- * a nil followed by an error message is returned. If a host name is available
- * that will be returned as the second value.
+ * On success the local or remote IP-address (a string) and the port (a number)
+ * are returned, otherwise a nil followed by an error message is returned. If a
+ * host name is available that will be returned as the third value.
  */
 
 static int socket_addr_get(lua_State *L)
@@ -540,9 +542,10 @@ static int socket_addr_get(lua_State *L)
   if (status != APR_SUCCESS)
     return push_error_status(L, status);
   lua_pushstring(L, ip_address);
+  lua_pushinteger(L, address->port);
   lua_pushstring(L, address->hostname);
 
-  return 2;
+  return 3;
 }
 
 /* socket:shutdown(mode) -> status {{{1

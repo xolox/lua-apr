@@ -1,14 +1,14 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: March 28, 2011
+# Last Change: May 15, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
 # This makefile has been tested on Ubuntu Linux 10.04 after installing the
 # external dependencies using the `install_deps' target (see below).
 
-VERSION = 0.17
+VERSION = 0.17.3
 RELEASE = 1
 PACKAGE = lua-apr-$(VERSION)-$(RELEASE)
 
