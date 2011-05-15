@@ -1,7 +1,7 @@
 /* Error handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 20, 2011
+ * Last Change: May 15, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *

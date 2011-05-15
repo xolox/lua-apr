@@ -5,7 +5,7 @@
  Multi platform build bot for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: March 27, 2011
+ Last Change: May 15, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -85,7 +85,7 @@ function local_build() -- {{{1
     local started = apr.time_now()
     local platform = apr.platform_get()
     coroutine.yield("Building on " .. platform .. " ..")
-    local build = assert(io.popen(platform ~= 'WIN32' and 'make 2>&1'
+    local build = assert(io.popen(platform ~= 'WIN32' and 'make --no-print-directory 2>&1'
         or 'nmake /nologo /f Makefile.win 2>&1'))
     for line in build:lines() do
       coroutine.yield(line)
@@ -136,6 +136,7 @@ function run_tests() -- {{{1
   local pathsep = package.config:sub(3, 3)
   assert(apr.env_set('LUA_PATH', builddir .. '/?.lua' .. pathsep .. builddir .. '/?/init.lua'))
   assert(apr.env_set('LUA_CPATH', builddir .. '/?.' .. libext))
+  assert(apr.env_set('LD_PRELOAD', '/lib/libSegFault.so'))
   local testsuite = assert(io.popen 'lua -lapr.test 2>&1')
   for line in testsuite:lines() do
     coroutine.yield(line)

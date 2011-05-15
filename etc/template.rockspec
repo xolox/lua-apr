@@ -1,19 +1,19 @@
 --[[
 
- This is the LuaRocks `rockspec' for version 0.10 of the Lua/APR binding.
+ This is the LuaRocks rockspec for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: January 23, 2011
+ Last Change: {{DATE}}
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
 --]]
 
 package = 'Lua-APR'
-version = '0.10-1'
+version = '{{VERSION}}'
 source = {
-  url = 'http://peterodding.com/code/lua/apr/downloads/lua-apr-0.10-1.zip',
-  md5 = '9cb5130051be8490a7ec8ec7916f1e04',
+  url = 'http://peterodding.com/code/lua/apr/downloads/lua-apr-{{VERSION}}.zip',
+  md5 = '{{HASH}}',
 }
 description = {
   summary = 'Apache Portable Runtime binding for Lua',
@@ -31,10 +31,12 @@ external_dependencies = {
     unix = {
       APR = { header = 'apr-1.0/apr.h', library = 'apr-1' },
       APU = { header = 'apr-1.0/apu.h', library = 'aprutil-1' },
+      APREQ = { header = 'apreq2/apreq.h', library = 'apreq2' },
     },
     macosx = {
       APR = { header = 'apr-1/apr.h', library = 'apr-1'},
       APU = { header = 'apr-1/apu.h', library = 'aprutil-1' },
+      APREQ = { header = 'apreq2/apreq.h', library = 'apreq2' },
     },
   }
 }
@@ -44,21 +46,21 @@ build = {
     LUA_DIR = '$(PREFIX)',
     LUA_LIBDIR = '$(LIBDIR)',
     LUA_SHAREDIR = '$(LUADIR)',
-    CFLAGS = '$(CFLAGS) -I$(LUA_INCDIR) -I$(APR_INCDIR)/apr-1.0 -I$(APU_INCDIR)/apr-1.0',
-    LFLAGS = '$(LFLAGS) -L$(APR_LIBDIR) -L$(APU_LIBDIR) -lapr-1 -laprutil-1',
+    CFLAGS = '$(CFLAGS) -I$(LUA_INCDIR) -I$(APR_INCDIR)/apr-1.0 -I$(APU_INCDIR)/apr-1.0 -I$(APREQ_INCDIR)/apreq2',
+    LFLAGS = '$(LFLAGS) -L$(APR_LIBDIR) -L$(APU_LIBDIR) -L$(APREQ_LIBDIR) -lapr-1 -laprutil-1 -lapreq2',
   },
   platforms = {
     linux = {
       variables = {
         -- Make sure "apr_off_t" is defined correctly.
-        CFLAGS = '$(CFLAGS) -I$(LUA_INCDIR) -I$(APR_INCDIR)/apr-1.0 -I$(APU_INCDIR)/apr-1.0 -D_GNU_SOURCE',
+        CFLAGS = '$(CFLAGS) -I$(LUA_INCDIR) -I$(APR_INCDIR)/apr-1.0 -I$(APU_INCDIR)/apr-1.0 -I$(APREQ_INCDIR)/apreq2 -D_GNU_SOURCE',
       }
     },
     macosx = {
       variables = {
         -- Custom location for APR/APU headers on Mac OS X.
         -- FIXME I'm not sure whether _GNU_SOURCE needs to be defined.
-        CFLAGS = '$(CFLAGS) -I$(LUA_INCDIR) -I$(APR_INCDIR)/apr-1 -I$(APU_INCDIR)/apr-1 -D_GNU_SOURCE',
+        CFLAGS = '$(CFLAGS) -I$(LUA_INCDIR) -I$(APR_INCDIR)/apr-1 -I$(APU_INCDIR)/apr-1 -I$(APREQ_INCDIR)/apreq2 -D_GNU_SOURCE',
       }
     }
   }

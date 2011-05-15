@@ -1,15 +1,15 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: May 15, 2011
+# Last Change: May 16, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
 # This makefile has been tested on Ubuntu Linux 10.04 after installing the
 # external dependencies using the `install_deps' target (see below).
 
-VERSION = 0.17.6
-RELEASE = 1
+VERSION = $(shell grep _VERSION src/apr.lua | cut "-d'" -f2)
+RELEASE = $(shell grep _RELEASE src/apr.lua | cut "-d'" -f2)
 PACKAGE = lua-apr-$(VERSION)-$(RELEASE)
 
 # Based on http://www.luarocks.org/en/Recommended_practices_for_Makefiles
@@ -166,47 +166,54 @@ install_deps:
 	luarocks install http://peterodding.com/code/lua/lxsh/downloads/lxsh-0.6.1-1.rockspec
 
 # Prepare a source ZIP archive and a Debian package 
-package: zip_package deb_package
+package: zip_package rockspec deb_package
 
 # Create a profiling build to run the test suite and generate documentation
 # including test coverage, then create a clean build without profiling.
 package_prerequisites:
-	make clean
-	make PROFILING=1
-	lua etc/buildbot.lua --local
-	make docs
-	make clean
-	make DO_RELEASE=1
+	@make --no-print-directory clean
+	@export PROFILING=1; lua etc/buildbot.lua --local
+	@make --no-print-directory docs
 
 # Prepare a source ZIP archive from which Lua/APR can be build.
 zip_package: package_prerequisites
-	rm -f $(PACKAGE).zip
-	mkdir -p $(PACKAGE)/doc
-	cp docs.html $(PACKAGE)/doc/apr.html
-	lua etc/wrap.lua < README.md > $(PACKAGE)/doc/readme.html
-	lua etc/wrap.lua < NOTES.md > $(PACKAGE)/doc/notes.html
-	lua etc/wrap.lua < TODO.md > $(PACKAGE)/doc/todo.html
-	mkdir -p $(PACKAGE)/etc
-	cp -a etc/buildbot.lua etc/docs.lua etc/errors.lua etc/wrap.lua $(PACKAGE)/etc
-	mkdir -p $(PACKAGE)/benchmarks
-	cp -a benchmarks/* $(PACKAGE)/benchmarks
-	mkdir -p $(PACKAGE)/examples
-	cp -a examples/*.lua $(PACKAGE)/examples
-	mkdir -p $(PACKAGE)/src
-	cp -a src/lua_apr.h $(SOURCES) $(SOURCE_MODULE) $(PACKAGE)/src
-	mkdir -p $(PACKAGE)/test
-	cp -a test/*.lua $(PACKAGE)/test
-	cp Makefile Makefile.win make.cmd README.md NOTES.md TODO.md $(PACKAGE)
-	zip $(PACKAGE).zip -r $(PACKAGE)
-	rm -R $(PACKAGE)
-	@echo 'MD5 sum for LuaRocks:'
-	md5sum $(PACKAGE).zip
+	@rm -f $(PACKAGE).zip
+	@mkdir -p $(PACKAGE)/doc
+	@cp docs.html $(PACKAGE)/doc/apr.html
+	@lua etc/wrap.lua < README.md > $(PACKAGE)/doc/readme.html
+	@lua etc/wrap.lua < NOTES.md > $(PACKAGE)/doc/notes.html
+	@lua etc/wrap.lua < TODO.md > $(PACKAGE)/doc/todo.html
+	@mkdir -p $(PACKAGE)/etc
+	@cp -a etc/buildbot.lua etc/docs.lua etc/errors.lua etc/wrap.lua $(PACKAGE)/etc
+	@mkdir -p $(PACKAGE)/benchmarks
+	@cp -a benchmarks/* $(PACKAGE)/benchmarks
+	@mkdir -p $(PACKAGE)/examples
+	@cp -a examples/*.lua $(PACKAGE)/examples
+	@mkdir -p $(PACKAGE)/src
+	@cp -a src/lua_apr.h $(SOURCES) $(SOURCE_MODULE) $(PACKAGE)/src
+	@mkdir -p $(PACKAGE)/test
+	@cp -a test/*.lua $(PACKAGE)/test
+	@cp Makefile Makefile.win make.cmd README.md NOTES.md TODO.md $(PACKAGE)
+	@zip $(PACKAGE).zip -qr $(PACKAGE)
+	@echo Generated $(PACKAGE).zip
+	@rm -R $(PACKAGE)
+
+# Prepare a LuaRocks rockspec for the current release.
+rockspec: zip_package
+	@cat etc/template.rockspec \
+		| sed "s/{{VERSION}}/$(VERSION)-$(RELEASE)/g" \
+		| sed "s/{{DATE}}/`export LANG=; date '+%B %d, %Y'`/" \
+		| sed "s/{{HASH}}/`md5sum $(PACKAGE).zip | cut '-d ' -f1 `/" \
+		> lua-apr-$(VERSION)-$(RELEASE).rockspec
+	@echo Generated $(PACKAGE).rockspec
 
 # Create a Debian package using "checkinstall".
 deb_package: package_prerequisites
 	@echo "Lua/APR is a binding to the Apache Portable Runtime (APR) library." > description-pak
 	@echo "APR powers software such as the Apache webserver and Subversion and" >> description-pak
 	@echo "Lua/APR makes the APR operating system interfaces available to Lua." >> description-pak
+	@make --no-print-directory clean
+	@make --no-print-directory DO_RELEASE=1
 	checkinstall \
 		--default \
 		--backup=no \
@@ -223,12 +230,12 @@ deb_package: package_prerequisites
 
 # Clean generated files from working directory.
 clean:
-	rm -Rf $(BINARY_MODULE) $(OBJECTS) etc/coverage
-	rm -f $(APREQ_BINARY)
-	if which lcov; then lcov -z -d .; fi
-	rm -f src/*.gcov src/*.gcno
+	@rm -Rf $(BINARY_MODULE) $(OBJECTS) etc/coverage
+	@rm -f $(APREQ_BINARY)
+	@lcov -q -z -d . || true
+	@rm -f src/*.gcov src/*.gcno
 
 .PHONY: install uninstall test valgrind coverage docs install_deps package \
-	package_prerequisites zip_package deb_package deb_repo clean
+	package_prerequisites zip_package rockspec deb_package clean
 
 # vim: ts=4 sw=4 noet
