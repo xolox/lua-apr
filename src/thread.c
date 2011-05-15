@@ -1,7 +1,7 @@
 /* Multi threading module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 19, 2011
+ * Last Change: May 15, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -133,7 +133,7 @@ static void* lua_apr_cc thread_runner(apr_thread_t *handle, lua_apr_thread *thre
   const char *function;
   size_t length;
   lua_State *L;
-  int nargs, status;
+  int status;
 
   /* The child thread is now using the thread structure. */
   object_incref((lua_apr_refobj*)thread);
@@ -145,7 +145,7 @@ static void* lua_apr_cc thread_runner(apr_thread_t *handle, lua_apr_thread *thre
     luaL_openlibs(L); /* load standard library */
     lua_settop(L, 0); /* normalize stack */
     lua_pushcfunction(L, error_handler); /* push error handler */
-    nargs = push_tuple(L, thread->input); /* push thread arguments */
+    push_tuple(L, thread->input); /* push thread arguments */
     function = lua_tolstring(L, 2, &length); /* compile chunk */
     if (luaL_loadbuffer(L, function, length, function)) {
       thread->output = strdup(lua_tostring(L, -1));

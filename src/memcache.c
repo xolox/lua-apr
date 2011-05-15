@@ -3,7 +3,7 @@
  * Authors:
  *  - zhiguo zhao <zhaozg@gmail.com>
  *  - Peter Odding <peter@peterodding.com>
- * Last Change: March 27, 2011
+ * Last Change: May 15, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -430,13 +430,12 @@ static int mc_decr(lua_State *L)
 
 static int mc_version(lua_State *L)
 {
-  apr_memcache_t *client;
   apr_memcache_server_t *server;
   apr_status_t status;
   char* value;
   size_t length;
 
-  client = check_mc_client(L, 1);
+  (void)check_mc_client(L, 1);
   server = check_mc_server(L, 2);
   status = apr_memcache_version(server, server->p, &value);
   if (status != APR_SUCCESS)
@@ -480,12 +479,11 @@ static int mc_version(lua_State *L)
 
 static int mc_stats(lua_State *L)
 {
-  apr_memcache_t *client;
   apr_memcache_server_t *server;
   apr_memcache_stats_t *stats;
   apr_status_t status;
 
-  client = check_mc_client(L, 1);
+  (void)check_mc_client(L, 1);
   server = check_mc_server(L, 2);
   status = apr_memcache_stats(server, server->p, &stats);
   if (status != APR_SUCCESS)

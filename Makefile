@@ -8,7 +8,7 @@
 # This makefile has been tested on Ubuntu Linux 10.04 after installing the
 # external dependencies using the `install_deps' target (see below).
 
-VERSION = 0.17.4
+VERSION = 0.17.5
 RELEASE = 1
 PACKAGE = lua-apr-$(VERSION)-$(RELEASE)
 

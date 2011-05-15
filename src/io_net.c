@@ -29,11 +29,12 @@ static apr_status_t socket_alloc(lua_State *L, int family, int protocol, lua_apr
   apr_status_t status;
 
   object = new_object(L, &lua_apr_socket_type);
+  if (object == NULL)
+    raise_error_memory(L);
   object->family = family;
   object->protocol = protocol;
   status = apr_pool_create(&object->pool, NULL);
-  if (status == APR_SUCCESS)
-    *objptr = object;
+  *objptr = object;
 
   return status;
 }
@@ -350,7 +351,7 @@ static int socket_listen(lua_State *L)
 
 static int socket_accept(lua_State *L)
 {
-  lua_apr_socket *server, *client;
+  lua_apr_socket *server, *client = NULL;
   apr_status_t status;
 
   server = socket_check(L, 1, 1);

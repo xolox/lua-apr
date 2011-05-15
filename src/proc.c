@@ -1,7 +1,7 @@
 /* Process handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 19, 2011
+ * Last Change: May 15, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -134,12 +134,7 @@ static void close_pipe(lua_State *L, const char *key)
 
 int lua_apr_proc_create(lua_State *L)
 {
-  lua_apr_proc *process;
-  const char *program;
-
-  program = luaL_checkstring(L, 1);
-  process = proc_alloc(L, program);
-
+  proc_alloc(L, luaL_checkstring(L, 1));
   return 1;
 }
 
