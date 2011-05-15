@@ -3,9 +3,12 @@
  Unit tests for the thread queues module of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: March 27, 2011
+ Last Change: May 15, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
+
+ This script runs the thread queue tests in a child process to
+ protect the test suite from crashing on unsupported platforms.
 
 --]]
 
@@ -21,56 +24,8 @@ if not apr.thread_queue then
   return false
 end
 
--- Create a thread queue with space for one tuple.
-local queue = assert(apr.thread_queue(1))
-
--- Test that the queue starts empty.
-assert(not queue:trypop())
-
--- Pass the thread queue to a thread.
-local thread = assert(apr.thread_create([[
-  local status, apr = pcall(require, 'apr')
-  if not status then
-    pcall(require, 'luarocks.require')
-    apr = require 'apr'
-  end
-  local queue = ...
-  -- Scalar values.
-  assert(queue:push(nil))
-  assert(queue:push(false))
-  assert(queue:push(true))
-  assert(queue:push(42))
-  assert(queue:push(math.pi))
-  assert(queue:push "hello world through a queue!")
-  -- Tuples.
-  assert(queue:push(true, false, 13, math.huge, _VERSION))
-  -- Object values.
-  assert(queue:push(queue))
-  assert(queue:push(apr.pipe_open_stdin()))
-  assert(queue:push(apr.socket_create()))
-]], queue))
-
--- Check the sequence of supported value types.
-assert(queue:pop() == nil)
-assert(queue:pop() == false)
-assert(queue:pop() == true)
-assert(queue:pop() == 42)
-assert(queue:pop() == math.pi)
-assert(queue:pop() == "hello world through a queue!")
-
--- Check that multiple values are supported.
-local expected = { true, false, 13, math.huge, _VERSION }
-helpers.checktuple(expected, assert(queue:pop()))
-
--- These test that Lua/APR objects can be passed between threads and that
--- objects which are really references __equal the object they reference.
-assert(assert(queue:pop()) == queue)
-assert(apr.type(queue:pop()) == 'file')
-assert(apr.type(queue:pop()) == 'socket')
-
--- Now make sure the queue is empty again.
-assert(not queue:trypop())
-
--- Make sure trypush() works as expected.
-assert(queue:push(1)) -- the thread queue is now full
-assert(not queue:trypush(2)) -- thus trypush() should fail
+local child = assert(apr.proc_create 'lua')
+assert(child:cmdtype_set 'shellcmd/env')
+assert(child:exec { helpers.scriptpath 'thread_queue-child.lua' })
+local dead, reason, code = assert(child:wait(true))
+return reason == 'exit' and code == 0

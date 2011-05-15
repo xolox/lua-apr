@@ -3,9 +3,12 @@
  Unit tests for the multi threading module of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: March 27, 2011
+ Last Change: May 15, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
+
+ This script runs the multi threading tests in a child process to
+ protect the test suite from crashing on unsupported platforms.
 
 --]]
 
@@ -21,42 +24,8 @@ if not apr.thread_create then
   return false
 end
 
--- Check that yield() exists, can be called and does mostly nothing :-)
-assert(select('#', apr.thread_yield()) == 0)
-
--- Test thread creation and argument passing.
-local threadfile = helpers.tmpname()
-local thread = assert(apr.thread_create([[
-  local handle = assert(io.open(..., 'w'))
-  assert(handle:write 'hello world!')
-  assert(handle:close())
-]], threadfile))
-assert(thread:join())
-
--- Check that the file was actually created inside the thread.
-assert(helpers.readfile(threadfile) == 'hello world!')
-
--- Test module loading and multiple return values.
-local thread = assert(apr.thread_create [[
-  local status, apr = pcall(require, 'apr')
-  if not status then
-    pcall(require, 'luarocks.require')
-    apr = require 'apr'
-  end
-  return apr.version_get()
-]])
-helpers.checktuple({ true, apr.version_get() }, assert(thread:join()))
-
--- Test thread:status()
-local thread = assert(apr.thread_create [[
-  local status, apr = pcall(require, 'apr')
-  if not status then
-    pcall(require, 'luarocks.require')
-    apr = require 'apr'
-  end
-  apr.sleep(2)
-]])
-apr.sleep(1)
-assert(thread:status() == 'running')
-assert(thread:join())
-assert(thread:status() == 'done')
+local child = assert(apr.proc_create 'lua')
+assert(child:cmdtype_set 'shellcmd/env')
+assert(child:exec { helpers.scriptpath 'thread-child.lua' })
+local dead, reason, code = assert(child:wait(true))
+return reason == 'exit' and code == 0

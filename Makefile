@@ -8,8 +8,8 @@
 # This makefile has been tested on Ubuntu Linux 10.04 after installing the
 # external dependencies using the `install_deps' target (see below).
 
-VERSION = 0.17.5
-RELEASE = 2
+VERSION = 0.17.6
+RELEASE = 1
 PACKAGE = lua-apr-$(VERSION)-$(RELEASE)
 
 # Based on http://www.luarocks.org/en/Recommended_practices_for_Makefiles
