@@ -8,7 +8,7 @@
 # This makefile has been tested on Ubuntu Linux 10.04 after installing the
 # external dependencies using the `install_deps' target (see below).
 
-VERSION = 0.17.3
+VERSION = 0.17.4
 RELEASE = 1
 PACKAGE = lua-apr-$(VERSION)-$(RELEASE)
 
@@ -62,14 +62,17 @@ SOURCES = src/base64.c \
 		  src/xml.c
 
 # If you're building Lua/APR with LuaRocks it should locate the external
-# dependencies automatically, otherwise we fall back to `pkg-config'. On
-# Debian/Ubuntu the Lua pkg-config file is called "lua5.1", on Arch Linux its
-# just "lua".
+# dependencies automatically, otherwise we fall back to `pkg-config'. Some
+# complicating factors: On Debian/Ubuntu the Lua pkg-config file is called
+# `lua5.1', on Arch Linux it's just `lua'. Also `pkg-config --cflags apr-1'
+# doesn't include -pthread while `apr-1-config --cflags' does include this flag
+# and I suspect we need it to get the Debian hurd-i386 build to work. See also
+# issue #5 on GitHub: https://github.com/xolox/lua-apr/issues/5
 CFLAGS += $(shell pkg-config --cflags lua5.1 --silence-errors || pkg-config --cflags lua) \
-		  $(shell pkg-config --cflags apr-1) \
-		  $(shell pkg-config --cflags apr-util-1)
-LFLAGS += $(shell pkg-config --libs apr-1) \
-		  $(shell pkg-config --libs apr-util-1)
+		  $(shell apr-1-config --cflags --cppflags --includes 2>/dev/null || pkg-config --cflags apr-1) \
+		  $(shell apu-1-config --includes 2>/dev/null || pkg-config --cflags apr-util-1)
+LFLAGS += $(shell apr-1-config --link-ld --libs 2>/dev/null || pkg-config --libs apr-1) \
+		  $(shell apu-1-config --link-ld --libs 2>/dev/null || pkg-config --libs apr-util-1)
 
 # Create debug builds by default but enable release
 # builds using the command line "make DO_RELEASE=1".
@@ -98,15 +101,15 @@ OBJECTS = $(patsubst %.c,%.o,$(SOURCES))
 
 # Build the binary module.
 $(BINARY_MODULE): $(OBJECTS) Makefile
-	@$(CC) -shared -o $@ $(OBJECTS) $(LFLAGS)
+	$(CC) -shared -o $@ $(OBJECTS) $(LFLAGS)
 
 # Build the standalone libapreq2 binding.
 $(APREQ_BINARY): etc/apreq_standalone.c Makefile
-	@$(CC) -Wall -shared -o $@ $(CFLAGS) -fPIC etc/apreq_standalone.c $(LFLAGS)
+	$(CC) -Wall -shared -o $@ $(CFLAGS) -fPIC etc/apreq_standalone.c $(LFLAGS)
 
 # Compile individual source code files to object files.
 $(OBJECTS): %.o: %.c src/lua_apr.h Makefile
-	@$(CC) -Wall -c $(CFLAGS) -fPIC $< -o $@
+	$(CC) -Wall -c $(CFLAGS) -fPIC $< -o $@
 
 # Always try to regenerate the error handling module.
 src/errno.c: etc/errors.lua Makefile
@@ -135,7 +138,7 @@ uninstall:
 
 # Run the test suite.
 test: $(BINARY_MODULE)
-	@lua -lapr.test
+	export LD_PRELOAD=/lib/libSegFault.so; lua -lapr.test
 
 # Run the test suite under Valgrind to detect and analyze errors.
 valgrind:
