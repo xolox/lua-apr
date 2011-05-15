@@ -90,7 +90,7 @@ The makefile creates a debug build by default. Use `sudo make install DO_RELEASE
 
 ### Build on Windows using makefile
 
-A makefile for Microsoft Windows is included in the repository. It has been tested on Windows XP with `NMAKE` from the free [Microsoft Visual C++ Express][mscv] 2010 tool chain. If you don't have git installed you can [download the latest sources][autozip] directly from GitHub as a ZIP file. Please note that the Windows makefile only builds the Lua/APR binding, you need to build APR yourself (see the [instructions][apr_build]).
+A makefile for Microsoft Windows is included in the repository. It has been tested on Windows XP with `NMAKE` from the free [Microsoft Visual C++ Express][msvc] 2010 tool chain. If you don't have git installed you can [download the latest sources][autozip] directly from GitHub as a ZIP file. Please note that the Windows makefile only builds the Lua/APR binding, you need to build APR yourself (see the [instructions][apr_build]).
 
 The makefile creates a debug build by default. Use `NMAKE /f Makefile.win DO_RELEASE=1` to create a release build instead. Just be sure to run `NMAKE /f Makefile.win clean` when switching between debug/release mode to avoid linking incompatible object files.
 
