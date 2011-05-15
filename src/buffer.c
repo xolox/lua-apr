@@ -1,7 +1,7 @@
 /* Buffered I/O interface for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: May 14, 2011
+ * Last Change: May 15, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -18,9 +18,12 @@
 
 #include "lua_apr.h"
 
+/* Subtract a from b without producing negative values. */
+#define SAFE_SUB(a, b) ((a) <= (b) ? (b) - (a) : 0)
+
 #define CURSOR(B) (&B->data[B->index])
-#define AVAIL(B) (B->index <= B->limit ? B->limit - B->index : 0)
-#define SPACE(B) (B->unmanaged ? B->size - B->index : (B->limit <= B->size ? B->size - B->limit : 0))
+#define AVAIL(B) SAFE_SUB(B->index, B->limit)
+#define SPACE(B) (B->unmanaged ? SAFE_SUB(B->index, B->size) : SAFE_SUB(B->limit, B->size))
 #define SUCCESS_OR_EOF(B, S) ((S) == APR_SUCCESS || CHECK_FOR_EOF(B, S))
 #define CHECK_FOR_EOF(B, S) (APR_STATUS_IS_EOF(S) || (B)->unmanaged)
 #define DEBUG_BUFFER(B) do { \
@@ -199,16 +202,19 @@ static apr_status_t read_number(lua_State *L, lua_apr_readbuf *input)
     /* Skip any leading whitespace in the buffered input. */
     offset += strspn(CURSOR(B) + offset, " \n\t\r\f\v");
     /* Calculate available bytes but guard against overflow. */
-    test = offset <= AVAIL(B) ? (AVAIL(B) - offset) : 0;
+    test = SAFE_SUB(offset, AVAIL(B));
     /* Make sure enough input remains to read full number [or we got EOF]. */
     if (test >= LUAI_MAXNUMBER2STR || CHECK_FOR_EOF(B, status)) {
-      /* Try to parse number at selected position. */
-      value = lua_str2number(CURSOR(B) + offset, &endptr);
-      if (endptr > CURSOR(B) + offset) {
-        lua_pushnumber(L, value);
-        B->index += endptr - CURSOR(B) + 1;
-      } else
-        lua_pushnil(L);
+      if (test > 0) {
+        /* Try to parse number at selected position. */
+        value = lua_str2number(CURSOR(B) + offset, &endptr);
+        if (endptr > CURSOR(B) + offset) {
+          lua_pushnumber(L, value);
+          B->index += endptr - CURSOR(B) + 1;
+          break;
+        }
+      }
+      lua_pushnil(L);
       break;
     }
     /* Get more input. */
