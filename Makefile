@@ -1,7 +1,7 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: May 16, 2011
+# Last Change: June 4, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -64,11 +64,11 @@ SOURCES = src/base64.c \
 # If you're building Lua/APR with LuaRocks it should locate the external
 # dependencies automatically, otherwise we fall back to `pkg-config'. Some
 # complicating factors: On Debian/Ubuntu the Lua pkg-config file is called
-# `lua5.1', on Arch Linux it's just `lua'. Also `pkg-config --cflags apr-1'
-# doesn't include -pthread while `apr-1-config --cflags' does include this flag
-# and I suspect we need it to get the Debian hurd-i386 build to work. See also
-# issue #5 on GitHub: https://github.com/xolox/lua-apr/issues/5
-CFLAGS += $(shell pkg-config --cflags lua5.1 --silence-errors || pkg-config --cflags lua) \
+# `lua5.1', on FreeBSD it's `lua-5.1' and on Arch Linux it's just `lua'. Also
+# `pkg-config --cflags apr-1' doesn't include -pthread while `apr-1-config
+# --cflags' does include this flag and this seems to be needed on some
+# platforms. See also issue #5 on GitHub: https://github.com/xolox/lua-apr/issues/5
+CFLAGS += $(shell pkg-config --cflags lua5.1 --silence-errors || pkg-config --cflags lua-5.1 --silence-errors || pkg-config --cflags lua) \
 		  $(shell apr-1-config --cflags --cppflags --includes 2>/dev/null || pkg-config --cflags apr-1) \
 		  $(shell apu-1-config --includes 2>/dev/null || pkg-config --cflags apr-util-1)
 LFLAGS += $(shell apr-1-config --link-ld --libs 2>/dev/null || pkg-config --libs apr-1) \
