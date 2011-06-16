@@ -5,7 +5,7 @@
  Multi platform build bot for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: May 15, 2011
+ Last Change: June 16, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -137,7 +137,7 @@ function run_tests() -- {{{1
   assert(apr.env_set('LUA_PATH', builddir .. '/?.lua' .. pathsep .. builddir .. '/?/init.lua'))
   assert(apr.env_set('LUA_CPATH', builddir .. '/?.' .. libext))
   assert(apr.env_set('LD_PRELOAD', '/lib/libSegFault.so'))
-  local testsuite = assert(io.popen 'lua -lapr.test 2>&1')
+  local testsuite = assert(io.popen [[ lua -e "require 'apr.test' ()" 2>&1 ]])
   for line in testsuite:lines() do
     coroutine.yield(line)
   end

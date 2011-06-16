@@ -1,7 +1,7 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: June 4, 2011
+# Last Change: June 16, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -138,11 +138,11 @@ uninstall:
 
 # Run the test suite.
 test: $(BINARY_MODULE)
-	export LD_PRELOAD=/lib/libSegFault.so; lua -lapr.test
+	export LD_PRELOAD=/lib/libSegFault.so; lua -e "require 'apr.test' ()"
 
 # Run the test suite under Valgrind to detect and analyze errors.
 valgrind:
-	valgrind -q --track-origins=yes --leak-check=full lua -lapr.test
+	valgrind -q --track-origins=yes --leak-check=full lua -e "require 'apr.test' ()"
 
 # Create or update test coverage report using "lcov".
 coverage:

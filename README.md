@@ -50,7 +50,7 @@ I've setup an experimental Debian package repository to make it easier to instal
     sudo sh -c 'echo deb http://peterodding.com/code/lua/apr/packages ./ >> /etc/apt/sources.list'
     sudo apt-get update
     sudo apt-get install --no-install-recommends lua-apr
-    lua -lapr.test
+    lua -e "require 'apr.test' ()"
 
 [debrepo]: http://peterodding.com/code/lua/apr/packages/
 
@@ -66,7 +66,7 @@ If you have git installed you can also download and install the latest sources u
 
 After installing the library you can run the test suite using the following command:
 
-    $ lua -lapr.test
+    $ lua -e "require 'apr.test' ()"
 
 [lr]: http://luarocks.org/
 
@@ -84,7 +84,7 @@ If you don't have LuaRocks installed the following shell commands should help yo
     $ cd lua-apr
     $ sudo make install_deps # installs build & runtime dependencies for Debian/Ubuntu
     $ sudo make install # installs apr.lua and apr/core.so in /usr/local
-    $ lua -lapr.test # runs the test suite
+    $ lua -e "require 'apr.test' ()" # runs the test suite
 
 The makefile creates a debug build by default. Use `sudo make install DO_RELEASE=1` to create a release build instead. Just be sure to run `make clean` when switching between debug/release mode to avoid linking incompatible object files.
 
