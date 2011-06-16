@@ -119,6 +119,7 @@ static void* lua_apr_cc thread_runner(apr_thread_t *handle, lua_apr_thread *thre
   /* Start by creating a new Lua state. */
   if ((L = luaL_newstate()) == NULL) {
     status = TS_ERROR;
+    thread->output = strdup("Failed to create Lua state");
   } else {
     luaL_openlibs(L); /* load standard library */
     lua_settop(L, 0); /* normalize stack */
@@ -129,7 +130,7 @@ static void* lua_apr_cc thread_runner(apr_thread_t *handle, lua_apr_thread *thre
       thread->output = strdup(lua_tostring(L, -1));
       status = TS_ERROR;
     } else {
-      lua_replace(L, 2);
+      lua_replace(L, 2); /* replace string with function */
       thread->status = TS_RUNNING;
       if (lua_pcall(L, lua_gettop(L) - 2, LUA_MULTRET, 1)) {
         thread->output = strdup(lua_tostring(L, -1));
@@ -195,7 +196,7 @@ int lua_apr_thread_create(lua_State *L)
   thread->status = TS_INIT;
   thread->parent = apr_os_thread_current();
 
-  /* Create a memory pool for the thread structure. */
+  /* Create memory pool for thread (freed by apr_thread_exit()). */
   status = apr_pool_create(&thread->pool, NULL);
   if (status != APR_SUCCESS)
     goto fail;
