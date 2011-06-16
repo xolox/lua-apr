@@ -15,7 +15,7 @@
 
 local apr = require 'apr.core'
 apr._VERSION = '0.18'
-apr._RELEASE = '1'
+apr._RELEASE = '2'
 
 -- apr.md5(input [, binary]) -> digest {{{1
 --

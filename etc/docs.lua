@@ -3,15 +3,11 @@
  Documentation generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: March 28, 2011
+ Last Change: June 16, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
 ]]
-
--- We only need this for the version number.
--- TODO Might as well extract it directly from apr.lua?
-local apr = require 'apr'
 
 -- Files containing documentation fragments (the individual lines enable
 -- automatic rebasing between git feature branches and the master branch).
@@ -244,6 +240,19 @@ end
 
 -- Convert documentation comments to Markdown hypertext. {{{1
 
+local function findrelease()
+  local handle = assert(io.open 'src/apr.lua')
+  local version, release
+  for line in handle:lines() do
+    version = version or line:match "^apr%._VERSION = '(.-)'"
+    release = release or line:match "^apr%._RELEASE = '(.-)'"
+  end
+  assert(handle:close())
+  assert(version, "Failed to determine Lua/APR version number!")
+  assert(release, "Failed to determine Lua/APR release number!")
+  return version .. '-' .. release
+end
+
 local blocks = { trim([[
 
 # Lua/APR binding documentation
@@ -262,7 +271,7 @@ for the Lua/APR binding. Some notes about this documentation:
    source code of the binding to prevent that documentation and implementation
    become out of sync.
 
-*This document was generated from the Lua/APR **]] .. apr._VERSION .. [[** source code.*
+*This document was generated from the Lua/APR **]] .. findrelease() .. [[** source code.*
 
 [homepage]: http://peterodding.com/code/lua/apr/
 [apr_wiki]: http://en.wikipedia.org/wiki/Apache_Portable_Runtime
