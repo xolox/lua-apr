@@ -3,7 +3,7 @@
  Driver script for the unit tests of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: March 27, 2011
+ Last Change: June 16, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -54,8 +54,14 @@ for _, testname in ipairs(modules) do
   local modname = (...) .. '.' .. testname
   package.loaded[modname] = nil
   helpers.message("Running %s tests: ", testname)
+  local starttime = apr.time_now()
   if require(modname) then
-    helpers.message "OK\n"
+    local elapsed = apr.time_now() - starttime
+    if elapsed > 0.1 then
+      helpers.message("OK (%.2fs)\n", elapsed)
+    else
+      helpers.message "OK\n"
+    end
   else
     helpers.message "Failed!\n"
   end

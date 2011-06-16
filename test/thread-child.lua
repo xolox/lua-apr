@@ -3,7 +3,7 @@
  Unit tests for the multi threading module of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: May 15, 2011
+ Last Change: June 16, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -51,9 +51,9 @@ local thread = assert(apr.thread_create [[
     pcall(require, 'luarocks.require')
     apr = require 'apr'
   end
-  apr.sleep(2)
+  apr.sleep(1)
 ]])
-apr.sleep(1)
-assert(thread:status() == 'running')
+while assert(thread:status()) == 'init' do apr.sleep(0.1) end
+assert('running' == assert(thread:status()))
 assert(thread:join())
-assert(thread:status() == 'done')
+assert('done' == assert(thread:status()))
