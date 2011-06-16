@@ -159,6 +159,41 @@ static int queue_trypop(lua_State *L)
   return queue_pop_real(L, apr_queue_trypop);
 }
 
+/* queue:interrupt() -> status {{{1
+ *
+ * Interrupt all the threads blocking on this queue. On success true is
+ * returned, otherwise a nil followed by an error message is returned.
+ */
+
+static int queue_interrupt(lua_State *L)
+{
+  apr_status_t status;
+  lua_apr_queue *object;
+  
+  object = check_queue(L, 1);
+  status = apr_queue_interrupt_all(object->handle);
+
+  return push_status(L, status);
+}
+
+/* queue:terminate() -> status {{{1
+ *
+ * Terminate the queue, sending an interrupt to all the blocking threads. On
+ * success true is returned, otherwise a nil followed by an error message is
+ * returned.
+ */
+
+static int queue_terminate(lua_State *L)
+{
+  apr_status_t status;
+  lua_apr_queue *object;
+  
+  object = check_queue(L, 1);
+  status = apr_queue_term(object->handle);
+
+  return push_status(L, status);
+}
+
 /* queue:close() -> status {{{1
  *
  * Close the handle @queue and (if no other threads are using the queue)
@@ -201,6 +236,8 @@ static luaL_Reg queue_methods[] = {
   { "pop", queue_pop },
   { "trypush", queue_trypush },
   { "trypop", queue_trypop },
+  { "interrupt", queue_interrupt },
+  { "terminate", queue_terminate },
   { "close", queue_close },
   { NULL, NULL }
 };
