@@ -3,7 +3,7 @@
  Unit tests for the file I/O handling module of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: March 27, 2011
+ Last Change: June 15, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -28,7 +28,7 @@ local testdata = [[
  that was an empty line
 ]]
 
--- Test the stat() function. {{{2
+-- Test the stat() function. {{{1
 local info = apr.stat(selfpath)
 assert(type(info) == 'table')
 assert(info.name == 'io_file.lua')
@@ -41,7 +41,7 @@ assert(type(info.inode) == 'number')
 assert(type(info.dev) == 'number')
 assert(info.protection:find '^[-r][-w][-xSs][-r][-w][-xSs][-r][-w][-xTt]$')
 
--- Test the alternative stat() interface. {{{2
+-- Test the alternative stat() interface. {{{1
 assert(apr.stat(selfpath, 'type') == 'file')
 assert(apr.stat(selfpath, 'name') == 'io_file.lua')
 local selfdir = apr.filepath_parent(selfpath)
@@ -50,7 +50,7 @@ assert(kind == 'directory')
 assert(type(size) == 'number')
 assert(prot:find '^[-r][-w][-xSs][-r][-w][-xSs][-r][-w][-xTt]$')
 
--- Test apr.file_perms_set().  {{{2
+-- Test apr.file_perms_set().  {{{1
 local tempname = assert(helpers.tmpname())
 helpers.writefile(tempname, 'something')
 local status, errmsg, errcode = apr.file_perms_set(tempname, 'rw-rw----')
@@ -60,29 +60,29 @@ if errcode ~= 'ENOTIMPL' then
   assert(apr.stat(tempname, 'protection') == 'r--r-----')
 end
 
--- Test apr.file_copy(). {{{2
+-- Test apr.file_copy(). {{{1
 local copy1 = assert(helpers.tmpname())
 helpers.writefile(copy1, testdata)
 local copy2 = assert(helpers.tmpname())
 assert(apr.file_copy(copy1, copy2))
 assert(testdata == helpers.readfile(copy2))
 
--- Test apr.file_append(). {{{2
+-- Test apr.file_append(). {{{1
 assert(apr.file_append(copy1, copy2))
 assert(helpers.readfile(copy2) == testdata:rep(2))
 
--- Test apr.file_rename(). {{{2
+-- Test apr.file_rename(). {{{1
 assert(apr.file_rename(copy1, copy2))
 assert(not apr.stat(copy1))
 assert(helpers.readfile(copy2) == testdata)
 
--- Test apr.file_mtime_set(). {{{2
+-- Test apr.file_mtime_set(). {{{1
 local mtime = math.random(0, apr.time_now())
 assert(apr.stat(copy2, 'mtime') ~= mtime)
 assert(apr.file_mtime_set(copy2, mtime))
 assert(apr.stat(copy2, 'mtime') == mtime)
 
--- Test apr.file_attrs_set(). {{{2
+-- Test apr.file_attrs_set(). {{{1
 local status, errmsg, errcode = apr.file_perms_set(copy2, 'ug=rw,o=')
 if errcode ~= 'ENOTIMPL' then
   assert(apr.stat(copy2, 'protection'):find '^.w..w....$')
@@ -90,12 +90,12 @@ if errcode ~= 'ENOTIMPL' then
   assert(apr.stat(copy2, 'protection'):find '^.[^w]..[^w]....$')
 end
 
--- Test file:stat(). {{{2
+-- Test file:stat(). {{{1
 local handle = assert(apr.file_open(copy2))
 assert(handle:stat('type') == 'file')
 assert(handle:stat('size') >= #testdata)
 
--- Test file:lines(). {{{2
+-- Test file:lines(). {{{1
 local lines = {}
 for line in assert(handle:lines()) do lines[#lines + 1] = line end
 for line in testdata:gmatch '[^\n]+' do
@@ -108,12 +108,12 @@ for line in testdata:gmatch '[^\n]+' do
 end
 assert(#lines == 0)
 
--- Test tostring(file). {{{2
+-- Test tostring(file). {{{1
 assert(tostring(handle):find '^file %([x%x]+%)$')
 assert(handle:close())
 assert(tostring(handle):find '^file %(closed%)$')
 
--- Test file:read(), file:write() and file:seek() {{{2
+-- Test file:read(), file:write() and file:seek() {{{1
 
 local maxmultiplier = 20
 for testsize = 1, maxmultiplier do
@@ -174,7 +174,7 @@ for testsize = 1, maxmultiplier do
           local apr_value = apr_handle:read(format)
           if lua_value ~= apr_value then
             helpers.warning("Buggy output from file:write()?!\nLua value: %s\nAPR value: %s\n",
-                formatvalue(lua_value), formatvalue(apr_value))
+                helpers.formatvalue(lua_value), helpers.formatvalue(apr_value))
           end
           assert(lua_value == apr_value)
           if not lua_value or (format == '*a' and lua_value == '') then break end

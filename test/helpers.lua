@@ -3,7 +3,7 @@
  Test infrastructure for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: March 27, 2011
+ Last Change: June 15, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -107,6 +107,19 @@ function helpers.writable(directory) -- {{{1
   local status = pcall(helpers.writefile, entry, 'something')
   if status then os.remove(entry) end
   return status
+end
+
+local escapes = { ['\r'] = '\\r', ['\n'] = '\\n', ['"'] = '\\"', ['\0'] = '\\0' }
+
+function helpers.formatvalue(v) -- {{{1
+  if type(v) == 'number' then
+    local s = string.format('%.99f', v)
+    return s:find '%.' and (s:gsub('0+$', '0')) or s
+  elseif type(v) == 'string' then
+    return '"' .. v:gsub('[\r\n"%z]', escapes) .. '"'
+  else
+    return tostring(v)
+  end
 end
 
 -- }}}1
