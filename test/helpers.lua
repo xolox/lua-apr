@@ -3,7 +3,7 @@
  Test infrastructure for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: June 15, 2011
+ Last Change: June 16, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -32,6 +32,13 @@ end
 function helpers.warning(s, ...) -- {{{1
   io.stderr:write("\nWarning: ", string.format(s, ...))
   io.stderr:flush()
+end
+
+function helpers.try(body, errorhandler) -- {{{1
+  local status, value = pcall(body)
+  if status then return true end
+  errorhandler(value)
+  return false
 end
 
 function helpers.filedefined() -- {{{1
