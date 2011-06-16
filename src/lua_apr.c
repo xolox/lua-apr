@@ -1,7 +1,7 @@
 /* Miscellaneous functions module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: March 28, 2011
+ * Last Change: June 16, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -209,10 +209,6 @@ LUA_APR_EXPORT int luaopen_apr_core(lua_State *L)
     if (atexit(apr_terminate) != 0)
       raise_error_message(L, "Lua/APR: Failed to register apr_terminate()");
     apr_was_initialized = 1;
-#   if APR_HAS_THREADS
-    /* Initialize the thread module's mutex and condition variables. */
-    threads_initialize(L);
-#   endif
   }
 
   /* Create the `scratch' memory pool for global APR functions (as opposed to

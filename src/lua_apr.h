@@ -1,7 +1,7 @@
 /* Header file for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: March 27, 2011
+ * Last Change: June 16, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -382,10 +382,6 @@ int lua_apr_tokenize_to_argv(lua_State*);
 /* thread.c */
 int lua_apr_thread_create(lua_State*);
 int lua_apr_thread_yield(lua_State*);
-void threads_initialize(lua_State*);
-void threads_increment(lua_State*);
-void threads_decrement(lua_State*);
-void threads_terminate();
 
 /* thread_queue.c */
 int lua_apr_thread_queue(lua_State*);

@@ -1,7 +1,7 @@
 /* Multi threading module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: May 15, 2011
+ * Last Change: June 16, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -24,12 +24,8 @@
  *    protect object access with a thread safe lock. This will probably be
  *    fixed in the near future (hey, I said it was experimental)
  *
- *  - When a thread object is garbage collected while the thread is still
- *    running, the Lua/APR binding will join the thread using an internal mutex
- *    and condition variable from inside the garbage collection handler. This
- *    is to avoid that the parent Lua state and the operating system process
- *    exit while the child is still running, because this can lead to hard to
- *    debug segmentation faults deep inside [libc] [libc]
+ *  - When you start a thread and don't call `thread:detach()` or
+ *    `thread:join()`, the thread will be joined once it is garbage collected
  *
  * [Lua_state]: http://www.lua.org/manual/5.1/manual.html#lua_State
  * [threading]: http://en.wikipedia.org/wiki/Thread_%28computer_science%29
@@ -40,24 +36,8 @@
 #include <lualib.h>
 #include <apr_strings.h>
 #include <apr_portable.h>
-#include <apr_thread_cond.h>
 
 #if APR_HAS_THREADS
-
-/* I've left the debugging messages in for now in case the mutex and condition
- * variable handling turns out to be buggy after publishing this code (you'll
- * have to define LUA_APR_DEBUG_THREADS=1 before anything is printed). */
-
-#ifndef LUA_APR_DEBUG_THREADS
-#define LUA_APR_DEBUG_THREADS 0
-#endif
-
-#define LUA_APR_THREAD_MSG(msg, ...) \
-  if (LUA_APR_DEBUG_THREADS) \
-    LUA_APR_DBG(msg, __VA_ARGS__)
-
-/* The thread which initialized the Lua/APR binding. */
-static apr_os_thread_t initial_thread;
 
 /* Private parts. {{{1 */
 
@@ -165,7 +145,6 @@ static void* lua_apr_cc thread_runner(apr_thread_t *handle, lua_apr_thread *thre
   }
 
   thread_destroy(NULL, thread);
-  threads_decrement(L);
 
   /* If an error occurred, make sure the user sees it. */
   if (status == TS_ERROR)
@@ -234,9 +213,6 @@ int lua_apr_thread_create(lua_State *L)
         (apr_thread_start_t)thread_runner, thread, thread->pool);
   if (status != APR_SUCCESS)
     goto fail;
-
-  /* Remember that we started another thread. */
-  threads_increment(L);
 
   /* Return the thread object. */
   return 1;
@@ -352,98 +328,6 @@ static int thread_gc(lua_State *L)
 {
   thread_destroy(L, check_thread(L, 1, 0));
   return 0;
-}
-
-/* Module initialization and finalization. {{{1 */
-
-static apr_pool_t *pool = NULL;
-static apr_thread_mutex_t *mutex;
-static apr_thread_cond_t *condition;
-static volatile int num_threads = 0;
-
-void threads_initialize(lua_State *L)
-{
-  apr_status_t status;
-
-  LUA_APR_THREAD_MSG("(L=%p) Initializing threading module!", L);
-
-  /* XXX Remember which thread initialized the Lua/APR binding, because this
-   * thread will have to "join" any child threads before it exits, otherwise
-   * nasty crashes can result. I say "join" because we actually use a mutex
-   * and condition variable instead of apr_thread_join() so that detached
-   * threads are also supported (though I'm not sure how useful this is). */
-  initial_thread = apr_os_thread_current();
-
-  status = apr_pool_create(&pool, NULL);
-  if (status == APR_SUCCESS)
-    apr_thread_mutex_create(&mutex, APR_THREAD_MUTEX_UNNESTED, pool);
-  if (status == APR_SUCCESS)
-    apr_thread_cond_create(&condition, pool);
-  if (status != APR_SUCCESS)
-    raise_error_status(L, status);
-}
-
-int threads_error(lua_State *L, apr_status_t status)
-{
-  if (status == APR_SUCCESS)
-    return 0;
-  if (L != NULL) {
-    raise_error_status(L, status);
-  } else {
-    char message[LUA_APR_MSGSIZE];
-    apr_strerror(status, message, count(message));
-    fprintf(stderr, "Lua/APR threading module internal error: %s\n", message);
-  }
-  return 1;
-}
-
-void threads_lock(lua_State *L)
-{
-  LUA_APR_THREAD_MSG("(L=%p) Enabling threading module lock!", L);
-  threads_error(L, apr_thread_mutex_lock(mutex));
-}
-
-void threads_unlock(lua_State *L, apr_status_t status)
-{
-  LUA_APR_THREAD_MSG("(L=%p) Disabling threading module lock!", L);
-  if (status == APR_SUCCESS)
-    status = apr_thread_mutex_unlock(mutex);
-  else
-    apr_thread_mutex_unlock(mutex);
-  if (L == NULL)
-      apr_pool_destroy(pool);
-  threads_error(L, status);
-}
-
-void threads_increment(lua_State *L)
-{
-  threads_lock(L);
-  LUA_APR_THREAD_MSG("(L=%p) Raising child thread count from %i to %i", L, num_threads, num_threads + 1);
-  num_threads++;
-  threads_unlock(L, APR_SUCCESS);
-}
-
-void threads_decrement(lua_State *L)
-{
-  threads_lock(L);
-  LUA_APR_THREAD_MSG("(L=%p) Lowering child thread count from %i to %i", L, num_threads, num_threads - 1);
-  num_threads--;
-  LUA_APR_THREAD_MSG("(L=%p) Signaling child thread termination", L);
-  threads_unlock(L, apr_thread_cond_signal(condition));
-}
-
-void threads_terminate()
-{
-  if (apr_os_thread_equal(initial_thread, apr_os_thread_current())) {
-    threads_lock(NULL);
-    LUA_APR_THREAD_MSG("%s", "Terminating threading module!");
-    while (num_threads > 0) {
-      LUA_APR_THREAD_MSG("%s", "Waiting for child thread termination signal..");
-      threads_error(NULL, apr_thread_cond_wait(condition, mutex));
-    }
-    LUA_APR_THREAD_MSG("%s", "Looks like all child threads finished?!");
-    threads_unlock(NULL, APR_SUCCESS);
-  }
 }
 
 /* Lua/APR thread object metadata {{{1 */

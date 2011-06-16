@@ -1,7 +1,7 @@
 /* Global memory pool handling for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 26, 2011
+ * Last Change: June 16, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -13,10 +13,6 @@
 static int pool_gc(lua_State *L)
 {
   apr_pool_t *pool;
-
-# if APR_HAS_THREADS && !defined(APREQ_STANDALONE)
-  threads_terminate();
-# endif
 
   pool = *(apr_pool_t**)luaL_checkudata(L, 1, LUA_APR_POOL_MT);
   apr_pool_destroy(pool);
