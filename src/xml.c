@@ -3,7 +3,7 @@
  * Authors:
  *  - zhiguo zhao <zhaozg@gmail.com>
  *  - Peter Odding <peter@peterodding.com>
- * Last Change: February 13, 2011
+ * Last Change: June 16, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -318,7 +318,7 @@ static int xml_gc(lua_State *L)
   lua_apr_xml_object *object = check_xml_parser(L, 1, CHECK_NONE);
   if (object_collectable((lua_apr_refobj*)object))
     xml_close_real(object);
-  release_object(L, (lua_apr_refobj*)object);
+  release_object((lua_apr_refobj*)object);
   return 0;
 }
 

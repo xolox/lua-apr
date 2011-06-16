@@ -1,7 +1,7 @@
 /* Shared memory module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 13, 2011
+ * Last Change: June 16, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -44,7 +44,7 @@ static lua_apr_shm* check_shm(lua_State *L, int idx)
   return check_object(L, idx, &lua_apr_shm_type);
 }
 
-static apr_status_t shm_destroy_real(lua_State *L, lua_apr_shm *object)
+static apr_status_t shm_destroy_real(lua_apr_shm *object)
 {
   apr_status_t status = APR_SUCCESS;
   if (object_collectable((lua_apr_refobj*)object)) {
@@ -54,7 +54,7 @@ static apr_status_t shm_destroy_real(lua_State *L, lua_apr_shm *object)
       object->handle = NULL;
     }
   }
-  release_object(L, (lua_apr_refobj*)object);
+  release_object((lua_apr_refobj*)object);
   return status;
 }
 
@@ -244,7 +244,7 @@ static int shm_destroy(lua_State *L)
   apr_status_t status;
 
   object = check_shm(L, 1);
-  status = shm_destroy_real(L, object);
+  status = shm_destroy_real(object);
 
   return push_status(L, status);
 }
@@ -268,7 +268,7 @@ static int shm_tostring(lua_State *L)
 
 static int shm_gc(lua_State *L)
 {
-  shm_destroy_real(L, check_shm(L, 1));
+  shm_destroy_real(check_shm(L, 1));
   return 0;
 }
 

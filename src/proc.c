@@ -1,7 +1,7 @@
 /* Process handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: May 15, 2011
+ * Last Change: June 16, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -767,7 +767,7 @@ static int proc_gc(lua_State *L)
       process->memory_pool = NULL;
     }
   }
-  release_object(L, (lua_apr_refobj*)process);
+  release_object((lua_apr_refobj*)process);
   return 0;
 }
 

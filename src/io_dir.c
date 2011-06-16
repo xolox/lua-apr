@@ -1,7 +1,7 @@
 /* Directory manipulation module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 19, 2011
+ * Last Change: June 16, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -448,7 +448,7 @@ static int dir_gc(lua_State *L)
       directory->memory_pool = NULL;
     }
   }
-  release_object(L, (lua_apr_refobj*)directory);
+  release_object((lua_apr_refobj*)directory);
   return 0;
 }
 

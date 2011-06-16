@@ -338,10 +338,10 @@ apr_pool_t *to_pool(lua_State*);
 
 /* object.c */
 void *new_object(lua_State*, lua_apr_objtype*);
-void *prepare_reference(lua_State*, lua_apr_objtype*, lua_apr_refobj*);
+void *prepare_reference(lua_apr_objtype*, lua_apr_refobj*);
 void init_object(lua_State*, lua_apr_objtype*);
 int object_collectable(lua_apr_refobj*);
-void release_object(lua_State*, lua_apr_refobj*);
+void release_object(lua_apr_refobj*);
 void object_env_default(lua_State*);
 int object_env_private(lua_State*, int);
 int object_has_type(lua_State*, int, lua_apr_objtype*, int);

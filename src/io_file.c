@@ -1,7 +1,7 @@
 /* File I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 13, 2011
+ * Last Change: June 16, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -704,7 +704,7 @@ static int file_gc(lua_State *L)
   lua_apr_file *file = file_check(L, 1, 0);
   if (object_collectable((lua_apr_refobj*)file))
     file_close_impl(L, file);
-  release_object(L, (lua_apr_refobj*)file);
+  release_object((lua_apr_refobj*)file);
   return 0;
 }
 

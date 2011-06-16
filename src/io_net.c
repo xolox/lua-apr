@@ -1,7 +1,7 @@
 /* Network I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: May 15, 2011
+ * Last Change: June 16, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -616,7 +616,7 @@ static int socket_gc(lua_State *L)
     free_buffer(L, &socket->output.buffer);
     socket_close_impl(L, socket);
   }
-  release_object(L, (lua_apr_refobj*)socket);
+  release_object((lua_apr_refobj*)socket);
   return 0;
 }
 

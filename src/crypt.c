@@ -1,7 +1,7 @@
 /* Cryptography routines module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 13, 2011
+ * Last Change: June 16, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -319,7 +319,7 @@ static int md5_tostring(lua_State *L)
 static int md5_gc(lua_State *L)
 {
   lua_apr_md5_ctx *object = md5_check(L, 1, 0);
-  release_object(L, (lua_apr_refobj*)object);
+  release_object((lua_apr_refobj*)object);
   return 1;
 }
 
@@ -433,7 +433,7 @@ static int sha1_tostring(lua_State *L)
 static int sha1_gc(lua_State *L)
 {
   lua_apr_sha1_ctx *object = sha1_check(L, 1, 0);
-  release_object(L, (lua_apr_refobj*)object);
+  release_object((lua_apr_refobj*)object);
   return 1;
 }
 

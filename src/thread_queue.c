@@ -1,7 +1,7 @@
 /* Thread queues module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 19, 2011
+ * Last Change: June 16, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -24,7 +24,7 @@ typedef struct {
 
 /* Internal functions. {{{1 */
 
-static void close_queue_real(lua_State *L, lua_apr_queue *object)
+static void close_queue_real(lua_apr_queue *object)
 {
   if (object_collectable((lua_apr_refobj*)object)) {
     if (object->pool != NULL) {
@@ -32,7 +32,7 @@ static void close_queue_real(lua_State *L, lua_apr_queue *object)
       object->pool = NULL;
     }
   }
-  release_object(L, (lua_apr_refobj*)object);
+  release_object((lua_apr_refobj*)object);
 }
 
 typedef apr_status_t (lua_apr_cc *apr_queue_push_func)(apr_queue_t*, void*);
@@ -172,7 +172,7 @@ static int queue_trypop(lua_State *L)
 
 static int queue_close(lua_State *L)
 {
-  close_queue_real(L, check_queue(L, 1));
+  close_queue_real(check_queue(L, 1));
   lua_pushboolean(L, 1);
   return 1;
 }
@@ -190,7 +190,7 @@ static int queue_tostring(lua_State *L)
 
 static int queue_gc(lua_State *L)
 {
-  close_queue_real(L, check_queue(L, 1));
+  close_queue_real(check_queue(L, 1));
   return 0;
 }
 

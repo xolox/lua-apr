@@ -1,7 +1,7 @@
 /* Inter thread serialization module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 19, 2011
+ * Last Change: June 16, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -102,7 +102,7 @@ static int check_value(lua_State *L, int idx, void *value)
           lua_apr_refobj *refobj = lua_touserdata(L, idx);
           *(packed_type*)value = TV_OBJECT;
           *(lua_apr_objtype**)(p += sizeof(packed_type)) = T;
-          *(void**)(p += sizeof(lua_apr_objtype**)) = prepare_reference(L, T, refobj);
+          *(void**)(p += sizeof(lua_apr_objtype**)) = prepare_reference(T, refobj);
           /* XXX Increase the reference count assuming the tuple will be
            * unpacked eventually (barring exceptional errors?!) */
           object_incref(refobj);

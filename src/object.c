@@ -1,10 +1,11 @@
 /* Object model for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 19, 2011
+ * Last Change: June 16, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
+ * TODO Use apr_atomic_inc() / apr_atomic_dec() !
  */
 
 #include "lua_apr.h"
@@ -36,7 +37,7 @@ void *new_object(lua_State *L, lua_apr_objtype *T)
  * memory. Returns the address of the object in unmanaged memory.
  */
 
-void *prepare_reference(lua_State *L, lua_apr_objtype *T, lua_apr_refobj *object)
+void *prepare_reference(lua_apr_objtype *T, lua_apr_refobj *object)
 {
   lua_apr_refobj *clone;
   if (object->unmanaged)
@@ -63,7 +64,7 @@ void *prepare_reference(lua_State *L, lua_apr_objtype *T, lua_apr_refobj *object
 void *proxy_object(lua_State *L, lua_apr_objtype *T, lua_apr_refobj *original)
 {
   lua_apr_refobj *object, *reference;
-  if ((object = prepare_reference(L, T, original)) != NULL) {
+  if ((object = prepare_reference(T, original)) != NULL) {
     reference = lua_newuserdata(L, sizeof(lua_apr_refobj));
     if (reference != NULL) {
       reference->reference = object->reference;
@@ -109,7 +110,7 @@ int object_collectable(lua_apr_refobj *object)
  * deallocated.
  */
 
-void release_object(lua_State *L, lua_apr_refobj *object)
+void release_object(lua_apr_refobj *object)
 {
   if (object->reference != NULL)
     object = object->reference;

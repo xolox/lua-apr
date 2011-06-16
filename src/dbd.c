@@ -3,7 +3,7 @@
  * Authors:
  *  - zhiguo zhao <zhaozg@gmail.com>
  *  - Peter Odding <peter@peterodding.com>
- * Last Change: March 5, 2011
+ * Last Change: June 16, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -847,7 +847,7 @@ static int dbp_tostring(lua_State *L)
 static int dbp_gc(lua_State *L)
 {
   lua_apr_dbp_object *object = check_dbp(L, 1);
-  release_object(L, (lua_apr_refobj*)object);
+  release_object((lua_apr_refobj*)object);
   return 0;
 }
 
@@ -1025,7 +1025,7 @@ static int dbr_tostring(lua_State *L)
 static int dbr_gc(lua_State *L)
 {
   lua_apr_dbr_object *object = check_dbr(L, 1);
-  release_object(L, (lua_apr_refobj*)object);
+  release_object((lua_apr_refobj*)object);
   return 0;
 }
 
@@ -1067,7 +1067,7 @@ static int dbd_gc(lua_State *L)
   lua_apr_dbd_object *driver = check_dbd(L, 1, 0, 0);
   if (object_collectable((lua_apr_refobj*)driver))
     dbd_close_impl(driver);
-  release_object(L, (lua_apr_refobj*)driver);
+  release_object((lua_apr_refobj*)driver);
   return 0;
 }
 

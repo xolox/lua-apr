@@ -95,15 +95,13 @@ static int error_handler(lua_State *L)
 
 /* thread_destroy(thread) {{{2 */
 
-static void thread_destroy(lua_State *L, lua_apr_thread *thread)
+static void thread_destroy(lua_apr_thread *thread)
 {
   if (object_collectable((lua_apr_refobj*)thread)) {
-    /* If the thread exited with an error and the user didn't check the
-     * result using thread:join() we print the error message to stderr. */
     free(thread->input);
     free(thread->output);
   }
-  release_object(L, (lua_apr_refobj*)thread);
+  release_object((lua_apr_refobj*)thread);
 }
 
 /* thread_runner(handle, thread) {{{2 */
@@ -144,7 +142,7 @@ static void* lua_apr_cc thread_runner(apr_thread_t *handle, lua_apr_thread *thre
     lua_close(L);
   }
 
-  thread_destroy(NULL, thread);
+  thread_destroy(thread);
 
   /* If an error occurred, make sure the user sees it. */
   if (status == TS_ERROR)
@@ -186,11 +184,12 @@ int lua_apr_thread_create(lua_State *L)
 
   luaL_checktype(L, 1, LUA_TSTRING);
 
-  /* Create the Lua/APR thread object. */
+  /* Create the Lua/APR thread object.
+   * TODO Move this logic to the object model? */
   thread = new_object(L, &lua_apr_thread_type);
   if (thread == NULL)
     goto fail;
-  thread = prepare_reference(L, &lua_apr_thread_type, (lua_apr_refobj*)thread);
+  thread = prepare_reference(&lua_apr_thread_type, (lua_apr_refobj*)thread);
   if (thread == NULL)
     goto fail;
   thread->status = TS_INIT;
@@ -219,7 +218,7 @@ int lua_apr_thread_create(lua_State *L)
 
 fail:
   if (thread != NULL)
-    thread_destroy(L, thread);
+    thread_destroy(thread);
   return push_error_status(L, status);
 }
 
@@ -326,7 +325,7 @@ static int thread_tostring(lua_State *L)
 
 static int thread_gc(lua_State *L)
 {
-  thread_destroy(L, check_thread(L, 1, 0));
+  thread_destroy(check_thread(L, 1, 0));
   return 0;
 }
 
