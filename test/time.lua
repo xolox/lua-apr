@@ -3,7 +3,7 @@
  Unit tests for the time routines module of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: March 27, 2011
+ Last Change: June 16, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -42,8 +42,8 @@ assert(math.floor(now) == math.floor(imp))
 assert(apr.time_format('rfc822', 1000000000) == 'Sun, 09 Sep 2001 01:46:40 GMT')
 assert(apr.time_format('%Y-%m', 1000000000) == '2001-09')
 
--- Test apr.sleep() :-)
+-- Test that apr.sleep() supports sub second resolution.
 local before = apr.time_now()
 apr.sleep(0.25)
 local after = apr.time_now()
-assert(string.format('%.2f', after - before):find '^0%.2[456]$')
+assert(string.format('%.1f', after - before):find '^0%.[123]$')
