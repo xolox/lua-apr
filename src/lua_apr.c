@@ -8,6 +8,7 @@
 
 #include "lua_apr.h"
 #include <apr_portable.h>
+#include <ctype.h>
 
 /* Used to make sure that APR is only initialized once. */
 static int apr_was_initialized = 0;
@@ -367,9 +368,14 @@ int lua_apr_type(lua_State *L)
 
 int status_to_message(lua_State *L, apr_status_t status)
 {
+  int length;
   char message[LUA_APR_MSGSIZE];
+
   apr_strerror(status, message, count(message));
-  lua_pushstring(L, message);
+  length = strlen(message);
+  while (length > 0 && isspace(message[length - 1]))
+    length--;
+  lua_pushlstring(L, message, length);
   return 1;
 }
 

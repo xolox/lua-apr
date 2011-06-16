@@ -5,7 +5,7 @@
  Authors:
   - zhiguo zhao <zhaozg@gmail.com>
   - Peter Odding <peter@peterodding.com>
- Last Change: March 28, 2011
+ Last Change: June 16, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -50,7 +50,7 @@ assert(client:enable_server(server))
 -- Test metadata (server version and statistics).
 local version, message, code = client:version(server)
 if code == 'ECONNREFUSED' then
-  helpers.warning("Looks like memcached isn't available! (%s)", message)
+  helpers.warning("Looks like memcached isn't available! (%s)\n", message)
   return false
 end
 assert(type(version) == 'string')
