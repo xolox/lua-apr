@@ -1,7 +1,7 @@
 /* Buffered I/O interface for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: May 15, 2011
+ * Last Change: June 16, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -14,6 +14,25 @@
  *  - read_buffer() was based on the following references:
  *     - http://www.lua.org/source/5.1/liolib.c.html#g_read
  *     - http://www.lua.org/manual/5.1/manual.html#pdf-file:read
+ *
+ * Status:
+ * I don't like this code at all but it's a core part of the value in the
+ * Lua/APR binding! The code is quite confusing though and new bugs keep
+ * cropping up. Things that should at least be fixed:
+ *
+ * TODO strspn() is incompatible with unmanaged buffers because it can scan
+ * past the end of the buffer when the input is not terminated with a NUL
+ * byte (and doing so is out of the question for e.g. shared memory).
+ *
+ * TODO lua_str2number() can scan past the end of the input buffer but this
+ * is easy to fix: just copy MAX(AVAIL(B), LUAI_MAXNUMBER2STR) bytes to a
+ * static buffer and terminate that buffer with a NUL byte :-)
+ *
+ * TODO Binary to text translation is currently impossible in unmanaged
+ * buffers (shared memory). Decide whether to document or fix this issue?
+ *
+ * TODO The various read functions don't return immediately when status !=
+ * (APR_SUCCESS, APR_EOF) while they probably should?
  */
 
 #include "lua_apr.h"
@@ -230,23 +249,32 @@ static apr_status_t read_chars(lua_State *L, lua_apr_readbuf *input, apr_size_t 
 {
   lua_apr_buffer *B = &input->buffer;
   apr_status_t status = APR_SUCCESS;
+  int cornercase;
 
-  if (!B->unmanaged)
-    /* XXX The <= comparison is intended to make sure we read enough bytes to
-     * successfully convert \r\n to \n even when at the end of the buffer. */
-    while (AVAIL(B) < n && status == APR_SUCCESS)
-      status = fill_buffer(input, n);
-
-  if (AVAIL(B) > 0) {
-    /* TODO binary_to_text() may not need to be called again! */
-    if (!B->unmanaged && n > 0 && input->text_mode)
-      binary_to_text(B);
-    if (n > AVAIL(B))
-      n = AVAIL(B);
-    lua_pushlstring(L, CURSOR(B), n);
-    B->index += n;
-  } else
-    lua_pushnil(L);
+  for (;;) {
+    /* Return nil on EOF (this only makes sense after the 1st iteration). */
+    if (CHECK_FOR_EOF(B, status) && AVAIL(B) == 0) {
+      lua_pushnil(L);
+      break;
+    }
+    /* Check if we have enough input or reached EOF with buffered input. */
+    cornercase = input->text_mode && B->data[SAFE_SUB(1, AVAIL(B))] == '\r';
+    if ((n <= AVAIL(B) && !cornercase) || CHECK_FOR_EOF(B, status)) {
+      if (n > AVAIL(B))
+        n = AVAIL(B);
+      lua_pushlstring(L, CURSOR(B), n);
+      B->index += n;
+      break;
+    }
+    /* Get more input? */
+    if (!B->unmanaged) {
+      status = fill_buffer(input, n + cornercase);
+      if (!SUCCESS_OR_EOF(B, status))
+        break;
+      if (input->text_mode) /* && (n + cornercase) > 0 */
+        binary_to_text(B);
+    }
+  }
 
   return status;
 }
