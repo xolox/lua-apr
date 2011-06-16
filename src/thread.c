@@ -24,8 +24,10 @@
  *    protect object access with a thread safe lock. This will probably be
  *    fixed in the near future (hey, I said it was experimental)
  *
- *  - When you start a thread and don't call `thread:detach()` or
- *    `thread:join()`, the thread will be joined once it is garbage collected
+ *  - When you start a thread and let it get garbage collected without having
+ *    called `thread:join()`, the thread will be joined for you (because
+ *    failing to do so while the main thread is terminating can crash the
+ *    process)
  *
  * [Lua_state]: http://www.lua.org/manual/5.1/manual.html#lua_State
  * [threading]: http://en.wikipedia.org/wiki/Thread_%28computer_science%29
@@ -43,6 +45,9 @@
 
 const char *status_names[] = { "init", "running", "done", "error" };
 
+#define check_thread(L, idx) \
+  (lua_apr_thread*)check_object(L, idx, &lua_apr_thread_type)
+
 #define thread_busy(T) \
   ((T)->status == TS_INIT || (T)->status == TS_RUNNING)
 
@@ -55,19 +60,8 @@ typedef struct {
   apr_threadattr_t *attr;
   void *input, *output;
   volatile thread_status_t status;
-  int detached, joined;
-  apr_os_thread_t parent;
+  int joined;
 } lua_apr_thread;
-
-/* check_thread(L, idx, check_joinable) {{{2 */
-
-static lua_apr_thread *check_thread(lua_State *L, int idx, int check_joinable)
-{
-  lua_apr_thread *object = check_object(L, idx, &lua_apr_thread_type);
-  if (check_joinable && object->detached)
-    luaL_error(L, "attempt to join a detached thread");
-  return object;
-}
 
 /* error_handler(state) {{{2 */
 
@@ -143,22 +137,8 @@ static void* lua_apr_cc thread_runner(apr_thread_t *handle, lua_apr_thread *thre
     lua_close(L);
   }
 
-  thread_destroy(thread);
-
-  /* If an error occurred, make sure the user sees it. */
-  if (status == TS_ERROR)
-    fprintf(stderr, "Lua/APR thread exited with error: %s\n", (char*)thread->output);
-
   thread->status = status;
-  /* XXX Theoretically, if the parent thread inspects thread->status at this
-   * point, the child thread hasn't terminated yet. If the parent thread were
-   * to terminate before the child thread, a crash would most likely result...
-   * I don't like this one bit but can't see how there's any around it!
-   *
-   * (I've debugged several crash bugs caused by race conditions between parent
-   * and child threads before publishing this code and wound up running the
-   * thread_queue.lua tests for a 1000 iterations before I decided to publish
-   * this code). */
+  thread_destroy(thread);
   apr_thread_exit(handle, APR_SUCCESS);
 
   /* To make the compiler happy. */
@@ -194,7 +174,6 @@ int lua_apr_thread_create(lua_State *L)
   if (thread == NULL)
     goto fail;
   thread->status = TS_INIT;
-  thread->parent = apr_os_thread_current();
 
   /* Create memory pool for thread (freed by apr_thread_exit()). */
   status = apr_pool_create(&thread->pool, NULL);
@@ -235,25 +214,6 @@ int lua_apr_thread_yield(lua_State *L)
   return 0;
 }
 
-/* thread:detach() -> status {{{1
- *
- * Detach a thread to make the operating system automatically reclaim storage
- * for the thread once it terminates. On success true is returned, otherwise
- * nil followed by an error message is returned.
- */
-
-static int thread_detach(lua_State *L)
-{
-  lua_apr_thread *object;
-  apr_status_t status;
-
-  object = check_thread(L, 1, 0);
-  status = apr_thread_detach(object->handle);
-  if (status == APR_SUCCESS)
-    object->detached = 1;
-  return push_status(L, status);
-}
-
 /* thread:join() -> status [, result, ...] {{{1
  *
  * Block until a thread stops executing and return its result. If the thread
@@ -269,7 +229,7 @@ static int thread_join(lua_State *L)
   lua_apr_thread *object;
   apr_status_t status, unused;
 
-  object = check_thread(L, 1, 1);
+  object = check_thread(L, 1);
   lua_settop(L, 1);
 
   /* Don't join more than once. */
@@ -305,7 +265,7 @@ static int thread_status(lua_State *L)
 {
   lua_apr_thread *object;
 
-  object = check_thread(L, 1, 0);
+  object = check_thread(L, 1);
   lua_pushstring(L, status_names[object->status]);
 
   return 1;
@@ -315,7 +275,7 @@ static int thread_status(lua_State *L)
 
 static int thread_tostring(lua_State *L)
 {
-  lua_apr_thread *object = check_thread(L, 1, 0);
+  lua_apr_thread *object = check_thread(L, 1);
   lua_pushfstring(L, "%s (%s)",
       lua_apr_thread_type.friendlyname,
       status_names[object->status]);
@@ -326,14 +286,29 @@ static int thread_tostring(lua_State *L)
 
 static int thread_gc(lua_State *L)
 {
-  thread_destroy(check_thread(L, 1, 0));
+  lua_apr_thread *thread;
+  apr_status_t status, unused;
+
+  thread = check_thread(L, 1);
+  if (!thread->joined) {
+    fprintf(stderr, "Lua/APR joining child thread from __gc() hook ..\n");
+    status = apr_thread_join(&unused, thread->handle);
+    if (status != APR_SUCCESS) {
+      char message[LUA_APR_MSGSIZE];
+      apr_strerror(status, message, count(message));
+      fprintf(stderr, "Lua/APR failed to join thread: %s\n", message);
+    } else if (thread->status == TS_ERROR) {
+      fprintf(stderr, "Lua/APR thread exited with error: %s\n", (char*)thread->output);
+    }
+  }
+  thread_destroy(thread);
+
   return 0;
 }
 
 /* Lua/APR thread object metadata {{{1 */
 
 static luaL_Reg thread_methods[] = {
-  { "detach", thread_detach },
   { "join", thread_join },
   { "status", thread_status },
   { NULL, NULL }
