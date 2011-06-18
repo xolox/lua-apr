@@ -56,15 +56,19 @@ I've setup an experimental Debian package repository to make it easier to instal
 
 ### Build on UNIX using LuaRocks
 
-The easiest way to download, build & install the Lua/APR binding is to use [LuaRocks] [lr]:
+The easiest way to download, build & install the Lua/APR binding is to use [LuaRocks] [lr]. The following command will install the Lua/APR binding from the main repository:
+
+    $ luarocks install lua-apr
+
+You can also get the rockspec and sources directly from the author's website (may be more recent):
 
     $ luarocks install http://peterodding.com/code/lua/apr/downloads/lua-apr-0.18-4.rockspec
 
-If you have git installed you can also download and install the latest sources using the following command:
+If you have git installed you can also download and install the latest sources directly from [GitHub] [github]:
 
     $ luarocks install http://peterodding.com/code/lua/apr/downloads/lua-apr-scm-1.rockspec
 
-After installing the library you can run the test suite using the following command:
+After installing the library you can run the test suite by executing:
 
     $ lua -e "require 'apr.test' ()"
 
