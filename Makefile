@@ -1,7 +1,7 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: June 16, 2011
+# Last Change: June 18, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -68,32 +68,34 @@ SOURCES = src/base64.c \
 # `pkg-config --cflags apr-1' doesn't include -pthread while `apr-1-config
 # --cflags' does include this flag and this seems to be needed on some
 # platforms. See also issue #5 on GitHub: https://github.com/xolox/lua-apr/issues/5
-CFLAGS += $(shell pkg-config --cflags lua5.1 --silence-errors || pkg-config --cflags lua-5.1 --silence-errors || pkg-config --cflags lua) \
-		  $(shell apr-1-config --cflags --cppflags --includes 2>/dev/null || pkg-config --cflags apr-1) \
-		  $(shell apu-1-config --includes 2>/dev/null || pkg-config --cflags apr-util-1)
-LFLAGS += $(shell apr-1-config --link-ld --libs 2>/dev/null || pkg-config --libs apr-1) \
-		  $(shell apu-1-config --link-ld --libs 2>/dev/null || pkg-config --libs apr-util-1)
+override CFLAGS += \
+ $(shell pkg-config --cflags lua5.1 --silence-errors || pkg-config --cflags lua-5.1 --silence-errors || pkg-config --cflags lua) \
+ $(shell apr-1-config --cflags --cppflags --includes 2>/dev/null || pkg-config --cflags apr-1) \
+ $(shell apu-1-config --includes 2>/dev/null || pkg-config --cflags apr-util-1)
+override LFLAGS += \
+ $(shell apr-1-config --link-ld --libs 2>/dev/null || pkg-config --libs apr-1) \
+ $(shell apu-1-config --link-ld --libs 2>/dev/null || pkg-config --libs apr-util-1)
 
 # Create debug builds by default but enable release
 # builds using the command line "make DO_RELEASE=1".
 ifndef DO_RELEASE
-CFLAGS += -g -DDEBUG
-LFLAGS += -g
+override CFLAGS += -g -DDEBUG
+override LFLAGS += -g
 endif
 
 # Enable profiling with "make PROFILING=1".
 ifdef PROFILING
-CFLAGS += -fprofile-arcs -ftest-coverage
-LFLAGS += -fprofile-arcs
+override CFLAGS += -fprofile-arcs -ftest-coverage
+override LFLAGS += -fprofile-arcs
 endif
 
 # Experimental support for HTTP request parsing using libapreq2.
 ifndef DISABLE_APREQ
-SOURCES += src/http.c
-CFLAGS += $(shell apreq2-config --includes)
-LFLAGS += $(shell apreq2-config --link-ld)
+override SOURCES += src/http.c
+override CFLAGS += $(shell apreq2-config --includes)
+override LFLAGS += $(shell apreq2-config --link-ld)
 else
-CFLAGS += -DLUA_APR_DISABLE_APREQ
+override CFLAGS += -DLUA_APR_DISABLE_APREQ
 endif
 
 # Names of compiled object files.
