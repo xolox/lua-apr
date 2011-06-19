@@ -39,7 +39,7 @@ You can find the source code of the most recently released version under [downlo
 
 [srcdl]: http://peterodding.com/code/lua/apr/downloads
 [github]: http://github.com/xolox/lua-apr
-[winbin]: http://peterodding.com/code/lua/apr/downloads/lua-apr-0.18-2-win32.zip
+[winbin]: http://peterodding.com/code/lua/apr/downloads/lua-apr-0.18.2-1-win32.zip
 [lfw]: http://code.google.com/p/luaforwindows/
 
 ### Install the Debian/Ubuntu package
