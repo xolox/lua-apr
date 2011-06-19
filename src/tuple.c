@@ -1,9 +1,12 @@
 /* Inter thread serialization module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: June 16, 2011
+ * Last Change: June 19, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
+ *
+ * Note the use of memcpy() to avoid unaligned access.
+ * Relevant: http://lwn.net/Articles/259732/
  */
 
 #include "lua_apr.h"
@@ -37,7 +40,7 @@ static size_t check_value_size(lua_State *L, int idx, int trusted)
         lua_pop(L, 1);
       }
       if (trusted)
-        return sizeof(packed_type) + sizeof(lua_apr_objtype**) + sizeof(void**);
+        return sizeof(packed_type) + sizeof(lua_apr_objtype*) + sizeof(void*);
       break;
   }
   luaL_argerror(L, idx,
@@ -81,31 +84,33 @@ static int check_value(lua_State *L, int idx, void *value)
       return 1;
     case LUA_TNUMBER:
     {
+      lua_Number n = lua_tonumber(L, idx);
       *(packed_type*)value = TV_NUMBER;
-      *(lua_Number*)(p + sizeof(packed_type)) = lua_tonumber(L, idx);
+      memcpy(p + sizeof(packed_type), &n, sizeof n);
       return 1;
     }
     case LUA_TSTRING: {
       size_t size;
       const char *data = lua_tolstring(L, idx, &size);
       *(packed_type*)value = TV_STRING;
-      *(size_t*)(p += sizeof(packed_type)) = size;
-      memcpy(p + sizeof(size_t), data, size);
+      memcpy(p + sizeof(packed_type), &size, sizeof size);
+      memcpy(p + sizeof(packed_type) + sizeof size, data, size);
       return 1;
     }
     case LUA_TUSERDATA: {
       /* TODO Avoid this second loop using lua_apr_objtype[] array on stack. */
       int i;
       for (i = 0; lua_apr_types[i] != NULL; i++) {
-        lua_apr_objtype *T = lua_apr_types[i];
-        if (object_has_type(L, idx, T, 1)) {
-          lua_apr_refobj *refobj = lua_touserdata(L, idx);
+        lua_apr_objtype *type = lua_apr_types[i];
+        if (object_has_type(L, idx, type, 1)) {
+          lua_apr_refobj *object = lua_touserdata(L, idx);
+          void *reference = prepare_reference(type, object);
           *(packed_type*)value = TV_OBJECT;
-          *(lua_apr_objtype**)(p += sizeof(packed_type)) = T;
-          *(void**)(p += sizeof(lua_apr_objtype**)) = prepare_reference(T, refobj);
+          memcpy(p + sizeof(packed_type), &type, sizeof type);
+          memcpy(p + sizeof(packed_type) + sizeof type, &reference, sizeof reference);
           /* XXX Increase the reference count assuming the tuple will be
            * unpacked eventually (barring exceptional errors?!) */
-          object_incref(refobj);
+          object_incref(object);
           return 1;
         }
       }
@@ -134,7 +139,9 @@ int check_tuple(lua_State *L, int firstidx, int lastidx, void **ptr)
   if (tuple == NULL)
     return 0;
 
-  *(size_t*)tuple = 0; /* start with tuple of zero values */
+  /* We start with a tuple of zero values. Reminder to myself: malloc() returns
+   * 8 byte aligned pointers so this should be fine. */
+  *(size_t*)tuple = 0;
   p += sizeof(size_t);
 
   for (i = firstidx; i <= lastidx; i++) {
@@ -160,31 +167,40 @@ int push_tuple(lua_State *L, void *tuple)
     packed_type type = *(packed_type*)ptr;
     switch (type) {
       case TV_NIL:
-        lua_pushnil(L);
         ptr += sizeof(packed_type);
+        lua_pushnil(L);
         break;
       case TV_TRUE:
       case TV_FALSE:
-        lua_pushboolean(L, type == TV_TRUE);
         ptr += sizeof(packed_type);
+        lua_pushboolean(L, type == TV_TRUE);
         break;
       case TV_NUMBER: {
-        lua_Number number = *(lua_Number*)(ptr += sizeof(packed_type));
-        lua_pushnumber(L, number);
+        lua_Number n;
+        ptr += sizeof(packed_type);
+        memcpy(&n, ptr, sizeof n);
         ptr += sizeof(lua_Number);
+        lua_pushnumber(L, n);
         break;
       }
       case TV_STRING: {
-        size_t size = *(size_t*)(ptr += sizeof(packed_type));
-        const char *data = (ptr += sizeof(size_t));
-        lua_pushlstring(L, data, size);
-        ptr += size;
+        size_t s;
+        ptr += sizeof(packed_type);
+        memcpy(&s, ptr, sizeof s);
+        ptr += sizeof s;
+        lua_pushlstring(L, ptr, s);
+        ptr += s;
         break;
       }
       case TV_OBJECT: {
-        lua_apr_objtype *objtype = *(lua_apr_objtype**)(ptr += sizeof(packed_type));
-        lua_apr_refobj *object = *(void**)(ptr += sizeof(lua_apr_objtype**));
-        lua_apr_refobj *reference = lua_newuserdata(L, sizeof(lua_apr_refobj));
+        lua_apr_objtype *objtype;
+        lua_apr_refobj *object, *reference;
+        ptr += sizeof(packed_type);
+        memcpy(&objtype, ptr, sizeof objtype);
+        ptr += sizeof objtype;
+        memcpy(&object, ptr, sizeof object);
+        ptr += sizeof object;
+        reference = lua_newuserdata(L, sizeof(lua_apr_refobj));
         if (reference == NULL) {
           /* TODO Raise proper error message?
            * TODO Cleanup references to already packed objects?! */
@@ -194,7 +210,6 @@ int push_tuple(lua_State *L, void *tuple)
         reference->reference = object;
         reference->unmanaged = 0;
         init_object(L, objtype);
-        ptr += sizeof(void**);
         break;
       }
       default:
