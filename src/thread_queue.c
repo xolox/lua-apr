@@ -1,7 +1,7 @@
 /* Thread queues module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: June 16, 2011
+ * Last Change: June 19, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -95,8 +95,8 @@ int lua_apr_thread_queue(lua_State *L)
  * queue is full. On success true is returned, otherwise a nil followed by an
  * error message and error code is returned:
  *
- *  - `'APR_EINTR'`: the blocking was interrupted (try again)
- *  - `'APR_EOF'`: the queue has been terminated
+ *  - `'EINTR'`: the blocking was interrupted (try again)
+ *  - `'EOF'`: the queue has been terminated
  *
  * *This function is binary safe.*
  */
@@ -112,8 +112,8 @@ static int queue_push(lua_State *L)
  * success true is returned, otherwise a nil followed by an error message and
  * error code is returned:
  *
- *  - `'APR_EINTR'`: the blocking was interrupted (try again)
- *  - `'APR_EOF'`: the queue has been terminated
+ *  - `'EINTR'`: the blocking was interrupted (try again)
+ *  - `'EOF'`: the queue has been terminated
  *
  * *This function is binary safe.*
  */
@@ -129,9 +129,9 @@ static int queue_pop(lua_State *L)
  * the queue is full. On success true is returned, otherwise a nil followed by
  * an error message and error code is returned:
  *
- *  - `'APR_EINTR'`: the blocking was interrupted (try again)
- *  - `'APR_EAGAIN'`: the queue is full
- *  - `'APR_EOF'`: the queue has been terminated
+ *  - `'EINTR'`: the blocking was interrupted (try again)
+ *  - `'EAGAIN'`: the queue is full
+ *  - `'EOF'`: the queue has been terminated
  *
  * *This function is binary safe.*
  */
@@ -147,9 +147,9 @@ static int queue_trypush(lua_State *L)
  * On success true is returned, otherwise a nil followed by an error message
  * and error code is returned:
  *
- *  - `'APR_EINTR'`: the blocking was interrupted (try again)
- *  - `'APR_EAGAIN'`: the queue is empty
- *  - `'APR_EOF'`: the queue has been terminated
+ *  - `'EINTR'`: the blocking was interrupted (try again)
+ *  - `'EAGAIN'`: the queue is empty
+ *  - `'EOF'`: the queue has been terminated
  *
  * *This function is binary safe.*
  */
