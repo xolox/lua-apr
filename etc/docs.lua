@@ -3,7 +3,7 @@
  Documentation generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: June 16, 2011
+ Last Change: June 19, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -452,6 +452,15 @@ local function htmlencode(s)
            :gsub('>', '&gt;'))
 end
 
+local custom_sorting = {
+  ['crypt.c'] = [[ apr.md5 apr.md5_encode apr.password_validate
+    apr.password_get apr.md5_init md5_context:update md5_context:digest
+    md5_context:reset apr.sha1 apr.sha1_init sha1_context:update
+    sha1_context:digest sha1_context:reset ]],
+  ['thread.c'] = [[ apr.thread apr.thread_create apr.thread_yield
+    thread:status thread:join ]],
+}
+
 for _, module in ipairs(sorted_modules) do
 
   local a = toanchor(module.name)
@@ -461,14 +470,9 @@ for _, module in ipairs(sorted_modules) do
     blocks:add('    %s', module.example:gsub('\n', '\n    '))
   end
 
-  if module.file == 'crypt.c' then
-    -- Custom sorting for the cryptography module.
-    local orderstr = [[ apr.md5 apr.md5_encode apr.password_validate
-        apr.password_get apr.md5_init md5_context:update md5_context:digest
-        md5_context:reset apr.sha1 apr.sha1_init sha1_context:update
-        sha1_context:digest sha1_context:reset ]]
+  if custom_sorting[module.file] then
     local ordertbl = { n = 0 }
-    for f in orderstr:gmatch '%S+' do
+    for f in custom_sorting[module.file]:gmatch '%S+' do
       ordertbl[f], ordertbl.n = ordertbl.n, ordertbl.n + 1
     end
     local function order(f)

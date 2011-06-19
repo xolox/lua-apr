@@ -3,7 +3,7 @@
   Example: Multi threaded webserver
 
   Author: Peter Odding <peter@peterodding.com>
-  Last Change: February 19, 2011
+  Last Change: June 19, 2011
   Homepage: http://peterodding.com/code/lua/apr/
   License: MIT
 
@@ -104,16 +104,11 @@ function worker(thread_id, queue, template)
   end
 end
 
--- We could give apr.thread_create() a string of Lua code but by using byte
--- code instead we enable syntax highlighting and we preserve filename and line
--- numbers in Lua's traceback messages (this makes debugging less of a pain).
-local bytecode = string.dump(worker)
-
 -- Create the child threads and keep them around in a table (so that they are
 -- not garbage collected while we are still using them).
 local pool = {}
 for i = 1, num_threads do
-  table.insert(pool, assert(apr.thread_create(bytecode, i, queue, template)))
+  table.insert(pool, apr.thread(worker, i, queue, template))
 end
 
 -- Enter the accept() loop in the parent thread.

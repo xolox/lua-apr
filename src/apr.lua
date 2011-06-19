@@ -14,7 +14,7 @@
 --]]
 
 local apr = require 'apr.core'
-apr._VERSION = '0.18.1'
+apr._VERSION = '0.18.2'
 apr._RELEASE = '1'
 
 -- apr.md5(input [, binary]) -> digest {{{1
@@ -278,6 +278,27 @@ function apr.getopt(usage, config)
   else
     return opts, args
   end
+end
+
+if apr.thread_create then
+
+-- apr.thread(body [, arg, ...]) -> thread {{{1
+--
+-- Shortcut for `apr.thread_create()` that supports actual functions as @body
+-- by converting them to byte code using `string.dump()`. This means you don't
+-- lose syntax highlighting and debug information. This also calls `assert()`
+-- on the results of `apr.thread_create()`. This function won't work in Lua
+-- implementations like LuaJIT 2 where `string.dump()` is not available.
+--
+-- Part of the "Multi threading" module.
+
+function apr.thread(body, ...)
+  if type(body) == 'function' then
+    body = string.dump(body)
+  end
+  return assert(apr.thread_create(body, ...))
+end
+
 end
 
 -- }}}1
