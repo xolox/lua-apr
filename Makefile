@@ -1,7 +1,7 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: June 18, 2011
+# Last Change: June 19, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -170,12 +170,15 @@ install_deps:
 # Prepare a source ZIP archive and a Debian package 
 package: zip_package rockspec deb_package
 
-# Create a profiling build to run the test suite and generate documentation
-# including test coverage, then create a clean build without profiling.
+# Create a profiling build, run the test suite, generate documentation
+# including test coverage, then clean the intermediate files.
 package_prerequisites:
+	@echo Collecting coverage statistics using profiling build
 	@make --no-print-directory clean
 	@export PROFILING=1; lua etc/buildbot.lua --local
+	@echo Generating documentation including coverage statistics
 	@make --no-print-directory docs
+	@make --no-print-directory clean
 
 # Prepare a source ZIP archive from which Lua/APR can be build.
 zip_package: package_prerequisites
