@@ -3,7 +3,7 @@
  Unit tests for the character encoding translation module of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: March 27, 2011
+ Last Change: June 21, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -15,11 +15,6 @@ if not status then
   apr = require 'apr'
 end
 local helpers = require 'apr.test.helpers'
-
-if apr.platform_get() == 'WIN32' then
-  helpers.warning "Character encoding translation unsupported on Windows!\n"
-  return false
-end
 
 local utf8 = "Edelwei\195\159"
 local utf7 = "Edelwei+AN8-"

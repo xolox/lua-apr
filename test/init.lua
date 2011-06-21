@@ -3,7 +3,7 @@
  Driver script for the unit tests of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: June 16, 2011
+ Last Change: June 21, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -60,20 +60,28 @@ return function()
   end
   local helpers = require 'apr.test.helpers'
 
+  local success = true
   for _, testname in ipairs(modules) do
     local modname = modname .. '.' .. testname
     package.loaded[modname] = nil
     helpers.message("Running %s tests: ", testname)
     local starttime = apr.time_now()
-    if require(modname) then
+    local status, result = pcall(require, modname)
+    if status and result ~= false then
+      -- All tests passed.
       local elapsed = apr.time_now() - starttime
       if elapsed >= 0.5 then
         helpers.message("OK (%.2fs)\n", elapsed)
       else
         helpers.message "OK\n"
       end
+    elseif status then
+      -- Soft failure (anticipated).
+      helpers.message("Failed!\n")
     else
-      helpers.message "Failed!\n"
+      -- Hard failure.
+      helpers.message("Failed! (%s)\n", result)
+      success = false
     end
     package.loaded[modname] = nil
     -- Garbage collect unreferenced objects before testing the next module.
@@ -83,7 +91,7 @@ return function()
   helpers.message "Done!\n"
 
   -- Exit the interpreter (started with lua -e "require 'apr.test' ()").
-  os.exit()
+  os.exit(success and 0 or 1)
 
 end
 
