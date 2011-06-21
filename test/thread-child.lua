@@ -3,7 +3,7 @@
  Unit tests for the multi threading module of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: June 19, 2011
+ Last Change: June 21, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -34,25 +34,25 @@ assert(thread:join())
 assert(helpers.readfile(threadfile) == 'hello world!')
 
 -- Test module loading and multiple return values.
-local thread = assert(apr.thread(function()
+local thread = apr.thread(function()
   local status, apr = pcall(require, 'apr')
   if not status then
     pcall(require, 'luarocks.require')
     apr = require 'apr'
   end
   return apr.version_get()
-end))
+end)
 helpers.checktuple({ true, apr.version_get() }, assert(thread:join()))
 
 -- Test thread:status()
-local thread = assert(apr.thread(function()
+local thread = apr.thread(function()
   local status, apr = pcall(require, 'apr')
   if not status then
     pcall(require, 'luarocks.require')
     apr = require 'apr'
   end
   apr.sleep(1)
-end))
+end)
 while assert(thread:status()) == 'init' do apr.sleep(0.1) end
 assert('running' == assert(thread:status()))
 assert(thread:join())
