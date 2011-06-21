@@ -1,7 +1,7 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: June 19, 2011
+# Last Change: June 20, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -9,7 +9,7 @@
 # external dependencies using the `install_deps' target (see below).
 
 VERSION = $(shell grep _VERSION src/apr.lua | cut "-d'" -f2)
-RELEASE = $(shell grep _RELEASE src/apr.lua | cut "-d'" -f2)
+RELEASE = 1
 PACKAGE = lua-apr-$(VERSION)-$(RELEASE)
 
 # Based on http://www.luarocks.org/en/Recommended_practices_for_Makefiles

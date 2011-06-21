@@ -3,7 +3,7 @@
  Documentation generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: June 19, 2011
+ Last Change: June 21, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -241,16 +241,11 @@ end
 -- Convert documentation comments to Markdown hypertext. {{{1
 
 local function findrelease()
-  local handle = assert(io.open 'src/apr.lua')
-  local version, release
-  for line in handle:lines() do
-    version = version or line:match "^apr%._VERSION = '(.-)'"
-    release = release or line:match "^apr%._RELEASE = '(.-)'"
+  for line in io.lines 'src/apr.lua' do
+    local version = line:match "^apr%._VERSION = '(.-)'"
+    if version then return version end
   end
-  assert(handle:close())
-  assert(version, "Failed to determine Lua/APR version number!")
-  assert(release, "Failed to determine Lua/APR release number!")
-  return version .. '-' .. release
+  assert(false, "Failed to determine Lua/APR version number!")
 end
 
 local blocks = { trim([[
