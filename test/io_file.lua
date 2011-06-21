@@ -3,7 +3,7 @@
  Unit tests for the file I/O handling module of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: June 15, 2011
+ Last Change: June 21, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -112,6 +112,22 @@ assert(#lines == 0)
 assert(tostring(handle):find '^file %([x%x]+%)$')
 assert(handle:close())
 assert(tostring(handle):find '^file %(closed%)$')
+
+-- Test file:fd_get() and apr.file_open(fd). {{{1
+local fname = assert(helpers.tmpname())
+local msg = 'So does it expose file descriptors?'
+local writehandle = assert(io.open(fname, 'w'))
+assert(writehandle:write(msg))
+assert(writehandle:close())
+local readhandle = assert(apr.file_open(fname))
+if readhandle.fd_get then
+  -- file:fd_get() is supported.
+  local fd = assert(readhandle:fd_get())
+  assert(type(fd) == 'number')
+  local newhandle = assert(apr.file_open(fd))
+  assert(msg == assert(newhandle:read()))
+  assert(newhandle:close())
+end
 
 -- Test file:read(), file:write() and file:seek() {{{1
 

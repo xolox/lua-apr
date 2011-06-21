@@ -1,26 +1,138 @@
 /* File I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: June 16, 2011
+ * Last Change: June 21, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
 
 #include "lua_apr.h"
-#include <apr_strings.h>
-#include <apr_file_io.h>
 #include <apr_file_info.h>
+#include <apr_file_io.h>
 #include <apr_lib.h>
+#include <apr_portable.h>
+#include <apr_strings.h>
 #include <stdio.h>
-
-static int push_file_status(lua_State*, lua_apr_file*, apr_status_t);
-static int push_file_error(lua_State*, lua_apr_file*, apr_status_t);
 
 /* TODO Bind functions missing from io_file.c
  *  - apr_file_pipe_create_ex()
  *  - apr_file_sync()
  *  - apr_file_datasync()
  */
+
+/* Internal functions. {{{1 */
+
+/* file_alloc() {{{2 */
+
+lua_apr_file *file_alloc(lua_State *L, const char *path, lua_apr_pool *refpool)
+{
+  lua_apr_file *file;
+
+  file = new_object(L, &lua_apr_file_type);
+  if (refpool == NULL)
+    refpool = refpool_alloc(L);
+  else
+    refpool_incref(refpool);
+  file->pool = refpool;
+  if (path != NULL)
+    path = apr_pstrdup(file->pool->ptr, path);
+  file->path = path;
+
+  return file;
+}
+
+/* init_file_buffers() {{{2 */
+
+void init_file_buffers(lua_State *L, lua_apr_file *file, int text_mode)
+{
+  init_buffers(L, &file->input, &file->output, file->handle, text_mode,
+      (lua_apr_buf_rf) apr_file_read,
+      (lua_apr_buf_wf) apr_file_write,
+      (lua_apr_buf_ff) apr_file_flush);
+}
+
+/* file_check() {{{2 */
+
+lua_apr_file *file_check(lua_State *L, int i, int open)
+{
+  lua_apr_file *file = check_object(L, i, &lua_apr_file_type);
+  if (open && file->handle == NULL)
+    luaL_error(L, "attempt to use a closed file");
+  return file;
+}
+
+/* file_close_impl() {{{2 */
+
+apr_status_t file_close_impl(lua_State *L, lua_apr_file *file)
+{
+  apr_status_t status = APR_SUCCESS;
+  if (file->handle != NULL) {
+    status = flush_buffer(L, &file->output, 1);
+    if (status == APR_SUCCESS)
+      status = apr_file_close(file->handle);
+    else
+      apr_file_close(file->handle);
+    file->handle = NULL;
+    refpool_decref(file->pool);
+    free_buffer(L, &file->input.buffer);
+    free_buffer(L, &file->output.buffer);
+  }
+  return status;
+}
+
+/* push_file_error() {{{2 */
+
+static int push_file_error(lua_State *L, lua_apr_file *file, apr_status_t status)
+{
+  char message[LUA_APR_MSGSIZE];
+  apr_strerror(status, message, count(message));
+  lua_pushnil(L);
+  if (file->path != NULL)
+    lua_pushfstring(L, "%s: %s", file->path, message);
+  else
+    lua_pushstring(L, message);
+  status_to_name(L, status);
+  return 3;
+}
+
+/* push_file_status() {{{2 */
+
+static int push_file_status(lua_State *L, lua_apr_file *file, apr_status_t status)
+{
+  if (status == APR_SUCCESS) {
+    lua_pushboolean(L, 1);
+    return 1;
+  } else {
+    return push_file_error(L, file, status);
+  }
+}
+
+/* parse_mode_str() {{{2 */
+
+static apr_int32_t parse_mode_str(const char *mode)
+{
+  apr_int32_t flags = 0;
+  if (*mode == 'r') {
+    flags |= APR_FOPEN_READ, mode++;
+    if (*mode == '+') flags |= APR_FOPEN_WRITE, mode++;
+    if (*mode == 'b') flags |= APR_FOPEN_BINARY, mode++;
+    if (*mode == '+') flags |= APR_FOPEN_WRITE;
+  } else if (*mode == 'w') {
+    flags |= APR_FOPEN_WRITE | APR_FOPEN_CREATE | APR_FOPEN_TRUNCATE, mode++;
+    if (*mode == '+') flags |= APR_FOPEN_READ, mode++;
+    if (*mode == 'b') flags |= APR_FOPEN_BINARY, mode++;
+    if (*mode == '+') flags |= APR_FOPEN_READ;
+  } else if (*mode == 'a') {
+    flags |= APR_FOPEN_WRITE | APR_FOPEN_CREATE | APR_FOPEN_APPEND, mode++;
+    if (*mode == '+') flags |= APR_FOPEN_READ, mode++;
+    if (*mode == 'b') flags |= APR_FOPEN_BINARY, mode++;
+    if (*mode == '+') flags |= APR_FOPEN_READ;
+  }
+  /* Default to read mode just like Lua. */
+  if (!(flags & APR_FOPEN_WRITE))
+    flags |= APR_FOPEN_READ;
+  return flags;
+}
 
 #if APR_MAJOR_VERSION > 1 || (APR_MAJOR_VERSION == 1 && APR_MINOR_VERSION >= 4)
 
@@ -314,8 +426,9 @@ int lua_apr_stat(lua_State *L)
 
 /* apr.file_open(path [, mode [, permissions]]) -> file {{{1
  *
- * <em>This function imitates Lua's `io.open()` function, so here is the
- * documentation for that function:</em>
+ * <em>This function imitates Lua's `io.open()` function with one exception: On
+ * UNIX you can pass a file descriptor (number) instead of a path string (see
+ * also `file:fd_get()`). Now follows the documentation for `io.open()`:</em>
  *
  * This function opens a file, in the mode specified in the string @mode. It
  * returns a new file handle, or, in case of errors, nil plus an error
@@ -341,45 +454,34 @@ int lua_apr_file_open(lua_State *L)
 {
   apr_status_t status;
   lua_apr_file *file;
-  apr_fileperms_t perm;
   apr_int32_t flags;
   const char *path;
-  char *mode;
+  apr_fileperms_t perm;
 
-  path = luaL_checkstring(L, 1);
-  mode = (char *)luaL_optstring(L, 2, "r");
-  perm = check_permissions(L, 3, 0);
-  flags = 0;
-
-  /* Parse the mode string.
-   * TODO: Verify that these mappings are correct! */
-  if (*mode == 'r') {
-    flags |= APR_FOPEN_READ, mode++;
-    if (*mode == '+') flags |= APR_FOPEN_WRITE, mode++;
-    if (*mode == 'b') flags |= APR_FOPEN_BINARY, mode++;
-    if (*mode == '+') flags |= APR_FOPEN_WRITE;
-  } else if (*mode == 'w') {
-    flags |= APR_FOPEN_WRITE | APR_FOPEN_CREATE | APR_FOPEN_TRUNCATE, mode++;
-    if (*mode == '+') flags |= APR_FOPEN_READ, mode++;
-    if (*mode == 'b') flags |= APR_FOPEN_BINARY, mode++;
-    if (*mode == '+') flags |= APR_FOPEN_READ;
-  } else if (*mode == 'a') {
-    flags |= APR_FOPEN_WRITE | APR_FOPEN_CREATE | APR_FOPEN_APPEND, mode++;
-    if (*mode == '+') flags |= APR_FOPEN_READ, mode++;
-    if (*mode == 'b') flags |= APR_FOPEN_BINARY, mode++;
-    if (*mode == '+') flags |= APR_FOPEN_READ;
+# if defined(WIN32) || defined(OS2) || defined(NETWARE)
+  /* On Windows apr_os_file_t isn't an integer: it's a HANDLE. */
+  if (0) ;
+# else
+  /* On UNIX like systems apr_os_file_t is an integer. */
+  if (lua_isnumber(L, 1)) {
+    apr_os_file_t fd = (apr_os_file_t) lua_tonumber(L, 1);
+    flags = parse_mode_str(luaL_optstring(L, 2, "r"));
+    file = file_alloc(L, NULL, NULL);
+    status = apr_os_file_put(&file->handle, &fd, flags, file->pool->ptr);
+  }
+# endif
+  else {
+    path = luaL_checkstring(L, 1);
+    perm = check_permissions(L, 3, 0);
+    flags = parse_mode_str(luaL_optstring(L, 2, "r"));
+    file = file_alloc(L, path, NULL);
+    status = apr_file_open(&file->handle, path, flags, perm, file->pool->ptr);
   }
 
-  /* Default to read mode just like Lua. */
-  if (!(flags & APR_FOPEN_WRITE))
-    flags |= APR_FOPEN_READ;
-
-  /* Create the file object and open the file. */
-  file = file_alloc(L, path, NULL);
-  status = apr_file_open(&file->handle, path, flags, perm, file->pool->ptr);
   if (status != APR_SUCCESS)
     return push_file_error(L, file, status);
   init_file_buffers(L, file, !(flags & APR_FOPEN_BINARY));
+
   return 1;
 }
 
@@ -626,6 +728,38 @@ static int pipe_timeout_set(lua_State *L)
   return push_file_status(L, pipe, status);
 }
 
+#if !defined(WIN32) && !defined(OS2) && !defined(NETWARE)
+
+/* file:fd_get() -> fd {{{1
+ *
+ * Get the underlying [file descriptor] [fildes] for this file. On success a
+ * number is returned, otherwise a nil followed by an error message is
+ * returned.
+ *
+ * To convert a file descriptor into a Lua/APR file object you can pass the
+ * file descriptor (number) to `apr.file_open()` instead of the pathname.
+ *
+ * Note that this function is only available on platforms where file
+ * descriptors are numbers (this includes UNIX and excludes Windows).
+ */
+
+static int file_fd_get(lua_State *L)
+{
+  apr_status_t status;
+  lua_apr_file *file;
+  apr_os_file_t fd;
+
+  file = file_check(L, 1, 1);
+  status = apr_os_file_get(&fd, file->handle);
+  if (status != APR_SUCCESS)
+    return push_error_status(L, status);
+
+  lua_pushinteger(L, fd);
+  return 1;
+}
+
+#endif
+
 /* file:inherit_set() -> status {{{1
  *
  * Set a file to be inherited by child processes. By default, file descriptors
@@ -708,79 +842,6 @@ static int file_gc(lua_State *L)
   return 0;
 }
 
-lua_apr_file *file_alloc(lua_State *L, const char *path, lua_apr_pool *refpool) /* {{{1 */
-{
-  lua_apr_file *file;
-
-  file = new_object(L, &lua_apr_file_type);
-  if (refpool == NULL)
-    refpool = refpool_alloc(L);
-  else
-    refpool_incref(refpool);
-  file->pool = refpool;
-  if (path != NULL)
-    path = apr_pstrdup(file->pool->ptr, path);
-  file->path = path;
-
-  return file;
-}
-
-void init_file_buffers(lua_State *L, lua_apr_file *file, int text_mode) /* {{{1 */
-{
-  init_buffers(L, &file->input, &file->output, file->handle, text_mode,
-      (lua_apr_buf_rf) apr_file_read,
-      (lua_apr_buf_wf) apr_file_write,
-      (lua_apr_buf_ff) apr_file_flush);
-}
-
-lua_apr_file *file_check(lua_State *L, int i, int open) /* {{{1 */
-{
-  lua_apr_file *file = check_object(L, i, &lua_apr_file_type);
-  if (open && file->handle == NULL)
-    luaL_error(L, "attempt to use a closed file");
-  return file;
-}
-
-apr_status_t file_close_impl(lua_State *L, lua_apr_file *file) /* {{{1 */
-{
-  apr_status_t status = APR_SUCCESS;
-  if (file->handle != NULL) {
-    status = flush_buffer(L, &file->output, 1);
-    if (status == APR_SUCCESS)
-      status = apr_file_close(file->handle);
-    else
-      apr_file_close(file->handle);
-    file->handle = NULL;
-    refpool_decref(file->pool);
-    free_buffer(L, &file->input.buffer);
-    free_buffer(L, &file->output.buffer);
-  }
-  return status;
-}
-
-int push_file_status(lua_State *L, lua_apr_file *file, apr_status_t status) /* {{{1 */
-{
-  if (status == APR_SUCCESS) {
-    lua_pushboolean(L, 1);
-    return 1;
-  } else {
-    return push_file_error(L, file, status);
-  }
-}
-
-int push_file_error(lua_State *L, lua_apr_file *file, apr_status_t status) /* {{{1 */
-{
-  char message[LUA_APR_MSGSIZE];
-  apr_strerror(status, message, count(message));
-  lua_pushnil(L);
-  if (file->path != NULL)
-    lua_pushfstring(L, "%s: %s", file->path, message);
-  else
-    lua_pushstring(L, message);
-  status_to_name(L, status);
-  return 3;
-}
-
 /* }}}1 */
 
 static luaL_Reg file_methods[] = {
@@ -795,6 +856,9 @@ static luaL_Reg file_methods[] = {
   { "write", file_write },
   { "timeout_get", pipe_timeout_get },
   { "timeout_set", pipe_timeout_set },
+# if !defined(WIN32) && !defined(OS2) && !defined(NETWARE)
+  { "fd_get", file_fd_get },
+# endif
   { "inherit_set", file_inherit_set },
   { "inherit_unset", file_inherit_unset },
   { NULL, NULL }
