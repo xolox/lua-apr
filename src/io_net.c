@@ -1,13 +1,14 @@
 /* Network I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: June 16, 2011
+ * Last Change: June 21, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
 
 #include "lua_apr.h"
 #include <apr_network_io.h>
+#include <apr_portable.h>
 
 /* Internal functions {{{1 */
 
@@ -23,7 +24,7 @@ typedef struct {
 
 /* socket_alloc(L) -- allocate and initialize socket object {{{2 */
 
-static apr_status_t socket_alloc(lua_State *L, int family, int protocol, lua_apr_socket **objptr)
+static apr_status_t socket_alloc(lua_State *L, lua_apr_socket **p)
 {
   lua_apr_socket *object;
   apr_status_t status;
@@ -31,10 +32,8 @@ static apr_status_t socket_alloc(lua_State *L, int family, int protocol, lua_apr
   object = new_object(L, &lua_apr_socket_type);
   if (object == NULL)
     raise_error_memory(L);
-  object->family = family;
-  object->protocol = protocol;
   status = apr_pool_create(&object->pool, NULL);
-  *objptr = object;
+  *p = object;
 
   return status;
 }
@@ -140,7 +139,9 @@ int lua_apr_socket_create(lua_State *L)
   type = protocol == APR_PROTO_TCP ? SOCK_STREAM : SOCK_DGRAM;
 
   /* Create and initialize the socket and its associated memory pool. */
-  status = socket_alloc(L, family, protocol, &object);
+  status = socket_alloc(L, &object);
+  object->family = family;
+  object->protocol = protocol;
   if (status == APR_SUCCESS)
     status = apr_socket_create(&object->handle, family, type, protocol, object->pool);
   if (status != APR_SUCCESS)
@@ -355,7 +356,9 @@ static int socket_accept(lua_State *L)
   apr_status_t status;
 
   server = socket_check(L, 1, 1);
-  status = socket_alloc(L, server->family, server->protocol, &client);
+  status = socket_alloc(L, &client);
+  client->family = server->family;
+  client->protocol = server->protocol;
   if (status == APR_SUCCESS)
     status = apr_socket_accept(&client->handle, server->handle, client->pool);
   socket_init(L, client);
@@ -549,6 +552,50 @@ static int socket_addr_get(lua_State *L)
   return 3;
 }
 
+/* socket:fd_get() -> fd {{{1
+ *
+ * Get the underlying [file descriptor] [fildes] for this socket. On success a
+ * number is returned, otherwise a nil followed by an error message is
+ * returned.
+ *
+ * [fildes]: http://en.wikipedia.org/wiki/File_descriptor
+ */
+
+int socket_fd_get(lua_State *L)
+{
+  apr_status_t status;
+  lua_apr_socket *object;
+  apr_os_sock_t fd;
+
+  object = socket_check(L, 1, 1);
+  status = apr_os_sock_get(&fd, object->handle);
+  if (status != APR_SUCCESS)
+    return push_error_status(L, status);
+
+  lua_pushinteger(L, fd);
+  return 1;
+}
+
+/* socket:fd_set(fd) -> status {{{1
+ *
+ * Set the underlying file descriptor (a number) of an existing socket. On
+ * success true is returned, otherwise a nil followed by an error message is
+ * returned.
+ */
+
+int socket_fd_set(lua_State *L)
+{
+  lua_apr_socket *object;
+  apr_status_t status;
+  apr_os_sock_t fd;
+
+  object = socket_check(L, 1, 0);
+  fd = luaL_checkinteger(L, 2);
+  status = apr_os_sock_put(&object->handle, &fd, object->pool);
+
+  return push_status(L, status);
+}
+
 /* socket:shutdown(mode) -> status {{{1
  *
  * Shutdown either reading, writing, or both sides of a socket. On success true
@@ -635,6 +682,8 @@ luaL_reg socket_methods[] = {
   { "opt_get", socket_opt_get },
   { "opt_set", socket_opt_set },
   { "addr_get", socket_addr_get },
+  { "fd_get", socket_fd_get },
+  { "fd_set", socket_fd_set },
   { "shutdown", socket_shutdown },
   { "close", socket_close },
   { NULL, NULL },
