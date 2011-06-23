@@ -3,7 +3,7 @@
  Unit tests for the process handling module of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: March 27, 2011
+ Last Change: June 23, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -50,8 +50,8 @@ assert(why == 'exit')
 
 -- Test apr.proc_fork() when supported. {{{1
 if apr.proc_fork then
-  local process, context = assert(apr.proc_fork())
   local forked_file, forked_text = assert(helpers.tmpname()), 'hello from forked child!'
+  local process, context = assert(apr.proc_fork())
   if context == 'child' then
     helpers.writefile(forked_file, forked_text)
     os.exit(0)
