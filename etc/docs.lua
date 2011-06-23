@@ -3,7 +3,7 @@
  Documentation generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: June 21, 2011
+ Last Change: June 23, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -29,6 +29,7 @@ local SOURCES = [[
   http.c
   proc.c
   shm.c
+  signal.c
   str.c
   thread.c
   thread_queue.c
@@ -390,6 +391,7 @@ local bsignore = {
   ['apr.parse_query_string'] = true,
   ['apr.platform_get'] = true,
   ['apr.proc_fork'] = true,
+  ['apr.signal_names'] = true,
   ['apr.strfsize'] = true,
   ['apr.type'] = true,
   ['apr.uri_port_of_scheme'] = true,

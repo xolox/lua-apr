@@ -1,7 +1,7 @@
 /* Miscellaneous functions module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: June 16, 2011
+ * Last Change: June 23, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -152,6 +152,13 @@ LUA_APR_EXPORT int luaopen_apr_core(lua_State *L)
     { "shm_create", lua_apr_shm_create },
     { "shm_attach", lua_apr_shm_attach },
     { "shm_remove", lua_apr_shm_remove },
+
+    /* signal.c -- signal handling. */
+    { "signal", lua_apr_signal },
+    { "signal_raise", lua_apr_signal_raise },
+    { "signal_block", lua_apr_signal_block },
+    { "signal_unblock", lua_apr_signal_unblock },
+    { "signal_names", lua_apr_signal_names },
 
     /* str.c -- string handling. */
     { "strnatcmp", lua_apr_strnatcmp },

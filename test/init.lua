@@ -39,6 +39,7 @@ local modules = {
   'misc',
   'proc',
   'shm',
+  'signal',
   'str',
   'thread',
   'thread_queue',

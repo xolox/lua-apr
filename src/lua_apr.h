@@ -1,7 +1,7 @@
 /* Header file for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: June 16, 2011
+ * Last Change: June 23, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -372,6 +372,13 @@ int push_stat_results(lua_State*, lua_apr_stat_context*, const char*);
 int lua_apr_shm_create(lua_State*);
 int lua_apr_shm_attach(lua_State*);
 int lua_apr_shm_remove(lua_State*);
+
+/* signal.c */
+int lua_apr_signal(lua_State*);
+int lua_apr_signal_raise(lua_State*);
+int lua_apr_signal_block(lua_State*);
+int lua_apr_signal_unblock(lua_State*);
+int lua_apr_signal_names(lua_State*);
 
 /* str.c */
 int lua_apr_strnatcmp(lua_State*);
