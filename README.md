@@ -23,6 +23,7 @@
  * [HTTP request parsing](http://peterodding.com/code/lua/apr/docs/#http_request_parsing)
  * [Process handling](http://peterodding.com/code/lua/apr/docs/#process_handling)
  * [Shared memory](http://peterodding.com/code/lua/apr/docs/#shared_memory)
+ * [Signal handling](http://peterodding.com/code/lua/apr/docs/#signal_handling)
  * [String routines](http://peterodding.com/code/lua/apr/docs/#string_routines)
  * [Multi threading](http://peterodding.com/code/lua/apr/docs/#multi_threading)
  * [Thread queues](http://peterodding.com/code/lua/apr/docs/#thread_queues)
