@@ -3,7 +3,7 @@
  * Authors:
  *  - zhiguo zhao <zhaozg@gmail.com>
  *  - Peter Odding <peter@peterodding.com>
- * Last Change: June 16, 2011
+ * Last Change: June 30, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -161,18 +161,16 @@ static lua_apr_dbp_object *check_dbp(lua_State *L, int idx)
 
 static void *new_subobj(lua_State *L, lua_apr_objtype *type, int idx, lua_apr_dbd_object *driver, size_t offset)
 {
+  lua_apr_dbd_reference *reference;
   void *object = new_object(L, type);
-  if (object != NULL) {
-    lua_apr_dbd_reference *reference;
-    reference = (void*)((char*)object + offset);
-    reference->driver = driver;
-    reference->generation = driver->generation;
-    /* Let Lua's garbage collector know we want the driver to stay alive. */
-    object_env_private(L, -1); /* get result set environment */
-    lua_pushvalue(L, idx); /* copy driver object reference */
-    lua_setfield(L, -2, "driver"); /* store reference to driver */
-    lua_pop(L, 1); /* remove environment from stack */
-  }
+  reference = (void*)((char*)object + offset);
+  reference->driver = driver;
+  reference->generation = driver->generation;
+  /* Let Lua's garbage collector know we want the driver to stay alive. */
+  object_env_private(L, -1); /* get result set environment */
+  lua_pushvalue(L, idx); /* copy driver object reference */
+  lua_setfield(L, -2, "driver"); /* store reference to driver */
+  lua_pop(L, 1); /* remove environment from stack */
   return object;
 }
 

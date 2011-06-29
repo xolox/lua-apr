@@ -1,7 +1,7 @@
 /* Object model for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: June 16, 2011
+ * Last Change: June 30, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -19,13 +19,11 @@
 void *new_object(lua_State *L, lua_apr_objtype *T)
 {
   lua_apr_refobj *object = lua_newuserdata(L, T->objsize);
-  if (object != NULL) {
-    memset(object, 0, T->objsize);
-    object->reference = NULL;
-    object->refcount = 1;
-    object->unmanaged = 0;
-    init_object(L, T);
-  }
+  memset(object, 0, T->objsize);
+  object->reference = NULL;
+  object->refcount = 1;
+  object->unmanaged = 0;
+  init_object(L, T);
   return object;
 }
 
@@ -66,11 +64,9 @@ void *proxy_object(lua_State *L, lua_apr_objtype *T, lua_apr_refobj *original)
   lua_apr_refobj *object, *reference;
   if ((object = prepare_reference(T, original)) != NULL) {
     reference = lua_newuserdata(L, sizeof(lua_apr_refobj));
-    if (reference != NULL) {
-      reference->reference = object->reference;
-      reference->unmanaged = 0;
-      init_object(L, T);
-    }
+    reference->reference = object->reference;
+    reference->unmanaged = 0;
+    init_object(L, T);
   }
   return object;
 }

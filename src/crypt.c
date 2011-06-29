@@ -1,7 +1,7 @@
 /* Cryptography routines module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: June 16, 2011
+ * Last Change: June 30, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -45,6 +45,8 @@
 
 /* Internal functions {{{1 */
 
+/* The APR cryptography functions zero buffers before returning and the Lua/APR
+ * binding does the same thing so that it doesn't negate the effort of APR. */
 #define clear_mem(p, l) memset(p, 42, l)
 #define clear_stack(b) clear_mem(b, sizeof(b))
 
@@ -156,25 +158,20 @@ int lua_apr_password_get(lua_State *L)
 {
   apr_status_t status;
   const char *prompt;
-  apr_size_t length;
-  char *password;
+  char password[256]; /* arbitrary limit */
+  apr_size_t length = count(password);
   int pushed;
 
   prompt = luaL_checkstring(L, 1);
-  password = lua_newuserdata(L, length = 512);
-  if (password == NULL) {
-    pushed = push_error_memory(L);
+  /* Note that apr_password_get() does NOT modify length! :-S */
+  status = apr_password_get(prompt, password, &length);
+  if (status != APR_SUCCESS) {
+    pushed = push_error_status(L, status);
   } else {
-    /* NOTE: apr_password_get() does NOT modify length */
-    status = apr_password_get(prompt, password, &length);
-    if (status != APR_SUCCESS) {
-      pushed = push_error_status(L, status);
-    } else {
-      lua_pushstring(L, password);
-      pushed = 1;
-    }
+    lua_pushstring(L, password);
+    pushed = 1;
   }
-  clear_mem(password, length);
+  clear_stack(password);
 
   return pushed;
 }

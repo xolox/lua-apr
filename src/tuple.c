@@ -1,7 +1,7 @@
 /* Inter thread serialization module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: June 19, 2011
+ * Last Change: June 30, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -201,12 +201,6 @@ int push_tuple(lua_State *L, void *tuple)
         memcpy(&object, ptr, sizeof object);
         ptr += sizeof object;
         reference = lua_newuserdata(L, sizeof(lua_apr_refobj));
-        if (reference == NULL) {
-          /* TODO Raise proper error message?
-           * TODO Cleanup references to already packed objects?! */
-          LUA_APR_DBG("#%i: Failed to unpack userdata!", i + 1);
-          return i;
-        }
         reference->reference = object;
         reference->unmanaged = 0;
         init_object(L, objtype);
