@@ -3,7 +3,7 @@
  Unit tests for the signal handling module of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: June 23, 2011
+ Last Change: June 30, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -55,6 +55,14 @@ assert(got_sigterm)
 
 -- XXX The following tests are known to fail on Windows.
 
+-- Spawn a child process that dies.
+local function spawn()
+  local child = assert(apr.proc_create 'lua')
+  assert(child:cmdtype_set 'program/env/path')
+  assert(child:exec { '-e', 'os.exit(0)' })
+  assert(child:wait(true))
+end
+
 -- Use apr.signal() to listen for dying child processes.
 local got_sigchild = false
 apr.signal('SIGCHLD', function()
@@ -62,7 +70,7 @@ apr.signal('SIGCHLD', function()
 end)
 
   -- Create and kill a child process.
-  assert(os.execute 'lua -e "os.exit(0)"' == 0)
+  spawn()
 
   -- Make sure we got the signal.
   assert(got_sigchild)
@@ -72,7 +80,7 @@ got_sigchild = false
 assert(apr.signal_block 'SIGCHLD')
 
   -- Create and kill a child process.
-  assert(os.execute 'lua -e "os.exit(0)"' == 0)
+  spawn()
 
   -- Make sure we didn't get the signal.
   assert(not got_sigchild)
@@ -81,7 +89,7 @@ assert(apr.signal_block 'SIGCHLD')
 assert(apr.signal_unblock 'SIGCHLD')
 
   -- Create and kill a child process.
-  assert(os.execute 'lua -e "os.exit(0)"' == 0)
+  spawn()
 
   -- Make sure we got the signal.
   assert(got_sigchild)
@@ -91,7 +99,7 @@ apr.signal('SIGCHLD', nil)
 got_sigchild = false
 
   -- Create and then kill a child process.
-  assert(os.execute 'lua -e "os.exit(0)"' == 0)
+  spawn()
 
   -- Make sure the old signal handler was not executed.
   assert(not got_sigchild)
