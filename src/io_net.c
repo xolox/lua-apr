@@ -1,7 +1,7 @@
 /* Network I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: June 21, 2011
+ * Last Change: June 24, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -111,9 +111,10 @@ static apr_status_t socket_close_impl(lua_State *L, lua_apr_socket *socket)
  *
  * These are the valid values for the @family argument:
  *
- *  - `'inet'` to create a socket using the [IPv4] [ipv4] address family
+ *  - `'inet'` to create a socket using the [IPv4] [ipv4] address family (this
+ *    is the default)
  *  - `'inet6'` to create a socket using the [IPv6] [ipv6] address family
- *  - `'unspec'` to pick the system default type (this is the default)
+ *  - `'unspec'` to pick the system default type
  *
  * Note that `'inet6'` is only supported when `apr.socket_supports_ipv6` is
  * true.
