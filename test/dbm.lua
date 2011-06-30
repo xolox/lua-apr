@@ -3,7 +3,7 @@
  Unit tests for the DBM module of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: March 27, 2011
+ Last Change: June 30, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -36,7 +36,14 @@ checkdbm()
 assert(dbm:delete(dbmkey))
 assert(not dbm:fetch(dbmkey))
 assert(not dbm:firstkey())
+
 -- Test tostring(dbm).
 assert(tostring(dbm):find '^dbm %([x%x]+%)$')
 assert(dbm:close())
 assert(tostring(dbm):find '^dbm %(closed%)$')
+
+-- Cleanup.
+apr.file_remove(file1)
+if file2 then
+  apr.file_remove(file2)
+end

@@ -3,7 +3,7 @@
  Test infrastructure for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: June 16, 2011
+ Last Change: June 30, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -88,12 +88,20 @@ end
 local tmpnum = 1
 local tmpdir = assert(apr.temp_dir_get())
 
+local function tmpname(tmpnum)
+  return apr.filepath_merge(tmpdir, 'lua-apr-tempfile-' .. tmpnum)
+end
+
 function helpers.tmpname() -- {{{1
-  local name = 'lua-apr-tempfile-' .. tmpnum
-  local file = apr.filepath_merge(tmpdir, name)
-  apr.file_remove(file)
+  local file = tmpname(tmpnum)
   tmpnum = tmpnum + 1
   return file
+end
+
+function helpers.cleanup() -- {{{1
+  for i = 1, tmpnum do
+    apr.file_remove(tmpname(i))
+  end
 end
 
 function helpers.readfile(path) -- {{{1

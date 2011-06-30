@@ -3,7 +3,7 @@
  Driver script for the unit tests of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: June 21, 2011
+ Last Change: June 30, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -89,6 +89,10 @@ return function()
     collectgarbage 'collect'
     collectgarbage 'collect'
   end
+
+  -- Cleanup temporary files.
+  helpers.cleanup()
+
   helpers.message "Done!\n"
 
   -- Exit the interpreter (started with lua -e "require 'apr.test' ()").
