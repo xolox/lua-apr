@@ -63,7 +63,7 @@ The easiest way to download, build & install the Lua/APR binding is to use [LuaR
 
 You can also get the rockspec and sources directly from the author's website (may be more recent):
 
-    $ luarocks install http://peterodding.com/code/lua/apr/downloads/lua-apr-0.19.4-1.rockspec
+    $ luarocks install http://peterodding.com/code/lua/apr/downloads/lua-apr-0.19.5-1.rockspec
 
 If you have git installed you can also download and install the latest sources directly from [GitHub] [github]:
 
@@ -82,9 +82,9 @@ If you don't have LuaRocks installed the following shell commands should help yo
     $ if which git; then # Get the latest sources using `git'?
     $   git clone git://github.com/xolox/lua-apr.git
     $ else # Or get the most recently released archive using `wget'.
-    $   wget http://peterodding.com/code/lua/apr/downloads/lua-apr-0.19.4-1.zip
-    $   unzip lua-apr-0.19.4-1.zip
-    $   mv lua-apr-0.19.4-1 lua-apr
+    $   wget http://peterodding.com/code/lua/apr/downloads/lua-apr-0.19.5-1.zip
+    $   unzip lua-apr-0.19.5-1.zip
+    $   mv lua-apr-0.19.5-1 lua-apr
     $ fi
     $ cd lua-apr
     $ sudo make install_deps # installs build & runtime dependencies for Debian/Ubuntu
