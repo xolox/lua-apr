@@ -1,12 +1,14 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: June 21, 2011
+# Last Change: July 1, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
 # This makefile has been tested on Ubuntu Linux 10.04 after installing the
 # external dependencies using the `install_deps' target (see below).
+#
+# TODO Automatically check whether libapreq2 is available?
 
 VERSION = $(shell grep _VERSION src/apr.lua | cut "-d'" -f2)
 RELEASE = 1
@@ -119,19 +121,15 @@ src/errno.c: etc/errors.lua Makefile
 	@lua etc/errors.lua > src/errno.c.new && mv -f src/errno.c.new src/errno.c || true
 
 # Install the Lua/APR binding under $LUA_DIR.
-install: $(BINARY_MODULE)
+install: $(BINARY_MODULE) docs
 	mkdir -p $(LUA_SHAREDIR)/apr/test
 	cp $(SOURCE_MODULE) $(LUA_SHAREDIR)/apr.lua
 	cp test/*.lua $(LUA_SHAREDIR)/apr/test
 	mkdir -p $(LUA_LIBDIR)/apr
 	cp $(BINARY_MODULE) $(LUA_LIBDIR)/apr/$(BINARY_MODULE)
-	if [ -e $(APREQ_BINARY) ]; then cp $(APREQ_BINARY) $(LUA_LIBDIR)/$(APREQ_BINARY); fi
-	make --no-print-directory docs
-	if [ ! -d $(LUA_APR_DOCS) ]; then mkdir -p $(LUA_APR_DOCS); fi
-	cp docs.html $(LUA_APR_DOCS)/
-	lua etc/wrap.lua < README.md > $(LUA_APR_DOCS)/readme.html
-	lua etc/wrap.lua < NOTES.md > $(LUA_APR_DOCS)/notes.html
-	lua etc/wrap.lua < TODO.md > $(LUA_APR_DOCS)/todo.html
+	[ ! -f $(APREQ_BINARY) ] || cp $(APREQ_BINARY) $(LUA_LIBDIR)/$(APREQ_BINARY)
+	[ -d $(LUA_APR_DOCS) ] || mkdir -p $(LUA_APR_DOCS)
+	cd doc && cp docs.html notes.html readme.html todo.html $(LUA_APR_DOCS)
 
 # Remove previously installed files.
 uninstall:
@@ -156,8 +154,12 @@ coverage:
 
 # Generate HTML documentation from Markdown embedded in source code.
 docs: etc/docs.lua $(SOURCE_MODULE) $(SOURCES)
-	@lua etc/docs.lua > docs.md
-	@lua etc/wrap.lua < docs.md > docs.html
+	[ -d doc ] || mkdir doc
+	lua etc/docs.lua > doc/docs.md
+	lua etc/wrap.lua doc/docs.md doc/docs.html
+	lua etc/wrap.lua README.md doc/readme.html
+	lua etc/wrap.lua NOTES.md doc/notes.html
+	lua etc/wrap.lua TODO.md doc/todo.html
 
 # Install the build dependencies using Debian/Ubuntu packages.
 # FIXME The libreadline-dev isn't really needed here is it?!
@@ -185,10 +187,8 @@ package_prerequisites:
 zip_package: package_prerequisites
 	@rm -f $(PACKAGE).zip
 	@mkdir -p $(PACKAGE)/doc
-	@cp docs.html $(PACKAGE)/doc/apr.html
-	@lua etc/wrap.lua < README.md > $(PACKAGE)/doc/readme.html
-	@lua etc/wrap.lua < NOTES.md > $(PACKAGE)/doc/notes.html
-	@lua etc/wrap.lua < TODO.md > $(PACKAGE)/doc/todo.html
+	@cp doc/docs.html $(PACKAGE)/doc/apr.html
+	@cd doc && cp notes.html readme.html todo.html $(PACKAGE)/doc
 	@mkdir -p $(PACKAGE)/etc
 	@cp -a etc/buildbot.lua etc/docs.lua etc/errors.lua etc/wrap.lua $(PACKAGE)/etc
 	@mkdir -p $(PACKAGE)/benchmarks

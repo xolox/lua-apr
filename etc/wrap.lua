@@ -1,18 +1,44 @@
+--[[
+
+ Markdown processor for the Lua/APR binding.
+
+ Author: Peter Odding <peter@peterodding.com>
+ Last Change: June 30, 2011
+ Homepage: http://peterodding.com/code/lua/apr/
+ License: MIT
+
+ This Lua script takes two arguments, the first is the pathname of an existing
+ Markdown document and the second is the name of an HTML file to generate. The
+ script will transform the Markdown to HTML, syntax highlight snippets of Lua
+ source code using my LXSH module and wrap the output in a page template.
+
+]]
+
+-- Get the names of the input and output file.
+local infile, outfile = unpack(arg, 1, 2)
+assert(infile, "Missing source Markdown file as 1st argument")
+assert(outfile, "Missing target HTML file as 2nd argument")
+
 -- Load Markdown module (lua-discount or markdown.lua)
-status, markdown = pcall(require, 'discount')
+local status, markdown = pcall(require, 'discount')
 if not status then markdown = require 'markdown' end
-assert(markdown, "Failed to load Markdown filter")
+if not markdown then
+  io.stderr:write("Markdown not installed, can't update HTML files!\n")
+  os.exit()
+end
 
 -- Parse and convert the markdown to HTML.
-input = io.read('*all')
-title = input:match '^%s*#%s*([^\r\n]+)'
-content = markdown(input)
+assert(io.input(infile))
+local input = assert(io.read '*all')
+local title = assert(input:match '^%s*#%s*([^\r\n]+)', "Failed to match page title")
+local content = markdown(input)
 
 -- Workaround for bug in Discount :-(
 content = content:gsub('<code>&ndash;</code>', '<code>-</code>')
 
--- Syntax highlight snippets of Lua source code in the documentation.
-status, highlighter = pcall(require, 'lxsh.highlighters.lua')
+-- If my LXSH module is installed we will use it to syntax highlight
+-- the snippets of Lua source code in the Lua/APR documentation.
+local status, highlighter = pcall(require, 'lxsh.highlighters.lua')
 if status and highlighter then
   local html_entities = { amp = '&', lt = '<', gt = '>' }
   content = content:gsub('<pre>(.-)</pre>', function(block)
@@ -23,6 +49,7 @@ if status and highlighter then
 end
 
 -- Wrap the HTML in a standardized template.
+assert(io.output(outfile))
 io.write([[
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
 "http://www.w3.org/TR/html4/strict.dtd">
