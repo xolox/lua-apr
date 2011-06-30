@@ -14,7 +14,7 @@
 --]]
 
 local apr = require 'apr.core'
-apr._VERSION = '0.19.2'
+apr._VERSION = '0.19.3'
 
 -- apr.md5(input [, binary]) -> digest {{{1
 --

@@ -44,20 +44,18 @@ void *new_object(lua_State *L, lua_apr_objtype *T)
 
 void *prepare_reference(lua_apr_objtype *T, lua_apr_refobj *object)
 {
-  lua_apr_refobj *clone;
-  if (object->unmanaged)
-    return object;
-  if (object->reference == NULL) {
-    clone = malloc(T->objsize);
+  object = root_object(object);
+  if (object->reference == NULL && !object->unmanaged) {
+    lua_apr_refobj *clone = malloc(T->objsize);
     if (clone == NULL)
       return NULL;
     memcpy(clone, object, T->objsize);
-    object->reference = clone;
-    /* just being explicit */
-    clone->reference = NULL;
     clone->unmanaged = 1;
+    /* Unmanaged object is referenced from originating Lua state. */
+    object->reference = clone;
+    object_incref(object);
   }
-  return root_object(object);
+  return object;
 }
 
 /* create_reference() {{{1
