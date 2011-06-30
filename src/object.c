@@ -4,11 +4,16 @@
  * Last Change: June 30, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
- *
- * TODO Use apr_atomic_inc() / apr_atomic_dec() !
  */
 
 #include "lua_apr.h"
+
+static lua_apr_refobj *root_object(lua_apr_refobj *object)
+{
+  while (object->reference != NULL)
+    object = object->reference;
+  return object;
+}
 
 /* new_object() {{{1
  *
@@ -33,6 +38,8 @@ void *new_object(lua_State *L, lua_apr_objtype *T)
  * threads and/or Lua states by moving the object to unmanaged memory and
  * turning the original object into a reference to the object in unmanaged
  * memory. Returns the address of the object in unmanaged memory.
+ *
+ * XXX Note that this does not increment the reference count!
  */
 
 void *prepare_reference(lua_apr_objtype *T, lua_apr_refobj *object)
@@ -50,25 +57,27 @@ void *prepare_reference(lua_apr_objtype *T, lua_apr_refobj *object)
     clone->reference = NULL;
     clone->unmanaged = 1;
   }
-  return object->reference;
+  return root_object(object);
 }
 
-/* proxy_object() {{{1
+/* create_reference() {{{1
  *
  * Create an object of the given type which references another object. Returns
  * the address of the referenced object.
+ *
+ * XXX Note that this does not increment the reference count!
  */
 
-void *proxy_object(lua_State *L, lua_apr_objtype *T, lua_apr_refobj *original)
+void create_reference(lua_State *L, lua_apr_objtype *T, lua_apr_refobj *original)
 {
-  lua_apr_refobj *object, *reference;
-  if ((object = prepare_reference(T, original)) != NULL) {
-    reference = lua_newuserdata(L, sizeof(lua_apr_refobj));
-    reference->reference = object->reference;
-    reference->unmanaged = 0;
-    init_object(L, T);
-  }
-  return object;
+  lua_apr_refobj *reference;
+  /* Objects are never moved back from unmanaged to managed memory so we don't
+   * need to allocate a full structure here; we only need the fields defined in
+   * the lua_apr_refobj structure. */
+  reference = lua_newuserdata(L, sizeof *reference);
+  reference->reference = root_object(original);
+  reference->unmanaged = 0;
+  init_object(L, T);
 }
 
 /* init_object() {{{1
@@ -88,15 +97,18 @@ void init_object(lua_State *L, lua_apr_objtype *T)
 /* object_collectable() {{{1
  *
  * Check whether an object can be destroyed (if the reference count is more
- * than one the object will not be destroyed, instead just the reference will
- * be garbage collected).
+ * than one the object should not be destroyed, instead just the reference
+ * should be garbage collected).
+ *
+ * XXX Even though object_incref() and object_decref() use atomic operations
+ * this function can break the atomicity; it promises something it doesn't
+ * control. Whether this can be a problem in practice, I don't know...
  */
 
 int object_collectable(lua_apr_refobj *object)
 {
-  if (object->reference != NULL)
-    object = object->reference;
-  return object->refcount == 1;
+  object = root_object(object);
+  return apr_atomic_read32(&object->refcount) == 1;
 }
 
 /* release_object() {{{1
@@ -108,11 +120,9 @@ int object_collectable(lua_apr_refobj *object)
 
 void release_object(lua_apr_refobj *object)
 {
-  if (object->reference != NULL)
-    object = object->reference;
-  object->refcount--;
-  if (object->unmanaged && object->refcount == 0)
-    free(object);
+  object = root_object(object);
+  if (object_decref(object) && object->unmanaged)
+      free(object);
 }
 
 /* object_env_default() {{{1
@@ -173,45 +183,38 @@ int object_has_type(lua_State *L, int idx, lua_apr_objtype *T, int getmt)
 
 /* objects_equal() {{{1
  *
- * Check if two objects refer to the same unmanaged object.
+ * Check if two objects refer to the same unmanaged object. This is an
+ * implementation of the __eq metamethod for Lua/APR userdata objects.
  */
 
 int objects_equal(lua_State *L)
 {
   lua_apr_refobj *a, *b;
-  /* Redundant but explicit check for type. */
+
+  /* Get and compare the metatables. */
   lua_getmetatable(L, 1);
   lua_getmetatable(L, 2);
   if (lua_equal(L, -1, -2)) {
-    a = lua_touserdata(L, 1);
-    b = lua_touserdata(L, 2);
-    /* Compare the references. */
-    if (a->reference != NULL && a->reference == b->reference) {
-      lua_pushboolean(L, 1);
-      return 1;
-    }
-  }
-  lua_pushboolean(L, 0);
+    /* Compare the referenced objects. */
+    a = root_object(lua_touserdata(L, 1));
+    b = root_object(lua_touserdata(L, 2));
+    lua_pushboolean(L, a == b);
+  } else
+    lua_pushboolean(L, 0);
   return 1;
 }
 
 /* check_object() {{{1
  *
- * Check if the type of an object on the Lua stack matches the given type.
+ * Check if the type of a userdata object on the Lua stack matches the given
+ * Lua/APR type and return a pointer to the userdata object.
  */
 
 void *check_object(lua_State *L, int idx, lua_apr_objtype *T)
 {
-  if (object_has_type(L, idx, T, 1)) {
-    /* This is basically all that's needed to enable sharing userdata
-     * objects between operating system threads and Lua states.. :-) */
-    lua_apr_refobj *object = lua_touserdata(L, idx);
-    if (object->reference != NULL)
-      object = object->reference;
-    return object;
-  }
-  luaL_typerror(L, idx, T->typename);
-  return NULL;
+  if (!object_has_type(L, idx, T, 1))
+    luaL_typerror(L, idx, T->typename);
+  return root_object(lua_touserdata(L, idx));
 }
 
 /* get_metatable() {{{1
@@ -237,37 +240,33 @@ int get_metatable(lua_State *L, lua_apr_objtype *T)
 
 /* object_incref() {{{1
  *
- * Increment the reference count of an object. Returns the address of the
- * referenced object.
+ * Increment the reference count of an object.
  */
 
-void *object_incref(lua_apr_refobj *object)
+void object_incref(lua_apr_refobj *object)
 {
-  if (object->reference != NULL)
-    object = object->reference;
-  object->refcount++;
-  return object;
+  object = root_object(object);
+  apr_atomic_inc32(&object->refcount);
 }
 
 /* object_decref() {{{1
  *
- * Decrement the reference count on an object.
+ * Decrement the reference count of an object.
  * This does not destroy the object in any way!
  */
 
-int object_decref(void *ptr)
+int object_decref(lua_apr_refobj *object)
 {
-  lua_apr_refobj *object;
-
-  object = ptr;
-  object->refcount--;
-
-  return object->refcount == 0;
+  object = root_object(object);
+  return apr_atomic_dec32(&object->refcount) == 0;
 }
 
 /* refpool_alloc() {{{1
  *
- * Allocate a reference counted APR memory pool.
+ * Allocate a reference counted APR memory pool that can be shared between
+ * multiple Lua/APR objects in the same Lua state and OS thread (that is to say
+ * no synchronization or atomic instructions are). The memory pool is destroyed
+ * when the last reference is released.
  */
 
 lua_apr_pool *refpool_alloc(lua_State *L)

@@ -1,7 +1,7 @@
 /* Multi threading module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: June 16, 2011
+ * Last Change: June 30, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -165,12 +165,8 @@ int lua_apr_thread_create(lua_State *L)
 
   luaL_checktype(L, 1, LUA_TSTRING);
 
-  /* Create the Lua/APR thread object.
-   * TODO Move this logic to the object model? */
+  /* Create the Lua/APR thread object. */
   thread = new_object(L, &lua_apr_thread_type);
-  if (thread == NULL)
-    goto fail;
-  thread = prepare_reference(&lua_apr_thread_type, (lua_apr_refobj*)thread);
   if (thread == NULL)
     goto fail;
   thread->status = TS_INIT;

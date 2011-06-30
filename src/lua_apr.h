@@ -1,7 +1,7 @@
 /* Header file for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: June 23, 2011
+ * Last Change: June 30, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -23,6 +23,7 @@
 #include <apr_file_io.h>
 #include <apr_thread_proc.h>
 #include <apr_queue.h>
+#include <apr_atomic.h>
 
 /* Macro definitions. {{{1 */
 
@@ -130,7 +131,8 @@
 typedef struct lua_apr_refobj lua_apr_refobj;
 struct lua_apr_refobj {
   lua_apr_refobj *reference;
-  int refcount, unmanaged;
+  volatile apr_uint32_t refcount;
+  int unmanaged;
 };
 
 /* Reference counted APR memory pool. */
@@ -339,6 +341,7 @@ apr_pool_t *to_pool(lua_State*);
 /* object.c */
 void *new_object(lua_State*, lua_apr_objtype*);
 void *prepare_reference(lua_apr_objtype*, lua_apr_refobj*);
+void create_reference(lua_State*, lua_apr_objtype*, lua_apr_refobj*);
 void init_object(lua_State*, lua_apr_objtype*);
 int object_collectable(lua_apr_refobj*);
 void release_object(lua_apr_refobj*);
@@ -348,9 +351,8 @@ int object_has_type(lua_State*, int, lua_apr_objtype*, int);
 int objects_equal(lua_State*);
 void *check_object(lua_State*, int, lua_apr_objtype*);
 int get_metatable(lua_State*, lua_apr_objtype*);
-void *object_incref(lua_apr_refobj*);
-void *proxy_object(lua_State*, lua_apr_objtype*, lua_apr_refobj*);
-int object_decref(void*);
+void object_incref(lua_apr_refobj*);
+int object_decref(lua_apr_refobj*);
 lua_apr_pool *refpool_alloc(lua_State*);
 apr_pool_t* refpool_incref(lua_apr_pool*);
 void refpool_decref(lua_apr_pool*);

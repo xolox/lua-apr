@@ -194,16 +194,13 @@ int push_tuple(lua_State *L, void *tuple)
       }
       case TV_OBJECT: {
         lua_apr_objtype *objtype;
-        lua_apr_refobj *object, *reference;
+        lua_apr_refobj *object;
         ptr += sizeof(packed_type);
         memcpy(&objtype, ptr, sizeof objtype);
         ptr += sizeof objtype;
         memcpy(&object, ptr, sizeof object);
         ptr += sizeof object;
-        reference = lua_newuserdata(L, sizeof(lua_apr_refobj));
-        reference->reference = object;
-        reference->unmanaged = 0;
-        init_object(L, objtype);
+        create_reference(L, objtype, object);
         break;
       }
       default:
