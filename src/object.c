@@ -50,10 +50,9 @@ void *prepare_reference(lua_apr_objtype *T, lua_apr_refobj *object)
     if (clone == NULL)
       return NULL;
     memcpy(clone, object, T->objsize);
+    apr_atomic_set32(&clone->refcount, 1);
     clone->unmanaged = 1;
-    /* Unmanaged object is referenced from originating Lua state. */
     object->reference = clone;
-    object_incref(object);
   }
   return object;
 }
