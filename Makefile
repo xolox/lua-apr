@@ -7,8 +7,6 @@
 #
 # This makefile has been tested on Ubuntu Linux 10.04 after installing the
 # external dependencies using the `install_deps' target (see below).
-#
-# TODO Automatically check whether libapreq2 is available?
 
 VERSION = $(shell grep _VERSION src/apr.lua | cut "-d'" -f2)
 RELEASE = 1
@@ -116,7 +114,7 @@ $(OBJECTS): %.o: %.c src/lua_apr.h Makefile
 
 # Always try to regenerate the error handling module.
 src/errno.c: etc/errors.lua Makefile
-	@lua etc/errors.lua > src/errno.c.new && mv -f src/errno.c.new src/errno.c || true
+	@lua etc/errors.lua
 
 # Install the Lua/APR binding under $LUA_DIR.
 install: $(BINARY_MODULE) docs

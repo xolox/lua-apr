@@ -3,7 +3,7 @@
  Error handling code generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: March 26, 2011
+ Last Change: July 1, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -59,7 +59,7 @@ Failed to determine where apr_errno.h is defined! This means the error
 handling module can't be regenerated, but don't worry: The Lua/APR
 repository includes a generated "errno.c" for just these situations.
 ]]
-  os.exit(1)
+  return
 end
 
 -- Parse the header file. {{{1
@@ -117,9 +117,12 @@ end
 
 -- Generate the error handling module's source code. {{{1
 
+local tempfile = assert(os.tmpname())
+local handle = assert(io.open(tempfile, 'w'))
+
 -- Documentation. {{{2
 
-io.write([[
+handle:write([[
 /* Error handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
@@ -201,16 +204,16 @@ void status_to_name(lua_State *L, apr_status_t status)
   switch (status) {
 ]])
 
--- }}}2
+-- Dynamically generated source code. {{{2
 
 local template = '    case %s: %slua_pushliteral(L, %q); %sreturn;\n'
 for i, constant in ipairs(constants) do
   local name = constant:gsub('^APR_', '')
   local padding = string.rep(' ', longest_constant - #constant)
-  io.write(template:format(constant, padding, name, padding))
+  handle:write(template:format(constant, padding, name, padding))
 end
 
-io.write [[
+handle:write [[
   }
 
   /* If the switch statement fails we fall back to the following monstrosity :-) */
@@ -221,13 +224,34 @@ local template = '  else if (%s(status)) %s{ lua_pushliteral(L, %q); %sreturn; }
 for i, test in ipairs(tests) do
   local name = test:gsub('^APR_STATUS_IS_', '')
   local padding = string.rep(' ', longest_test - #test)
-  io.write(template:format(test, padding, name, padding))
+  handle:write(template:format(test, padding, name, padding))
 end
 
-io.write [[
+handle:write [[
 
   /* This might be a bug in the script that generated this source code? */
   LUA_APR_DBG("Lua/APR status_to_name(%i) failed, might be a bug?", status);
   lua_pushinteger(L, status);
 }
 ]]
+
+-- Only replace the file if it has changed. {{{2
+
+assert(handle:close())
+
+local function getsrc(path)
+  local handle = io.open(path)
+  if handle then
+    local source = assert(handle:read '*a')
+    assert(handle:close())
+    return source:gsub('Last Change: [^\n]+', '')
+  end
+end
+
+if getsrc(tempfile) == getsrc 'src/errno.c' then
+  -- Either nothing or just the date changed.
+  io.stderr:write("Up to date!\n")
+  os.remove(tempfile)
+else
+  assert(os.rename(tempfile, 'src/errno.c'))
+end
