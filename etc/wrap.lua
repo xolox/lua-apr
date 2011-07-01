@@ -3,7 +3,7 @@
  Markdown processor for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: June 30, 2011
+ Last Change: July 1, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -21,8 +21,10 @@ assert(outfile, "Missing target HTML file as 2nd argument")
 
 -- Load Markdown module (lua-discount or markdown.lua)
 local status, markdown = pcall(require, 'discount')
-if not status then markdown = require 'markdown' end
-if not markdown then
+if not status then
+  status, markdown = pcall(require, 'markdown')
+end
+if not status then
   io.stderr:write("Markdown not installed, can't update HTML files!\n")
   os.exit()
 end

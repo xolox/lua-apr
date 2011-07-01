@@ -36,42 +36,48 @@
 
 ## How to get and install the module
 
-You can find the source code of the most recently released version under [downloads][srcdl]. The source code is also available online in the [GitHub repository][github]. There are [Windows binaries][winbin] available that have been tested with [Lua for Windows][lfw] v5.1.4-40. You can also build the Lua/APR binding yourself. Here are your options:
+You can find the source code of the most recently released version under [downloads][srcdl]. The source code is also available online in the [GitHub repository][github]. There are [Windows binaries][winbin] available that have been tested with [Lua for Windows][lfw] v5.1.4-40 and there is an offical Debian Linux package. You can also build the Lua/APR binding yourself using the instructions below.
 
 [srcdl]: http://peterodding.com/code/lua/apr/downloads
 [github]: http://github.com/xolox/lua-apr
 [winbin]: http://peterodding.com/code/lua/apr/downloads/lua-apr-0.19-win32.zip
 [lfw]: http://code.google.com/p/luaforwindows/
 
-### Install the Debian/Ubuntu package
+### Install using Debian package
 
-I've setup an experimental Debian package repository to make it easier to install the Lua/APR binding on Debian and Ubuntu. The following commands should help you get started ([see here for a detailed explanation][debrepo]):
+The Lua/APR binding has an official Debian package which is available in [wheezy (testing)] [wheezy], [sid (unstable)] [sid] and Ubuntu [Oneiric Ocelot (11.10)] [oneiric]. If you are running any of those (or a newer release) the following commands should get you started:
 
-    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 6CD27CBF
-    sudo sh -c 'echo deb http://peterodding.com/code/lua/apr/packages ./ >> /etc/apt/sources.list'
-    sudo apt-get update
-    sudo apt-get install --no-install-recommends lua-apr
-    lua -e "require 'apr.test' ()"
+    $ apt-get install liblua5.1-apr1
+    $ lua -e "require 'apr.test' ()"
 
-[debrepo]: http://peterodding.com/code/lua/apr/packages/
+If you are running an older Debian release or a derivative of Debian which doesn't have the official package yet, you may be able to download and install one of the Debian packages manually from one of the three pages linked above.
+
+[wheezy]: http://packages.debian.org/source/wheezy/lua-apr
+[sid]: http://packages.debian.org/source/sid/lua-apr
+[oneiric]: http://packages.ubuntu.com/source/oneiric/lua-apr
 
 ### Build on UNIX using LuaRocks
 
-The easiest way to download, build & install the Lua/APR binding is to use [LuaRocks] [lr]. The following command will install the Lua/APR binding from the main repository:
+The easiest way to download, build & install the Lua/APR binding is to use [LuaRocks] [lr]. The following commands will install the Lua/APR binding from the main repository and run the test suite to make sure everything works:
 
     $ luarocks install lua-apr
+    $ lua -e "require 'apr.test' ()"
 
-You can also get the rockspec and sources directly from the author's website (may be more recent):
+If LuaRocks fails to build the Lua/APR binding this is likely because of missing dependencies. Lua/APR depends on the APR, APR-util and libapreq2 system libraries but LuaRocks cannot install these because it only deals with Lua modules. How to install these system libraries depends on your choice of operating system and distribution, for example on Debian Linux and derivatives like Ubuntu you can use the following command:
 
-    $ luarocks install http://peterodding.com/code/lua/apr/downloads/lua-apr-0.19.5-1.rockspec
+    $ apt-get install libapr1 libapr1-dev libaprutil1 libaprutil1-dev \
+        libaprutil1-dbd-sqlite3 libapreq2 libapreq2-dev lua5.1 \
+        liblua5.1-0 liblua5.1-0-dev libreadline-dev
+
+As a general guideline for other systems and package managers, you'll need the binary and development packages of Lua 5.1, APR, APR-util and libapreq2.
+
+The latest rockspec and sources are also available from the author's website (in case the main LuaRocks repository is unavailable or lagging behind):
+
+    $ luarocks install http://peterodding.com/code/lua/apr/downloads/lua-apr-0.19.6-1.rockspec
 
 If you have git installed you can also download and install the latest sources directly from [GitHub] [github]:
 
     $ luarocks install http://peterodding.com/code/lua/apr/downloads/lua-apr-scm-1.rockspec
-
-After installing the library you can run the test suite by executing:
-
-    $ lua -e "require 'apr.test' ()"
 
 [lr]: http://luarocks.org/
 
@@ -82,9 +88,9 @@ If you don't have LuaRocks installed the following shell commands should help yo
     $ if which git; then # Get the latest sources using `git'?
     $   git clone git://github.com/xolox/lua-apr.git
     $ else # Or get the most recently released archive using `wget'.
-    $   wget http://peterodding.com/code/lua/apr/downloads/lua-apr-0.19.5-1.zip
-    $   unzip lua-apr-0.19.5-1.zip
-    $   mv lua-apr-0.19.5-1 lua-apr
+    $   wget http://peterodding.com/code/lua/apr/downloads/lua-apr-0.19.6-1.zip
+    $   unzip lua-apr-0.19.6-1.zip
+    $   mv lua-apr-0.19.6-1 lua-apr
     $ fi
     $ cd lua-apr
     $ sudo make install_deps # installs build & runtime dependencies for Debian/Ubuntu

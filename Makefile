@@ -129,16 +129,18 @@ install: $(BINARY_MODULE) docs
 	cp $(BINARY_MODULE) $(LUA_LIBDIR)/apr/$(BINARY_MODULE)
 	[ ! -f $(APREQ_BINARY) ] || cp $(APREQ_BINARY) $(LUA_LIBDIR)/$(APREQ_BINARY)
 	[ -d $(LUA_APR_DOCS) ] || mkdir -p $(LUA_APR_DOCS)
-	cd doc && cp docs.html notes.html readme.html todo.html $(LUA_APR_DOCS)
+	cp doc/docs.html doc/notes.html doc/readme.html doc/todo.html $(LUA_APR_DOCS)
 
 # Remove previously installed files.
 uninstall:
 	rm -f $(LUA_SHAREDIR)/apr.lua
 	rm -fR $(LUA_SHAREDIR)/apr/test
 	rm -fR $(LUA_LIBDIR)/apr
+	cd $(LUA_APR_DOCS) && rm -r docs.html notes.html readme.html todo.html
+	rmdir $(LUA_APR_DOCS) 2>/dev/null || true
 
 # Run the test suite.
-test: $(BINARY_MODULE)
+test: install
 	export LD_PRELOAD=/lib/libSegFault.so; lua -e "require 'apr.test' ()"
 
 # Run the test suite under Valgrind to detect and analyze errors.
@@ -152,43 +154,45 @@ coverage:
 	lcov -d src -b . --capture --output-file etc/coverage/lua-apr.info
 	genhtml -o etc/coverage etc/coverage/lua-apr.info
 
-# Generate HTML documentation from Markdown embedded in source code.
-docs: etc/docs.lua $(SOURCE_MODULE) $(SOURCES)
-	[ -d doc ] || mkdir doc
-	lua etc/docs.lua > doc/docs.md
-	lua etc/wrap.lua doc/docs.md doc/docs.html
-	lua etc/wrap.lua README.md doc/readme.html
-	lua etc/wrap.lua NOTES.md doc/notes.html
-	lua etc/wrap.lua TODO.md doc/todo.html
+# Convert the Markdown documents to HTML.
+docs: doc/docs.md $(SOURCE_MODULE) $(SOURCES)
+	@lua etc/wrap.lua doc/docs.md doc/docs.html
+	@lua etc/wrap.lua README.md doc/readme.html
+	@lua etc/wrap.lua NOTES.md doc/notes.html
+	@lua etc/wrap.lua TODO.md doc/todo.html
+
+# Extract the documentation from the source code and generate a Markdown file
+# containing all documentation including coverage statistics (if available).
+# XXX This file won't be regenerated automatically because A) the documentation
+# in the ZIP archives I release contains coverage statistics that cannot be
+# generated without first building and installing a profiling release and
+# running the test suite and B) new users certainly won't know how to generate
+# coverage statistics which means "make install" would overwrite the existing
+# documentation and lose the coverage statistics...
+doc/docs.md: etc/docs.lua
+	@[ -d doc ] || mkdir doc
+	@lua etc/docs.lua > doc/docs.md
 
 # Install the build dependencies using Debian/Ubuntu packages.
 # FIXME The libreadline-dev isn't really needed here is it?!
 install_deps:
 	apt-get install libapr1 libapr1-dev libaprutil1 libaprutil1-dev \
 		libaprutil1-dbd-sqlite3 libapreq2 libapreq2-dev lua5.1 \
-		liblua5.1-0 liblua5.1-0-dev libreadline-dev luarocks
-	luarocks install lua-discount
-	luarocks install http://peterodding.com/code/lua/lxsh/downloads/lxsh-0.6.1-1.rockspec
-
-# Prepare a source ZIP archive and a Debian package 
-package: zip_package rockspec deb_package
+		liblua5.1-0 liblua5.1-0-dev libreadline-dev
 
 # Create a profiling build, run the test suite, generate documentation
 # including test coverage, then clean the intermediate files.
-package_prerequisites:
+package_prerequisites: clean
 	@echo Collecting coverage statistics using profiling build
-	@make --no-print-directory clean
 	@export PROFILING=1; lua etc/buildbot.lua --local
 	@echo Generating documentation including coverage statistics
 	@make --no-print-directory docs
-	@make --no-print-directory clean
 
 # Prepare a source ZIP archive from which Lua/APR can be build.
 zip_package: package_prerequisites
 	@rm -f $(PACKAGE).zip
 	@mkdir -p $(PACKAGE)/doc
-	@cp doc/docs.html $(PACKAGE)/doc/apr.html
-	@cd doc && cp notes.html readme.html todo.html $(PACKAGE)/doc
+	@cp doc/docs.html doc/notes.html doc/readme.html doc/todo.html $(PACKAGE)/doc
 	@mkdir -p $(PACKAGE)/etc
 	@cp -a etc/buildbot.lua etc/docs.lua etc/errors.lua etc/wrap.lua $(PACKAGE)/etc
 	@mkdir -p $(PACKAGE)/benchmarks
@@ -213,35 +217,13 @@ rockspec: zip_package
 		> lua-apr-$(VERSION)-$(RELEASE).rockspec
 	@echo Generated $(PACKAGE).rockspec
 
-# Create a Debian package using "checkinstall".
-deb_package: package_prerequisites
-	@echo "Lua/APR is a binding to the Apache Portable Runtime (APR) library." > description-pak
-	@echo "APR powers software such as the Apache webserver and Subversion and" >> description-pak
-	@echo "Lua/APR makes the APR operating system interfaces available to Lua." >> description-pak
-	@make --no-print-directory clean
-	@make --no-print-directory DO_RELEASE=1
-	checkinstall \
-		--default \
-		--backup=no \
-		--type=debian \
-		--pkgname=lua-apr \
-		--pkgversion=$(VERSION) \
-		--pkgrelease=$(RELEASE) \
-		--pkglicense=MIT \
-		--pkggroup=interpreters \
-		'--requires=libapr1,libaprutil1,libaprutil1-dbd-sqlite3,libapreq2' \
-		'--maintainer="Peter Odding <peter@peterodding.com>"' \
-		make install LUA_DIR=/usr
-	@rm -R description-pak doc-pak/
-
 # Clean generated files from working directory.
 clean:
-	@rm -Rf $(BINARY_MODULE) $(OBJECTS) etc/coverage
-	@rm -f $(APREQ_BINARY)
-	@lcov -q -z -d . || true
-	@rm -f src/*.gcov src/*.gcno
+	@rm -Rf $(OBJECTS) $(BINARY_MODULE) $(APREQ_BINARY)
+	@rm -f src/*.gcov src/*.gcno etc/coverage doc/docs.md
+	@git checkout src/errno.c 2>/dev/null || true
 
 .PHONY: install uninstall test valgrind coverage docs install_deps package \
-	package_prerequisites zip_package rockspec deb_package clean
+	package_prerequisites zip_package rockspec clean
 
 # vim: ts=4 sw=4 noet
