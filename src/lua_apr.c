@@ -1,7 +1,7 @@
 /* Miscellaneous functions module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: June 23, 2011
+ * Last Change: July 1, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -95,7 +95,7 @@ LUA_APR_EXPORT int luaopen_apr_core(lua_State *L)
     /* getopt.c -- command argument parsing. */
     { "getopt", lua_apr_getopt },
 
-#   ifndef LUA_APR_DISABLE_APREQ
+#   if LUA_APR_HAVE_APREQ
     /* http.c -- HTTP request parsing. */
     { "parse_headers", lua_apr_parse_headers },
     { "parse_multipart", lua_apr_parse_multipart },

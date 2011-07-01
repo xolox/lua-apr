@@ -1,7 +1,7 @@
 # This is the Windows makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: June 21, 2011
+# Last Change: July 1, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -54,6 +54,7 @@ OBJECTS = src\base64.obj \
 		  src\filepath.obj \
 		  src\fnmatch.obj \
 		  src\getopt.obj \
+		  src\http.obj \
 		  src\io_dir.obj \
 		  src\io_file.obj \
 		  src\io_net.obj \
@@ -86,11 +87,8 @@ LFLAGS = $(LFLAGS) /debug
 !ENDIF
 
 # Experimental support for HTTP request parsing using libapreq2.
-!IFNDEF DISABLE_APREQ
-OBJECTS = $(OBJECTS) src\http.obj
-CFLAGS = $(CFLAGS) "/I$(APREQ_INCDIR)" /DLUA_APR_ENABLE_APREQ
+CFLAGS = $(CFLAGS) "/I$(APREQ_INCDIR)" /DLUA_APR_HAVE_APREQ=1
 LFLAGS = $(LFLAGS) "/LIBPATH:$(APREQ_LIBDIR)" libapreq2.lib
-!ENDIF
 
 # Build the binary module.
 $(BINARY_MODULE): $(OBJECTS) Makefile

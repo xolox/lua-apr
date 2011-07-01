@@ -40,6 +40,7 @@ SOURCES = src/base64.c \
 		  src/filepath.c \
 		  src/fnmatch.c \
 		  src/getopt.c \
+		  src/http.c \
 		  src/io_dir.c \
 		  src/io_file.c \
 		  src/io_net.c \
@@ -93,13 +94,10 @@ override LFLAGS += -fprofile-arcs
 endif
 
 # Experimental support for HTTP request parsing using libapreq2.
-ifndef DISABLE_APREQ
-override SOURCES += src/http.c
-override CFLAGS += $(shell apreq2-config --includes)
-override LFLAGS += $(shell apreq2-config --link-ld)
-else
-override CFLAGS += -DLUA_APR_DISABLE_APREQ
-endif
+HAVE_APREQ = $(shell which apreq2-config >/dev/null && echo 1 || echo 0)
+override CFLAGS += -DLUA_APR_HAVE_APREQ=$(HAVE_APREQ)
+override CFLAGS += $(shell apreq2-config --includes 2>/dev/null)
+override LFLAGS += $(shell apreq2-config --link-ld 2>/dev/null)
 
 # Names of compiled object files.
 OBJECTS = $(patsubst %.c,%.o,$(SOURCES))

@@ -1,13 +1,13 @@
 /* HTTP request parsing module for the Lua/APR binding
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: February 27, 2011
+ * Last Change: July 1, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
  * This module is an experimental binding to the [apreq2] [apreq2] library
  * which enables [HTTP] [http] request parsing of [query strings] [qstrings],
- * [headers] [headers] and [multipart] [multipart] messages. Some general notes
+ * [headers] [headers] and [multipart messages] [multipart]. Some general notes
  * about the functions in this module:
  *
  *  - None of the extracted strings (except maybe for request bodies) are
@@ -58,6 +58,8 @@
  *  - apreq_quote_once()
  *  - apreq_charset_divine()
  */
+
+#if LUA_APR_HAVE_APREQ
 
 #include "lua_apr.h"
 #include <apreq_error.h>
@@ -498,3 +500,5 @@ int lua_apr_uri_decode(lua_State *L)
   lua_pushlstring(L, string, strlen);
   return 1;
 }
+
+#endif

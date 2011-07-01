@@ -34,7 +34,7 @@
  * [Character encoding translation](http://peterodding.com/code/lua/apr/docs/#character_encoding_translation)
  * [XML parsing](http://peterodding.com/code/lua/apr/docs/#xml_parsing)
 
-## How to get and install the module
+## How to get and install the binding
 
 You can find the source code of the most recently released version under [downloads][srcdl]. The source code is also available online in the [GitHub repository][github]. There are [Windows binaries][winbin] available that have been tested with [Lua for Windows][lfw] v5.1.4-40 and there is an offical Debian Linux package. You can also build the Lua/APR binding yourself using the instructions below.
 
