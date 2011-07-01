@@ -9,6 +9,9 @@
 #include "lua_apr.h"
 #include <apr_portable.h>
 #include <ctype.h>
+#if LUA_APR_HAVE_APREQ
+#include <apreq_version.h>
+#endif
 
 /* Used to make sure that APR is only initialized once. */
 static int apr_was_initialized = 0;
@@ -268,22 +271,33 @@ int lua_apr_platform_get(lua_State *L)
   return 1;
 }
 
-/* apr.version_get() -> apr_version [, apu_version] {{{1
+/* apr.version_get() -> versions_table {{{1
  *
- * Get the version number of the Apache Portable Runtime as a string. The
- * string contains three numbers separated by dots. These numbers have the
- * following meaning:
+ * Get the versions of the libraries used by the Lua/APR binding.
+ * Returns a table with one or more of the following fields:
  *
- *  - The 1st number is used for major [API] [api] changes that can cause
- *    compatibility problems between the Lua/APR binding and APR library
- *  - The 2nd number is used for minor API changes that shouldn't impact
- *    existing functionality in the Lua/APR binding
- *  - The 3rd number is used exclusively for bug fixes
+ *  - **apr**: The version of the Apache Portable Runtime library. This field
+ *    is always available.
  *
- * The second return value, the version number of the APR utility library, is
- * only available when Lua/APR is compiled against APR 1.x because in APR 2.x
- * the utility library has been absorbed back into the APR library; there is no
- * longer a distinction between the APR core and APR utility libraries.
+ *  - **aprutil**: The version of the APR utility library. This field is only
+ *    available when Lua/APR is compiled against APR and APR-util 1.x because
+ *    in version 2.x the utility library has been absorbed back into the APR
+ *    library; there is no longer a distinction between the APR core and APR
+ *    utility libraries.
+ *
+ *  - **apreq**: The version of the HTTP request parsing library. This field is
+ *    only available when the libapreq2 library is installed.
+ *
+ * Each field is a string containing three numbers separated by dots. These
+ * numbers have the following meaning:
+ *
+ * 1. Major [API] [api] changes that can cause compatibility problems between
+ *    the Lua/APR binding and APR library
+ *
+ * 2. Minor API changes that shouldn't impact existing functionality in the
+ *    Lua/APR binding
+ *
+ * 3. Used exclusively for bug fixes
  *
  * This function can be useful when you want to know whether a certain bug fix
  * has been applied to APR and/or APR-util or if you want to report a bug in
@@ -298,13 +312,18 @@ int lua_apr_platform_get(lua_State *L)
 
 int lua_apr_version_get(lua_State *L)
 {
+  lua_newtable(L);
   lua_pushstring(L, apr_version_string());
+  lua_setfield(L, -2, "apr");
 # if APR_MAJOR_VERSION < 2
   lua_pushstring(L, apu_version_string());
-  return 2;
-# else
-  return 1;
+  lua_setfield(L, -2, "aprutil");
 # endif
+# if LUA_APR_HAVE_APREQ
+  lua_pushstring(L, apreq_version_string());
+  lua_setfield(L, -2, "apreq");
+# endif
+  return 1;
 }
 
 /* apr.os_default_encoding() -> name {{{1
