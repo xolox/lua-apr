@@ -1,7 +1,7 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: July 1, 2011
+# Last Change: July 3, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -43,6 +43,7 @@ SOURCES = src/base64.c \
 		  src/io_file.c \
 		  src/io_net.c \
 		  src/io_pipe.c \
+		  src/ldap.c \
 		  src/lua_apr.c \
 		  src/memcache.c \
 		  src/memory_pool.c \
@@ -76,7 +77,7 @@ override CFLAGS += \
  $(shell apu-1-config --includes 2>/dev/null || pkg-config --cflags apr-util-1)
 override LFLAGS += \
  $(shell apr-1-config --link-ld --libs 2>/dev/null || pkg-config --libs apr-1) \
- $(shell apu-1-config --link-ld --libs 2>/dev/null || pkg-config --libs apr-util-1)
+ $(shell apu-1-config --link-ld --libs --ldap-libs 2>/dev/null || pkg-config --libs apr-util-1)
 
 # Create debug builds by default but enable release
 # builds using the command line "make DO_RELEASE=1".
@@ -182,7 +183,7 @@ package_prerequisites: clean
 	@echo Collecting coverage statistics using profiling build
 	@export PROFILING=1; lua etc/buildbot.lua --local
 	@echo Generating documentation including coverage statistics
-	@make --no-print-directory docs
+	@rm -f doc/docs.md; make --no-print-directory docs
 
 # Prepare a source ZIP archive from which Lua/APR can be build.
 zip_package: package_prerequisites
@@ -215,8 +216,7 @@ rockspec: zip_package
 
 # Clean generated files from working directory.
 clean:
-	@rm -Rf $(OBJECTS) $(BINARY_MODULE) $(APREQ_BINARY)
-	@rm -f src/*.gcov src/*.gcno etc/coverage doc/docs.md
+	@rm -Rf $(OBJECTS) $(BINARY_MODULE) $(APREQ_BINARY) doc/docs.md
 	@git checkout src/errno.c 2>/dev/null || true
 
 .PHONY: install uninstall test valgrind coverage docs install_deps package \

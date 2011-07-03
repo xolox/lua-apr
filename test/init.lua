@@ -3,7 +3,7 @@
  Driver script for the unit tests of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: June 30, 2011
+ Last Change: July 2, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -35,6 +35,7 @@ local modules = {
   'io_dir',
   'io_file',
   'io_net',
+  'ldap',
   'memcache',
   'misc',
   'proc',

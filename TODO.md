@@ -20,7 +20,6 @@
 ## Anything else?
 
  * Propose the [libapreq2 binding] [apreq_binding] for inclusion as the official Lua language binding of [libapreq2] [libapreq2]? (first make the binding a lot more complete)
- * Integrate the LDAP binding contributed by zhiguo zhao!
  * [Maybe][atexit] I shouldn't be using `atexit()` to call `apr_terminate()`? (BTW the whole linked blog post is interesting, as is the follow-up post)
 
 [apreq_binding]: https://github.com/xolox/lua-apr/blob/master/src/http.c

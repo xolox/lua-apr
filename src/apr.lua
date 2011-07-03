@@ -3,7 +3,7 @@
  Lua source code for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: July 2, 2011
+ Last Change: July 3, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -14,7 +14,7 @@
 --]]
 
 local apr = require 'apr.core'
-apr._VERSION = '0.19.8'
+apr._VERSION = '0.20'
 
 -- apr.md5(input [, binary]) -> digest {{{1
 --

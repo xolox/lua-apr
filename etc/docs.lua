@@ -3,7 +3,7 @@
  Documentation generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: June 23, 2011
+ Last Change: July 3, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -24,6 +24,7 @@ local SOURCES = [[
   io_file.c
   io_net.c
   io_pipe.c
+  ldap.c
   memcache.c
   getopt.c
   http.c
@@ -308,6 +309,7 @@ local function sig2privfun(s)
     s = s:gsub('^result_set_', 'dbr_')
     s = s:gsub('^xml_parser_', 'xml_')
     s = s:gsub('^mc_client_', 'mc_')
+    s = s:gsub('^ldap_conn', 'lua_apr_ldap')
     return s
   end
 end
@@ -383,6 +385,10 @@ blocks:add('%s', table.concat(lines, '\n'))
 
 local bsignore = {
   ['apr.dbd'] = true,
+  ['apr.ldap'] = true,
+  ['apr.ldap_info'] = true,
+  ['apr.ldap_url_check'] = true,
+  ['apr.ldap_url_parse'] = true,
   ['apr.os_default_encoding'] = true,
   ['apr.os_locale_encoding'] = true,
   ['apr.parse_cookie_header'] = true,
@@ -402,6 +408,11 @@ local bsignore = {
   ['driver:driver'] = true,
   ['driver:transaction_mode'] = true,
   ['file:lock'] = true,
+  ['ldap_conn:bind'] = true,
+  ['ldap_conn:option_get'] = true,
+  ['ldap_conn:option_set'] = true,
+  ['ldap_conn:rebind_add'] = true,
+  ['ldap_conn:search'] = true,
   ['mc_client:add'] = true,
   ['mc_client:add_server'] = true,
   ['mc_client:add_server'] = true,

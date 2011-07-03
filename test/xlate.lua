@@ -3,7 +3,7 @@
  Unit tests for the character encoding translation module of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: June 21, 2011
+ Last Change: July 3, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -25,7 +25,7 @@ local latin2 = "Edelwei\223"
 assert(utf8 == assert(apr.xlate(utf8, 'UTF-8', 'UTF-8')))
 
 -- 2. UTF-8 <-> ISO-8859-1
-assert(latin1 == assert(apr.xlate(utf8, 'UTF-8', 'ISO-8859-1')))
+assert(latin1 == assert(apr.xlate(utf8, 'UTF-8', 'ISO-8859-1'), "(known to fail on Windows)"))
 assert(utf8 == assert(apr.xlate(latin1, 'ISO-8859-1', 'UTF-8')))
 
 -- 3. ISO-8859-1 <-> ISO-8859-2, identity

@@ -1,7 +1,7 @@
 # This is the Windows makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: July 1, 2011
+# Last Change: July 3, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -39,7 +39,7 @@ APREQ_BINARY = apreq.dll
 
 # Compiler and linker flags composed from the above settings.
 CFLAGS = "/I$(LUA_INCDIR)" "/I$(APR_INCDIR)" "/I$(APU_INCDIR)" /D"_CRT_SECURE_NO_DEPRECATE"
-LFLAGS = "/LIBPATH:$(LUA_LINKDIR)" lua51.lib "/LIBPATH:$(APR_LIBDIR)" libapr-1.lib "/LIBPATH:$(APU_LIBDIR)" libaprutil-1.lib
+LFLAGS = "/LIBPATH:$(LUA_LINKDIR)" lua51.lib "/LIBPATH:$(APR_LIBDIR)" libapr-1.lib "/LIBPATH:$(APU_LIBDIR)" libaprutil-1.lib Wldap32.Lib
 
 # Names of compiled object files (the individual lines enable automatic
 # rebasing between git feature branches and the master branch).
@@ -59,6 +59,7 @@ OBJECTS = src\base64.obj \
 		  src\io_file.obj \
 		  src\io_net.obj \
 		  src\io_pipe.obj \
+		  src\ldap.obj \
 		  src\lua_apr.obj \
 		  src\memcache.obj \
 		  src\memory_pool.obj \

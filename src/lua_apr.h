@@ -1,7 +1,7 @@
 /* Header file for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: June 30, 2011
+ * Last Change: July 3, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -219,6 +219,7 @@ extern lua_apr_objtype lua_apr_sha1_type;
 extern lua_apr_objtype lua_apr_xml_type;
 extern lua_apr_objtype lua_apr_memcache_type;
 extern lua_apr_objtype lua_apr_memcache_server_type;
+extern lua_apr_objtype lua_apr_ldap_type;
 
 /* Prototypes. {{{1 */
 
@@ -334,6 +335,12 @@ int lua_apr_pipe_open_stdout(lua_State*);
 int lua_apr_pipe_open_stderr(lua_State*);
 int lua_apr_namedpipe_create(lua_State*);
 int lua_apr_pipe_create(lua_State*);
+
+/* ldap.c */
+int lua_apr_ldap(lua_State*);
+int lua_apr_ldap_info(lua_State*);
+int lua_apr_ldap_url_check(lua_State*);
+int lua_apr_ldap_url_parse(lua_State*);
 
 /* memory_pool.c */
 apr_pool_t *to_pool(lua_State*);

@@ -3,7 +3,7 @@
  Unit tests for the signal handling module of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: June 30, 2011
+ Last Change: July 3, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -53,53 +53,55 @@ assert(got_sigterm)
 
 -- apr.signal() tests using real signals. {{{1
 
--- XXX The following tests are known to fail on Windows.
+if apr.platform_get() ~= 'WIN32' then
 
--- Spawn a child process that dies.
-local function spawn()
-  local child = assert(apr.proc_create 'lua')
-  assert(child:cmdtype_set 'program/env/path')
-  assert(child:exec { '-e', 'os.exit(0)' })
-  assert(child:wait(true))
+  -- Spawn a child process that dies.
+  local function spawn()
+    local child = assert(apr.proc_create 'lua')
+    assert(child:cmdtype_set 'program/env/path')
+    assert(child:exec { '-e', 'os.exit(0)' })
+    assert(child:wait(true))
+  end
+
+  -- Use apr.signal() to listen for dying child processes.
+  local got_sigchild = false
+  apr.signal('SIGCHLD', function()
+    got_sigchild = true
+  end)
+
+    -- Create and kill a child process.
+    spawn()
+
+    -- Make sure we got the signal.
+    assert(got_sigchild)
+
+  -- Test that apr.signal_block() blocks the signal.
+  got_sigchild = false
+  assert(apr.signal_block 'SIGCHLD')
+
+    -- Create and kill a child process.
+    spawn()
+
+    -- Make sure we didn't get the signal.
+    assert(not got_sigchild)
+
+  -- Test that apr.signal_unblock() unblocks the signal.
+  assert(apr.signal_unblock 'SIGCHLD')
+
+    -- Create and kill a child process.
+    spawn()
+
+    -- Make sure we got the signal.
+    assert(got_sigchild)
+
+  -- Test that signal handlers can be disabled.
+  apr.signal('SIGCHLD', nil)
+  got_sigchild = false
+
+    -- Create and then kill a child process.
+    spawn()
+
+    -- Make sure the old signal handler was not executed.
+    assert(not got_sigchild)
+
 end
-
--- Use apr.signal() to listen for dying child processes.
-local got_sigchild = false
-apr.signal('SIGCHLD', function()
-  got_sigchild = true
-end)
-
-  -- Create and kill a child process.
-  spawn()
-
-  -- Make sure we got the signal.
-  assert(got_sigchild)
-
--- Test that apr.signal_block() blocks the signal.
-got_sigchild = false
-assert(apr.signal_block 'SIGCHLD')
-
-  -- Create and kill a child process.
-  spawn()
-
-  -- Make sure we didn't get the signal.
-  assert(not got_sigchild)
-
--- Test that apr.signal_unblock() unblocks the signal.
-assert(apr.signal_unblock 'SIGCHLD')
-
-  -- Create and kill a child process.
-  spawn()
-
-  -- Make sure we got the signal.
-  assert(got_sigchild)
-
--- Test that signal handlers can be disabled.
-apr.signal('SIGCHLD', nil)
-got_sigchild = false
-
-  -- Create and then kill a child process.
-  spawn()
-
-  -- Make sure the old signal handler was not executed.
-  assert(not got_sigchild)
