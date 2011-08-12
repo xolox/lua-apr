@@ -25,30 +25,33 @@ Building APR on Windows can be a pain in the ass. It is meant to be done with Mi
     * Microsoft Web Workshop (IE) SDK
       * Build environment
 
- 3. Download the APR, APR-util and APR-iconv archives (I used `apr-1.4.2-win32-src.zip`, `apr-util-1.3.9-win32-src.zip` and `apr-iconv-1.2.1-win32-src-r2.zip`) from [apr.apache.org] [apr_homepage]. Unpack all archives to the same directory and rename the subdirectories to `apr`, `apr-util` and `apr-iconv`.
+ 3. Download the APR, APR-util, APR-iconv and libapreq2 archives (I used `apr-1.4.2-win32-src.zip`, `apr-util-1.3.9-win32-src.zip`, `apr-iconv-1.2.1-win32-src-r2.zip` and `libapreq2-2.13.tar.gz`) from [apr.apache.org] [apr_homepage] (you can [get libapreq2 here] [apreq_downloads]). Unpack all archives to the same directory and rename the subdirectories to `apr`, `apr-util` and `apr-iconv` (those three are build at the same time while libapreq2 is build separately).
 
  4. *The instructions about [building APR on Windows] [compile_hints] don't work for me so this is where things get sketchy:* Open a Windows SDK command prompt and navigate to the `apr-util` directory. Inside this directory execute `nmake -f Makefile.win buildall`. This doesn't work for me out of the box because of what's probably a bug in the APR-util makefile; I needed to replace `apr_app` with `aprapp` on lines 176 and 177 of `Makefile.win`. After this change `nmake` still exits with errors but nevertheless seems to build `libapr-1.dll` and `libaprutil-1.dll`...
+
+ 5. You also have to build APREQ, last I tried this was a mess on Windows, I collected some notes at the bottom of this page.
 
 [msvc]: http://www.microsoft.com/express/Downloads/#2010-Visual-CPP
 [sdk]: http://en.wikipedia.org/wiki/Microsoft_Windows_SDK#Obtaining_the_SDK
 [apr_homepage]: http://apr.apache.org/
+[apreq_downloads]: http://www.apache.org/dist/httpd/libapreq/
 [compile_hints]: http://apr.apache.org/compiling_win32.html
 
 ### Building the SQlite3 database driver on Windows
 
 The SQLite 3 driver is included in the [Windows binaries] [win32_binaries] but for the benefit of those who want to build the Apache Portable Runtime on Windows here are the steps involved:
 
- 1. Download the [precompiled SQLite 3 binaries For Windows] [sqlite_binaries] (273.98 KiB) and unpack the files somewhere
+ 1. Download the [precompiled SQLite 3 binaries For Windows] [sqlite_binaries] (273.98 KiB) and unpack the files somewhere.
 
- 2. Create `sqlite3.lib` from `sqlite3.def` (included in the precompiled binaries) using the command `lib /machine:i386 /def:sqlite3.def` and copy `sqlite3.lib` to `apr-util-1.3.9/LibR`
+ 2. Create `sqlite3.lib` from `sqlite3.def` (included in the precompiled binaries) using the command `lib /machine:i386 /def:sqlite3.def` and copy `sqlite3.lib` to `apr-util-1.3.9/LibR`.
 
- 3. Download the corresponding [source code distribution] [sqlite_sources] (1.20 MiB) and copy `sqlite3.h` to `apr-util-1.3.9/include`
+ 3. Download the corresponding [source code distribution] [sqlite_sources] (1.20 MiB) and copy `sqlite3.h` to `apr-util-1.3.9/include`.
 
- 4. Build the driver in the Windows SDK command prompt using the command `nmake /f apr_dbd_sqlite3.mak`
+ 4. Build the driver in the Windows SDK command prompt using the command `nmake /f apr_dbd_sqlite3.mak`.
 
- 5. To install the driver you can copy `sqlite3.dll` and `apr_dbd_sqlite3-1.dll` to Lua's installation directory
+ 5. To install the driver you can copy `sqlite3.dll` and `apr_dbd_sqlite3-1.dll` to Lua's installation directory.
 
-[win32_binaries]: http://github.com/downloads/xolox/lua-apr/lua-apr-0.11-win32.zip
+[win32_binaries]: http://peterodding.com/code/lua/apr/downloads/lua-apr-0.20-win32.zip
 [sqlite_binaries]: http://www.sqlite.org/sqlite-dll-win32-x86-3070400.zip
 [sqlite_sources]: http://www.sqlite.org/sqlite-preprocessed-3070400.zip
 
@@ -56,9 +59,9 @@ The SQLite 3 driver is included in the [Windows binaries] [win32_binaries] but f
 
 I wasted a few hours getting `libapreq2` version 2.13 to build on Windows because of the following issues:
 
- * The included makefile `libapreq2.mak` is full of syntax errors
- * The makefile unconditionally includes the Apache module and consequently doesn't link without a full Apache build
- * The build environment requires a specific flavor of Perl which I haven't gotten to work
+ * The included makefile `libapreq2.mak` is full of syntax errors.
+ * The makefile unconditionally includes the Apache module and consequently doesn't link without a full Apache build.
+ * The build environment requires a specific flavor of Perl which I haven't gotten to work.
 
 Eventually I decided to just rewrite the damned makefile and be done with it, enabling me to finally test the HTTP request parsing module on Windows (all tests passed the first time). I've included the [customized makefile] [apreq_makefile] in the Lua/APR git repository.
 
