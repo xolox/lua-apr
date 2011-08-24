@@ -108,10 +108,13 @@ At the top of the makefile several file locations are defined, you'll need to ch
 
 Please note that the Windows makefile only builds the Lua/APR binding, you need to build the APR, APR-util and APREQ libraries yourself. There are instructions available on [how to build APR/APR-util on apache.org][apr_build] but [my notes on the process][notes] may be a more useful starting point.
 
+I've also recently created a Windows batch script that bootstraps a Lua/APR development environment by downloading, unpacking, patching and building the libraries involved. To use it, download the [ZIP archive][bootstrap_zip], unpack it to a directory, open a Windows SDK command prompt in the directory where you unpacked the ZIP archive and execute `make.cmd`. I've only tested it on a 32 bit Windows XP virtual machine, butif it doesn't work out of the box it may provide a useful starting point.
+
 [msvc]: http://www.microsoft.com/express/Downloads/#2010-Visual-CPP
 [autozip]: http://github.com/xolox/lua-apr/zipball/master
 [apr_build]: http://apr.apache.org/compiling_win32.html
 [notes]: https://github.com/xolox/lua-apr/blob/master/NOTES.md#readme
+[bootstrap_zip]: http://peterodding.com/code/lua/apr/downloads/win32-bootstrap.zip
 
 ## Status
 

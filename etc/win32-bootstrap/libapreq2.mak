@@ -1,9 +1,9 @@
 # Microsoft Developer Studio Generated NMAKE File, Based on libapreq.dsp
 # Compile with NMAKE /f libapreq2.mak "CFG=libapreq2 - Win32 Debug"
 
-APR_LIB=c:\lua-apr\apr\Release\libapr-1.lib
-APU_LIB=c:\lua-apr\apr-util\Release\libaprutil-1.lib
-APREQ_HOME=c:\lua-apr\libapreq2
+APR_LIB=$(ROOT)\apr\Debug\libapr-1.lib
+APU_LIB=$(ROOT)\apr-util\Debug\libaprutil-1.lib
+APREQ_HOME=$(ROOT)\libapreq2
 
 !IF "$(CFG)" == ""
 CFG=libapreq2 - Win32 Release
@@ -31,8 +31,8 @@ NULL=
 NULL=nul
 !ENDIF 
 
-CPP=cl.exe /IC:\lua-apr\apr\include /IC:\lua-apr\apr-util\include
-RSC=rc.exe /IC:\lua-apr\apr\include /IC:\lua-apr\apr-util\include
+CPP=cl.exe /I$(ROOT)\apr\include /I$(ROOT)\apr-util\include
+RSC=rc.exe /I$(ROOT)\apr\include /I$(ROOT)\apr-util\include
 
 CFG_HOME=$(APREQ_HOME)\win32
 OUTDIR=$(CFG_HOME)\libs
@@ -53,9 +53,9 @@ LINK32_OBJS= \
 
 !IF  "$(CFG)" == "libapreq2 - Win32 Release"
 
-ALL : "$(OUTDIR)\libapreq2.dll"
+ALL: "$(OUTDIR)\libapreq2.dll"
 
-"$(OUTDIR)" :
+"$(OUTDIR)":
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
 CPP_PROJ=/nologo /MD /W3 /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "APREQ_DECLARE_EXPORT" /I"$(APREQ_HOME)\include" /FD /c 
@@ -67,15 +67,15 @@ LINK32=link.exe
 MANIFEST=$(OUTDIR)\libapreq2.dll.manifest
 LINK32_FLAGS="$(APR_LIB)" "$(APU_LIB)" kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /incremental:no /machine:I386 /out:"$(OUTDIR)\libapreq2.dll" /implib:"$(OUTDIR)\libapreq2.lib"
 
-"$(OUTDIR)\libapreq2.dll" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
+"$(OUTDIR)\libapreq2.dll": "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) $(LINK32_FLAGS) $(DEF_FLAGS) $(LINK32_OBJS)
     if exist $(MANIFEST) mt /nologo /manifest $(MANIFEST) /outputresource:$(OUTDIR)\libapreq2.dll;2
 
 !ELSEIF  "$(CFG)" == "libapreq2 - Win32 Debug"
 
-ALL : "$(OUTDIR)\libapreq2.dll"
+ALL: "$(OUTDIR)\libapreq2.dll"
 
-"$(OUTDIR)" :
+"$(OUTDIR)":
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
 CPP_PROJ=/nologo /MDd /W3 /Gm /EHsc /Zi /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "APREQ_DECLARE_EXPORT" /I"$(APREQ_HOME)\include" /FD /RTC1  /c 
@@ -87,7 +87,7 @@ LINK32=link.exe
 MANIFEST=$(OUTDIR)\libapreq2.dll.manifest
 LINK32_FLAGS="$(APR_LIB)" "$(APU_LIB)" kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /incremental:yes /pdb:"$(OUTDIR)\libapreq2.pdb" /debug /machine:I386 /out:"$(OUTDIR)\libapreq2.dll" /implib:"$(OUTDIR)\libapreq2.lib" /pdbtype:sept 
 
-"$(OUTDIR)\libapreq2.dll" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
+"$(OUTDIR)\libapreq2.dll": "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) $(LINK32_FLAGS) $(DEF_FLAGS) $(LINK32_OBJS)
     if exist $(MANIFEST) mt /nologo /manifest $(MANIFEST) /outputresource:$(OUTDIR)\libapreq2.dll;2
 

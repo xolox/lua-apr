@@ -65,4 +65,4 @@ I wasted a few hours getting `libapreq2` version 2.13 to build on Windows becaus
 
 Eventually I decided to just rewrite the damned makefile and be done with it, enabling me to finally test the HTTP request parsing module on Windows (all tests passed the first time). I've included the [customized makefile] [apreq_makefile] in the Lua/APR git repository.
 
-[apreq_makefile]: https://github.com/xolox/lua-apr/blob/master/etc/libapreq2.mak
+[apreq_makefile]: https://github.com/xolox/lua-apr/blob/master/etc/win32-bootstrap/libapreq2.mak
