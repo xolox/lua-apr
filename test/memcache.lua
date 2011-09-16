@@ -5,7 +5,7 @@
  Authors:
   - zhiguo zhao <zhaozg@gmail.com>
   - Peter Odding <peter@peterodding.com>
- Last Change: June 16, 2011
+ Last Change: September 16, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -84,6 +84,14 @@ for i = 1, TDATA_SIZE do
   testpairs[prefix .. i] = txt:sub(1, math.random(1, #txt))
 end
 
+local function delete(client, key)
+  -- clean up.
+  if not client:delete(key) then
+    -- https://github.com/xolox/lua-apr/issues/5#issuecomment-2106284
+    assert(client:delete(key, 0))
+  end
+end
+
 -- Test client:add(), client:replace(), client:get() and client:delete().
 for key, value in pairs(testpairs) do
   -- doesn't exist yet, fail.
@@ -98,7 +106,7 @@ for key, value in pairs(testpairs) do
   -- exists now, fail.
   assert(not client:add(key, value))
   -- clean up.
-  assert(client:delete(key))
+  delete(client, key)
   local status, value = client:get(key)
   assert(status and not value)
 end
@@ -118,7 +126,7 @@ for i = 1, TDATA_SIZE do
   local status, strval = assert(client:get(prefix))
   assert(tonumber(strval) == value)
 end
-assert(client:delete(prefix))
+delete(client, prefix)
 
 -- Test server management functions.
 for i = 1, max_servers - 1 do

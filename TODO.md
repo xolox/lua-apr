@@ -2,9 +2,12 @@
 
 ## New features
 
+ * **LDAP directory modification** (creating, changing and deleting LDAP directory entries)
+ * **Asynchronous network communication** (a binding for the [pollset][pollset] module?)
+ * **Encrypted network communication**. It appears that APR itself doesn't support this but clearly it's possible because there are dozens of projects that use APR and support encrypted network communication (the [Apache HTTP server] [httpd], [ApacheBench] [ab], [Tomcat] [tomcat], etc.)
  * Make it possible to enable text mode for files, pipes and sockets on platforms where there is no distinction between text/binary mode (because `CR` + `LF` → `LF` translation can be useful on UNIX as well)
- * Support for **encrypted network communication**. It appears that APR itself doesn't support this but clearly it's possible because there are dozens of projects that use APR and support encrypted network communication (the [Apache HTTP server] [httpd], [ApacheBench] [ab], [Tomcat] [tomcat], etc.)
-
+ 
+[pollset]: http://apr.apache.org/docs/apr/trunk/group__apr__poll.html
 [httpd]: http://en.wikipedia.org/wiki/Apache_HTTP_Server
 [ab]: http://en.wikipedia.org/wiki/ApacheBench
 [tomcat]: http://en.wikipedia.org/wiki/Apache_Tomcat

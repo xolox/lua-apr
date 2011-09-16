@@ -108,7 +108,7 @@ At the top of the makefile several file locations are defined, you'll need to ch
 
 Please note that the Windows makefile only builds the Lua/APR binding, you need to build the APR, APR-util and APREQ libraries yourself. There are instructions available on [how to build APR/APR-util on apache.org][apr_build] but [my notes on the process][notes] may be a more useful starting point.
 
-I've also recently created a Windows batch script that bootstraps a Lua/APR development environment by downloading, unpacking, patching and building the libraries involved. To use it, download the [ZIP archive][bootstrap_zip], unpack it to a directory, open a Windows SDK command prompt in the directory where you unpacked the ZIP archive and execute `make.cmd`. I've only tested it on a 32 bit Windows XP virtual machine, butif it doesn't work out of the box it may provide a useful starting point.
+I've also recently created a Windows batch script that bootstraps a Lua/APR development environment by downloading, unpacking, patching and building the libraries involved. To use it, download the [ZIP archive][bootstrap_zip], unpack it to a directory, open a Windows SDK command prompt in the directory where you unpacked the ZIP archive and execute `make.cmd`. I've only tested it on a 32 bit Windows XP virtual machine, but even if it doesn't work out of the box for you it may provide a useful starting point.
 
 [msvc]: http://www.microsoft.com/express/Downloads/#2010-Visual-CPP
 [autozip]: http://github.com/xolox/lua-apr/zipball/master
@@ -120,8 +120,11 @@ I've also recently created a Windows batch script that bootstraps a Lua/APR deve
 
 The following functionality has not been implemented yet but is on the to-do list:
 
+ * **LDAP directory modification** (creating, changing and deleting LDAP directory entries)
+ * **Asynchronous network communication** (a binding for the [pollset][pollset] module?)
  * **Encrypted network communication** (unfortunately this isn't provided by APR so [io_net.c][io_net] could get messy…)
 
+[pollset]: http://apr.apache.org/docs/apr/trunk/group__apr__poll.html
 [io_net]: https://github.com/xolox/lua-apr/blob/master/src/io_net.c
 
 ## Contact

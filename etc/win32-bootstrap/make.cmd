@@ -1,7 +1,7 @@
 :: Batch script to bootstrap a development environment for the Lua/APR binding.
 ::
 :: Author: Peter Odding <peter@peterodding.com>
-:: Last Change: August 24, 2011
+:: Last Change: September 11, 2011
 :: Homepage: http://peterodding.com/code/lua/apr/
 :: License: MIT
 ::
@@ -22,7 +22,7 @@
 SET BUILD_MODE=Debug
 
 :: Version strings (embedded in filenames and URLs).
-:: This script has only tested with the versions below.
+:: This script has only been tested with the versions below.
 SET APR_VERSION=1.4.5
 SET APU_VERSION=1.3.12
 SET API_VERSION=1.2.1
