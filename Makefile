@@ -1,7 +1,7 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: September 18, 2011
+# Last Change: September 19, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -192,7 +192,7 @@ zip_package: package_prerequisites
 	@mkdir -p $(PACKAGE)/doc
 	@cp doc/docs.html doc/notes.html doc/readme.html doc/todo.html $(PACKAGE)/doc
 	@mkdir -p $(PACKAGE)/etc
-	@cp -a etc/buildbot.lua etc/docs.lua etc/errors.lua etc/wrap.lua $(PACKAGE)/etc
+	@cp -a etc/buildbot.lua etc/dependencies.lua etc/docs.lua etc/errors.lua etc/wrap.lua $(PACKAGE)/etc
 	@mkdir -p $(PACKAGE)/benchmarks
 	@cp -a benchmarks/* $(PACKAGE)/benchmarks
 	@mkdir -p $(PACKAGE)/examples
@@ -220,7 +220,7 @@ clean:
 	@rm -Rf $(OBJECTS) $(BINARY_MODULE) $(APREQ_BINARY) doc/docs.md
 	@git checkout src/errno.c 2>/dev/null || true
 
-.PHONY: install uninstall test valgrind coverage docs install_deps package \
+.PHONY: install uninstall test valgrind coverage docs install_deps \
 	package_prerequisites zip_package rockspec clean
 
 # vim: ts=4 sw=4 noet

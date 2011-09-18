@@ -74,7 +74,7 @@ As a general guideline for other systems and package managers, you'll need the b
 
 The latest rockspec and sources are also available from the author's website (in case the main LuaRocks repository is unavailable or lagging behind):
 
-    $ luarocks install http://peterodding.com/code/lua/apr/downloads/lua-apr-0.20-1.rockspec
+    $ luarocks install http://peterodding.com/code/lua/apr/downloads/lua-apr-0.20.2-1.rockspec
 
 If you have git installed you can also download and install the latest sources directly from [GitHub] [github]:
 
@@ -89,9 +89,9 @@ If you don't have LuaRocks installed the following shell commands should help yo
     $ if which git; then # Get the latest sources using `git'?
     $   git clone git://github.com/xolox/lua-apr.git
     $ else # Or get the most recently released archive using `wget'.
-    $   wget http://peterodding.com/code/lua/apr/downloads/lua-apr-0.20-1.zip
-    $   unzip lua-apr-0.20-1.zip
-    $   mv lua-apr-0.20-1 lua-apr
+    $   wget http://peterodding.com/code/lua/apr/downloads/lua-apr-0.20.2-1.zip
+    $   unzip lua-apr-0.20.2-1.zip
+    $   mv lua-apr-0.20.2-1 lua-apr
     $ fi
     $ cd lua-apr
     $ sudo make install_deps # installs build & runtime dependencies for Debian/Ubuntu
