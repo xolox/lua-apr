@@ -121,6 +121,7 @@ local required_arch_packages = [[
   lua
   apr
   apr-util
+  perl-libapreq2
 ]]
 
 local find_arch_packages = find_packages [[
