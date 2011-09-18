@@ -64,13 +64,7 @@ The easiest way to download, build & install the Lua/APR binding is to use [LuaR
     $ luarocks install lua-apr
     $ lua -e "require 'apr.test' ()"
 
-If LuaRocks fails to build the Lua/APR binding this is likely because of missing dependencies. Lua/APR depends on the APR, APR-util and libapreq2 system libraries but LuaRocks cannot install these because it only deals with Lua modules. How to install these system libraries depends on your choice of operating system and distribution, for example on Debian Linux and derivatives like Ubuntu you can use the following command:
-
-    $ apt-get install libapr1 libapr1-dev libaprutil1 libaprutil1-dev \
-        libaprutil1-dbd-sqlite3 libapreq2 libapreq2-dev lua5.1 \
-        liblua5.1-0 liblua5.1-0-dev libreadline-dev
-
-As a general guideline for other systems and package managers, you'll need the binary and development packages of Lua 5.1, APR, APR-util and libapreq2.
+If LuaRocks fails to build the Lua/APR binding this is likely because of missing dependencies. Lua/APR depends on the APR, APR-util and libapreq2 system libraries but LuaRocks cannot install these because it only deals with Lua modules. The Lua/APR makefile runs a Lua script that knows how to install dependencies on Debian, Ubuntu, Arch Linux, Red Hat, Fedora Core, Suse Linux and CentOS. As a general guideline for other systems and package managers, you'll need the binary and development packages of Lua 5.1, APR, APR-util and libapreq2.
 
 The latest rockspec and sources are also available from the author's website (in case the main LuaRocks repository is unavailable or lagging behind):
 
@@ -94,7 +88,6 @@ If you don't have LuaRocks installed the following shell commands should help yo
     $   mv lua-apr-0.20.2-1 lua-apr
     $ fi
     $ cd lua-apr
-    $ sudo make install_deps # installs build & runtime dependencies for Debian/Ubuntu
     $ sudo make install # installs apr.lua and apr/core.so in /usr/local
     $ lua -e "require 'apr.test' ()" # runs the test suite
 
