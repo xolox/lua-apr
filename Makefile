@@ -1,7 +1,7 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: July 3, 2011
+# Last Change: September 18, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -93,13 +93,17 @@ override LFLAGS += -fprofile-arcs
 endif
 
 # Experimental support for HTTP request parsing using libapreq2.
-HAVE_APREQ = $(shell which apreq2-config >/dev/null && echo 1 || echo 0)
+HAVE_APREQ = $(shell which apreq2-config >/dev/null 2>&1 && echo 1 || echo 0)
 override CFLAGS += -DLUA_APR_HAVE_APREQ=$(HAVE_APREQ)
 override CFLAGS += $(shell apreq2-config --includes 2>/dev/null)
 override LFLAGS += $(shell apreq2-config --link-ld 2>/dev/null)
 
 # Names of compiled object files.
 OBJECTS = $(patsubst %.c,%.o,$(SOURCES))
+
+# XXX Experimental default build rule to automatically install required system
+# libraries before trying to build Lua/APR (only on supported platforms).
+default: install_deps $(BINARY_MODULE)
 
 # Build the binary module.
 $(BINARY_MODULE): $(OBJECTS) Makefile
@@ -170,12 +174,9 @@ doc/docs.md: etc/docs.lua
 	@[ -d doc ] || mkdir doc
 	@lua etc/docs.lua > doc/docs.md
 
-# Install the build dependencies using Debian/Ubuntu packages.
-# FIXME The libreadline-dev isn't really needed here is it?!
+# Automatically install build dependencies using system packages.
 install_deps:
-	apt-get install libapr1 libapr1-dev libaprutil1 libaprutil1-dev \
-		libaprutil1-dbd-sqlite3 libapreq2 libapreq2-dev lua5.1 \
-		liblua5.1-0 liblua5.1-0-dev libreadline-dev
+	@lua etc/dependencies.lua
 
 # Create a profiling build, run the test suite, generate documentation
 # including test coverage, then clean the intermediate files.
