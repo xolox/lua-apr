@@ -130,7 +130,7 @@ install: $(BINARY_MODULE) docs
 	cp $(BINARY_MODULE) $(LUA_LIBDIR)/apr/$(BINARY_MODULE)
 	[ ! -f $(APREQ_BINARY) ] || cp $(APREQ_BINARY) $(LUA_LIBDIR)/$(APREQ_BINARY)
 	[ -d $(LUA_APR_DOCS) ] || mkdir -p $(LUA_APR_DOCS)
-	cp doc/docs.html doc/notes.html doc/readme.html doc/todo.html $(LUA_APR_DOCS)
+	cp doc/docs.html doc/notes.html doc/readme.html doc/todo.html $(LUA_APR_DOCS) || true
 
 # Remove previously installed files.
 uninstall:
