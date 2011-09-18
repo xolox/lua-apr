@@ -3,7 +3,7 @@
  Driver script for the unit tests of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: July 2, 2011
+ Last Change: September 18, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -79,7 +79,7 @@ return function()
       end
     elseif status then
       -- Soft failure (anticipated).
-      helpers.message("Failed!\n")
+      helpers.message("Skipped!\n")
     else
       -- Hard failure.
       helpers.message("Failed! (%s)\n", result)
