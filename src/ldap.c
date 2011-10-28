@@ -5,7 +5,7 @@
  *  - Peter Odding <peter@peterodding.com>
  *  - Parts of this module were based on LuaLDAP 1.1.0 by Roberto
  *    Ierusalimschy, André Carregal and Tomás Guisasola (license below)
- * Last Change: July 3, 2011
+ * Last Change: October 29, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -31,6 +31,8 @@
 #include "lua_apr.h"
 #include <apr_ldap.h>
 #include <apr_uri.h>
+
+#if APR_HAS_LDAP
 
 /* LuaLDAP license. {{{1
  *
@@ -1033,3 +1035,5 @@ lua_apr_objtype lua_apr_ldap_type = {
   ldap_methods,                /* methods table */
   ldap_metamethods             /* metamethods table */
 };
+
+#endif

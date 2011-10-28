@@ -1,12 +1,13 @@
 /* Miscellaneous functions module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: July 3, 2011
+ * Last Change: October 29, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
 
 #include "lua_apr.h"
+#include <apr_ldap.h> /* APR_HAS_LDAP */
 #include <apr_portable.h>
 #include <ctype.h>
 #if LUA_APR_HAVE_APREQ
@@ -30,7 +31,9 @@ lua_apr_objtype *lua_apr_types[] = {
   &lua_apr_dbd_type,
   &lua_apr_dbr_type,
   &lua_apr_dbp_type,
+# if APR_HAS_LDAP
   &lua_apr_ldap_type,
+# endif
   &lua_apr_memcache_type,
   &lua_apr_memcache_server_type,
   &lua_apr_md5_type,
@@ -145,11 +148,13 @@ LUA_APR_EXPORT int luaopen_apr_core(lua_State *L)
     { "namedpipe_create", lua_apr_namedpipe_create },
     { "pipe_create", lua_apr_pipe_create },
 
+#   if APR_HAS_LDAP
     /* ldap.c -- LDAP connection handling. */
     { "ldap", lua_apr_ldap },
     { "ldap_info", lua_apr_ldap_info },
     { "ldap_url_check", lua_apr_ldap_url_check },
     { "ldap_url_parse", lua_apr_ldap_url_parse },
+#   endif
 
     /* proc -- process handling. */
     { "proc_create", lua_apr_proc_create },
