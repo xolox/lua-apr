@@ -3,7 +3,7 @@
  Lua script to install system packages required by the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: September 18, 2011
+ Last Change: October 29, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -132,7 +132,17 @@ local find_arch_packages = find_packages [[
 
 message "Checking for required system packages .."
 if executable 'dpkg' and executable 'apt-get' then
-  install_packages(required_deb_packages, find_deb_packages(), 'apt-get install')
+  -- Newer versions of Ubuntu install "recommended packages" by default, but
+  -- unfortunately the libapreq2 package recommends libapache2-mod-apreq2 which
+  -- pulls in the whole Apache server :-|. I think this is stupid and work
+  -- around it by passing the --no-install-recommends command line option
+  -- when it seems to be supported (unfortunately "apt-get --help" doesn't list
+  -- the supported command line options so we have to grep the binary :-P).
+  local install_command = 'apt-get install'
+  if os.execute 'strings /usr/bin/apt-get | grep -q install-recommends 1>/dev/null 2>&1' == 0 then
+    install_command = install_command .. ' --no-install-recommends'
+  end
+  install_packages(required_deb_packages, find_deb_packages(), install_command)
 elseif executable 'rpm' and executable 'yum' then
   install_packages(required_rpm_packages, find_rpm_packages(), 'yum install')
 elseif executable 'pacman' then
