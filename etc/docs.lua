@@ -3,7 +3,7 @@
  Documentation generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: July 3, 2011
+ Last Change: October 30, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -438,13 +438,16 @@ local function dumpentries(functions)
     local signature = entry.signature:gsub('%->', '→')
     local funcname = sig2pubfun(signature)
     local anchor = toanchor(funcname)
-    local covkey = sig2privfun(signature)
-    if not coverage[covkey] then covkey = 'lua_' .. covkey end
-    local tc = coverage[covkey] or ''
-    if tc ~= '' then
-      local template = '<span style="float: right; font-size: small; color: %s; opacity: 0.5">test coverage: %s<br></span>'
-      local color = tc >= 75 and 'green' or tc >= 50 and 'orange' or 'red'
-      tc = fmt(template, color, tc == 0 and 'none' or fmt('%i%%', tc))
+    local tc = ''
+    if next(coverage) then
+      local covkey = sig2privfun(signature)
+      if not coverage[covkey] then covkey = 'lua_' .. covkey end
+      tc = coverage[covkey] or ''
+      if tc ~= '' then
+        local template = '<span style="float: right; font-size: small; color: %s; opacity: 0.5">test coverage: %s<br></span>'
+        local color = tc >= 75 and 'green' or tc >= 50 and 'orange' or 'red'
+        tc = fmt(template, color, tc == 0 and 'none' or fmt('%i%%', tc))
+      end
     end
     blocks:add('### %s <a name="%s" href="#%s">`%s`</a>', tc, anchor, anchor, signature)
     blocks:add('%s', preprocess(entry.description))
