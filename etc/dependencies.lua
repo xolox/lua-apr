@@ -1,19 +1,33 @@
 --[[
 
- Lua script to install system packages required by the Lua/APR binding.
+ Detect and install missing system packages required by the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: October 29, 2011
+ Last Change: October 30, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
  LuaRocks doesn't handle installation of system packages and its detection of
- installed system libraries is also kind of broken. Because I want to make it
- as easy as possible for people to try out the Lua/APR binding, I wrote this
- Lua script to automatically install required system packages on supported
- platforms. This script is run from the default rule in the UNIX makefile.
+ installed system libraries also leaves some to be desired. Because I want to
+ make it as easy as possible for people to try out the Lua/APR binding, I wrote
+ this Lua script to automatically detect (and optionally install) missing
+ system packages on supported platforms. This script is run from the default
+ rule in the UNIX makefile.
+
+ Originally this script automatically executed the commands needed to install
+ missing system packages when it was executed from the makefile, but the
+ LuaRocks maintainers refused to include it and in retrospect it's indeed not
+ cool for a makefile to do such things out of the box.
+ 
+ I've now added support for the -n (dry run) argument which is passed from the
+ makefile and instructs this script not to install any packages. Instead it
+ will just give a friendly suggestion to the user. When the script is executed
+ without the -n argument it will go ahead and run the command to install
+ missing system packages.
 
 ]]
+
+local dry_run = arg[1] == '-n'
 
 -- Miscellaneous functions. {{{1
 
@@ -40,7 +54,7 @@ local function message(text, ...)
   io.stderr:write(text:format(...), '\n')
 end
 
--- Execute a command that requires superuser privileges.
+-- Prepend `sudo' to a command only when it's installed and needed.
 local function sudo(command, args)
   if executable 'sudo' and readcmd 'id -un' ~= 'root' then
     command = 'sudo ' .. command
@@ -48,7 +62,7 @@ local function sudo(command, args)
   if #args > 0 then
     command = command .. ' ' .. table.concat(args, ' ')
   end
-  return os.execute(command) == 0
+  return command
 end
 
 -- Take a shell command that outputs a list of all installed system packages
@@ -76,12 +90,27 @@ local function install_packages(required_packages, installed_packages, install_c
     end
   end
   if #missing_packages > 0 then
-    local package_manager = install_command:match '^%S+'
-    message("Installing %i missing package(s) using %s ..", #missing_packages, package_manager)
-    if sudo(install_command, missing_packages) then
-      message("Successfully installed %i missing package(s) using %s.", #missing_packages, package_manager)
+    install_command = sudo(install_command, missing_packages)
+    if dry_run then
+      message([[
+The Lua/APR binding has several external dependencies and it looks like some
+are missing on your system. You can install them with the following command:
+
+  %s
+
+The build will now continue because it's possible that you don't even want to
+build the Lua/APR binding against system packages, however if the build fails
+consider executing the command above and then retrying the build.
+]], install_command)
     else
-      message("Failed to install %i missing package(s) using %s!", #missing_packages, package_manager)
+      local package_manager = install_command:match '^%S+'
+      message("Installing %i missing package(s) using %s ..", #missing_packages, package_manager)
+      if sudo(install_command, missing_packages) then
+        message("Successfully installed %i missing package(s) using %s.", #missing_packages, package_manager)
+      else
+        message("Failed to install %i missing package(s) using %s!", #missing_packages, package_manager)
+        os.exit(1)
+      end
     end
   end
 end

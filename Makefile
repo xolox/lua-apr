@@ -1,7 +1,7 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: September 19, 2011
+# Last Change: October 30, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -101,9 +101,9 @@ override LFLAGS += $(shell apreq2-config --link-ld 2>/dev/null)
 # Names of compiled object files.
 OBJECTS = $(patsubst %.c,%.o,$(SOURCES))
 
-# XXX Experimental default build rule to automatically install required system
-# libraries before trying to build Lua/APR (only on supported platforms).
-default: install_deps $(BINARY_MODULE)
+# The default build rule checks for missing system packages before trying to
+# build Lua/APR (only on supported platforms).
+default: check_deps $(BINARY_MODULE)
 
 # Build the binary module.
 $(BINARY_MODULE): $(OBJECTS) Makefile
@@ -174,7 +174,11 @@ doc/docs.md: etc/docs.lua
 	@[ -d doc ] || mkdir doc
 	@lua etc/docs.lua > doc/docs.md
 
-# Automatically install build dependencies using system packages.
+# Check for missing system packages and alert the user.
+check_deps:
+	@lua etc/dependencies.lua -n
+
+# Automatically install external dependencies using system packages.
 install_deps:
 	@lua etc/dependencies.lua
 
@@ -220,7 +224,7 @@ clean:
 	@rm -Rf $(OBJECTS) $(BINARY_MODULE) $(APREQ_BINARY) doc/docs.md
 	@git checkout src/errno.c 2>/dev/null || true
 
-.PHONY: install uninstall test valgrind coverage docs install_deps \
-	package_prerequisites zip_package rockspec clean
+.PHONY: install uninstall test valgrind coverage docs check_deps \
+	install_deps package_prerequisites zip_package rockspec clean
 
 # vim: ts=4 sw=4 noet
