@@ -59,12 +59,12 @@ If you are running an older Debian release or a derivative of Debian which doesn
 
 ### Build on UNIX using LuaRocks
 
-The easiest way to download, build & install the Lua/APR binding is to use [LuaRocks] [lr]. The following commands will install the Lua/APR binding from the main repository and run the test suite to make sure everything works:
+The easiest way to download, build and install the Lua/APR binding is to use [LuaRocks] [lr]. The following commands will install the Lua/APR binding from the main repository and run the test suite to make sure everything works:
 
     $ luarocks install lua-apr
     $ lua -e "require 'apr.test' ()"
 
-If LuaRocks fails to build the Lua/APR binding this is likely because of missing dependencies. Lua/APR depends on the APR, APR-util and libapreq2 system libraries but LuaRocks cannot install these because it only deals with Lua modules. The Lua/APR makefile runs a Lua script that knows how to install dependencies on Debian, Ubuntu, Arch Linux, Red Hat, Fedora Core, Suse Linux and CentOS. As a general guideline for other systems and package managers, you'll need the binary and development packages of Lua 5.1, APR, APR-util and libapreq2.
+If LuaRocks fails to build the Lua/APR binding this is likely because of missing dependencies. Lua/APR depends on the APR, APR-util and libapreq2 system libraries but LuaRocks cannot install these because it only deals with Lua modules. When the build fails the makefile runs a Lua script that knows how to detect missing dependencies on Debian, Ubuntu, Arch Linux, Red Hat, Fedora Core, Suse Linux and CentOS. As a general guideline for other systems and package managers, you'll need the binary and development packages of Lua 5.1, APR, APR-util and libapreq2.
 
 The latest rockspec and sources are also available from the author's website (in case the main LuaRocks repository is unavailable or lagging behind):
 

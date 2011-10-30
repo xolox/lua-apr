@@ -5,8 +5,7 @@
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
-# This makefile has been tested on Ubuntu Linux 10.04 after installing the
-# external dependencies using the `install_deps' target (see below).
+# This makefile has been tested on Ubuntu Linux 10.04.
 
 VERSION = $(shell grep _VERSION src/apr.lua | cut "-d'" -f2)
 RELEASE = 1
@@ -64,20 +63,10 @@ SOURCES = src/base64.c \
 		  src/xlate.c \
 		  src/xml.c
 
-# If you're building Lua/APR with LuaRocks it should locate the external
-# dependencies automatically, otherwise we fall back to `pkg-config'. Some
-# complicating factors: On Debian/Ubuntu the Lua pkg-config file is called
-# `lua5.1', on FreeBSD it's `lua-5.1' and on Arch Linux it's just `lua'. Also
-# `pkg-config --cflags apr-1' doesn't include -pthread while `apr-1-config
-# --cflags' does include this flag and this seems to be needed on some
-# platforms. See also issue #5 on GitHub: https://github.com/xolox/lua-apr/issues/5
-override CFLAGS += \
- $(shell pkg-config --cflags lua5.1 --silence-errors || pkg-config --cflags lua-5.1 --silence-errors || pkg-config --cflags lua) \
- $(shell apr-1-config --cflags --cppflags --includes 2>/dev/null || pkg-config --cflags apr-1) \
- $(shell apu-1-config --includes 2>/dev/null || pkg-config --cflags apr-util-1)
-override LFLAGS += \
- $(shell apr-1-config --link-ld --libs 2>/dev/null || pkg-config --libs apr-1) \
- $(shell apu-1-config --link-ld --libs --ldap-libs 2>/dev/null || pkg-config --libs apr-util-1)
+# Determine compiler flags and linker flags for external dependencies using a
+# combination of pkg-config, apr-1-config, apu-1-config and apreq2-config.
+override CFLAGS += $(shell lua etc/make.lua --cflags)
+override LFLAGS += $(shell lua etc/make.lua --lflags)
 
 # Create debug builds by default but enable release
 # builds using the command line "make DO_RELEASE=1".
@@ -92,30 +81,24 @@ override CFLAGS += -fprofile-arcs -ftest-coverage
 override LFLAGS += -fprofile-arcs
 endif
 
-# Experimental support for HTTP request parsing using libapreq2.
-HAVE_APREQ = $(shell which apreq2-config >/dev/null 2>&1 && echo 1 || echo 0)
-override CFLAGS += -DLUA_APR_HAVE_APREQ=$(HAVE_APREQ)
-override CFLAGS += $(shell apreq2-config --includes 2>/dev/null)
-override LFLAGS += $(shell apreq2-config --link-ld 2>/dev/null)
-
 # Names of compiled object files.
 OBJECTS = $(patsubst %.c,%.o,$(SOURCES))
 
 # The default build rule checks for missing system packages before trying to
 # build Lua/APR (only on supported platforms).
-default: check_deps $(BINARY_MODULE)
+default: $(BINARY_MODULE)
 
 # Build the binary module.
 $(BINARY_MODULE): $(OBJECTS) Makefile
-	$(CC) -shared -o $@ $(OBJECTS) $(LFLAGS)
+	$(CC) -shared -o $@ $(OBJECTS) $(LFLAGS) || lua etc/make.lua --check
 
 # Build the standalone libapreq2 binding.
 $(APREQ_BINARY): etc/apreq_standalone.c Makefile
-	$(CC) -Wall -shared -o $@ $(CFLAGS) -fPIC etc/apreq_standalone.c $(LFLAGS)
+	$(CC) -Wall -shared -o $@ $(CFLAGS) -fPIC etc/apreq_standalone.c $(LFLAGS) || lua etc/make.lua --check
 
 # Compile individual source code files to object files.
 $(OBJECTS): %.o: %.c src/lua_apr.h Makefile
-	$(CC) -Wall -c $(CFLAGS) -fPIC $< -o $@
+	$(CC) -Wall -c $(CFLAGS) -fPIC $< -o $@ || lua etc/make.lua --check
 
 # Always try to regenerate the error handling module.
 src/errno.c: etc/errors.lua Makefile
@@ -174,14 +157,6 @@ doc/docs.md: etc/docs.lua
 	@[ -d doc ] || mkdir doc
 	@lua etc/docs.lua > doc/docs.md
 
-# Check for missing system packages and alert the user.
-check_deps:
-	@lua etc/dependencies.lua -n
-
-# Automatically install external dependencies using system packages.
-install_deps:
-	@lua etc/dependencies.lua
-
 # Create a profiling build, run the test suite, generate documentation
 # including test coverage, then clean the intermediate files.
 package_prerequisites: clean
@@ -196,7 +171,7 @@ zip_package: package_prerequisites
 	@mkdir -p $(PACKAGE)/doc
 	@cp doc/docs.html doc/notes.html doc/readme.html doc/todo.html $(PACKAGE)/doc
 	@mkdir -p $(PACKAGE)/etc
-	@cp -a etc/buildbot.lua etc/dependencies.lua etc/docs.lua etc/errors.lua etc/wrap.lua $(PACKAGE)/etc
+	@cp -a etc/buildbot.lua etc/make.lua etc/docs.lua etc/errors.lua etc/wrap.lua $(PACKAGE)/etc
 	@mkdir -p $(PACKAGE)/benchmarks
 	@cp -a benchmarks/* $(PACKAGE)/benchmarks
 	@mkdir -p $(PACKAGE)/examples
@@ -224,7 +199,7 @@ clean:
 	@rm -Rf $(OBJECTS) $(BINARY_MODULE) $(APREQ_BINARY) doc/docs.md
 	@git checkout src/errno.c 2>/dev/null || true
 
-.PHONY: install uninstall test valgrind coverage docs check_deps \
-	install_deps package_prerequisites zip_package rockspec clean
+.PHONY: install uninstall test valgrind coverage docs \
+	package_prerequisites zip_package rockspec clean
 
 # vim: ts=4 sw=4 noet
