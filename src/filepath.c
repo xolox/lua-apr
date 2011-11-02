@@ -1,7 +1,7 @@
 /* File path manipulation module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: March 27, 2011
+ * Last Change: November 1, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -221,7 +221,7 @@ int lua_apr_filepath_merge(lua_State *L)
     root = NULL;
 
   for (arg = 3, flags = 0; !lua_isnoneornil(L, arg); arg++)
-    flags |= values[luaL_checkoption(L, arg, 0, options)];
+    flags |= values[luaL_checkoption(L, arg, NULL, options)];
 
   status = apr_filepath_merge(&merged, root, path, flags, memory_pool);
 

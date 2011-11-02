@@ -1,7 +1,7 @@
 /* Network I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: June 24, 2011
+ * Last Change: November 1, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -11,16 +11,6 @@
 #include <apr_portable.h>
 
 /* Internal functions {{{1 */
-
-/* Socket object structure declaration. */
-typedef struct {
-  lua_apr_refobj header;
-  lua_apr_readbuf input;
-  lua_apr_writebuf output;
-  apr_pool_t *pool;
-  apr_socket_t *handle;
-  int family, protocol;
-} lua_apr_socket;
 
 /* socket_alloc(L) -- allocate and initialize socket object {{{2 */
 

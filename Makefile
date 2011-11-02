@@ -1,7 +1,7 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: October 30, 2011
+# Last Change: November 1, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -48,6 +48,7 @@ SOURCES = src/base64.c \
 		  src/memory_pool.c \
 		  src/object.c \
 		  src/permissions.c \
+		  src/pollset.c \
 		  src/proc.c \
 		  src/shm.c \
 		  src/signal.c \

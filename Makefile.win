@@ -1,7 +1,7 @@
 # This is the Windows makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: July 3, 2011
+# Last Change: November 1, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -65,6 +65,7 @@ OBJECTS = src\base64.obj \
 		  src\memory_pool.obj \
 		  src\object.obj \
 		  src\permissions.obj \
+		  src\pollset.obj \
 		  src\proc.obj \
 		  src\shm.obj \
 		  src\signal.obj \

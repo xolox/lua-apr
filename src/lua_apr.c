@@ -1,7 +1,7 @@
 /* Miscellaneous functions module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: October 29, 2011
+ * Last Change: November 1, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -26,6 +26,7 @@ lua_apr_objtype *lua_apr_types[] = {
   &lua_apr_thread_type,
   &lua_apr_queue_type,
 # endif
+  &lua_apr_pollset_type,
   &lua_apr_proc_type,
   &lua_apr_dbm_type,
   &lua_apr_dbd_type,
@@ -155,6 +156,9 @@ LUA_APR_EXPORT int luaopen_apr_core(lua_State *L)
     { "ldap_url_check", lua_apr_ldap_url_check },
     { "ldap_url_parse", lua_apr_ldap_url_parse },
 #   endif
+
+    /* pollset -- asynchronous network communication. */
+    { "pollset", lua_apr_pollset },
 
     /* proc -- process handling. */
     { "proc_create", lua_apr_proc_create },

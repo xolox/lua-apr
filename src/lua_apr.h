@@ -1,7 +1,7 @@
 /* Header file for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: July 3, 2011
+ * Last Change: November 1, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -21,6 +21,7 @@
 #include <apr_general.h>
 #include <apr_file_info.h>
 #include <apr_file_io.h>
+#include <apr_network_io.h>
 #include <apr_thread_proc.h>
 #include <apr_queue.h>
 #include <apr_atomic.h>
@@ -193,6 +194,16 @@ typedef struct {
   const char *path;
 } lua_apr_file;
 
+/* Structure for socket objects. */
+typedef struct {
+  lua_apr_refobj header;
+  lua_apr_readbuf input;
+  lua_apr_writebuf output;
+  apr_pool_t *pool;
+  apr_socket_t *handle;
+  int family, protocol;
+} lua_apr_socket;
+
 /* Structure used to define Lua userdata types created by Lua/APR. */
 typedef struct {
   const char *typename, *friendlyname;
@@ -208,6 +219,7 @@ extern lua_apr_objtype lua_apr_dir_type;
 extern lua_apr_objtype lua_apr_socket_type;
 extern lua_apr_objtype lua_apr_thread_type;
 extern lua_apr_objtype lua_apr_queue_type;
+extern lua_apr_objtype lua_apr_pollset_type;
 extern lua_apr_objtype lua_apr_proc_type;
 extern lua_apr_objtype lua_apr_shm_type;
 extern lua_apr_objtype lua_apr_dbm_type;
@@ -367,6 +379,9 @@ void refpool_decref(lua_apr_pool*);
 /* permissions.c */
 int push_protection(lua_State*, apr_fileperms_t);
 apr_fileperms_t check_permissions(lua_State*, int, int);
+
+/* pollset.c */
+int lua_apr_pollset(lua_State*);
 
 /* proc.c */
 int lua_apr_proc_create(lua_State*);
