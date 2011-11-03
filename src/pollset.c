@@ -1,7 +1,7 @@
 /* Pollset module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: November 2, 2011
+ * Last Change: November 4, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -136,6 +136,7 @@ static int pollset_remove(lua_State *L)
   apr_status_t status;
 
   object = check_object(L, 1, &lua_apr_pollset_type);
+  socket = check_object(L, 2, &lua_apr_socket_type);
   pollfd = find_fd(object, socket);
   if (pollfd != NULL) {
     /* Remove it from the pollset. */
