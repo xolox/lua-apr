@@ -3,7 +3,7 @@
  Error handling code generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: July 1, 2011
+ Last Change: November 4, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -73,15 +73,12 @@ end
 
 local source = io.read '*a'
 source = source:gsub('/%*.-%*/', '')
-local longest_constant, longest_test = 0, 0
 for token in source :gmatch '[%w_]+' do
   if not ignored[token] then
     if token:find '^APR_STATUS_IS_[A-Z0-9_]+$' then
       add(tests, token)
-      longest_test = math.max(longest_test, #token)
     elseif token:find '^APR_[A-Z0-9_]+$' then
       add(constants, token)
-      longest_constant = math.max(longest_constant, #token)
     end
   end
 end
@@ -99,7 +96,6 @@ if verbose then
     if not tests[constant:gsub('^APR_(.-)$', 'APR_STATUS_IS_%1')] then
       io.write("   (doesn't have a matching test)\n")
     end
-    longest_constant = math.max(#constant, longest_constant)
   end
   io.write '\n'
 
@@ -206,11 +202,17 @@ void status_to_name(lua_State *L, apr_status_t status)
 
 -- Dynamically generated source code. {{{2
 
-local template = '    case %s: %slua_pushliteral(L, %q); %sreturn;\n'
+local template = [[
+#   ifdef %s
+    case %s:
+      lua_pushliteral(L, %q);
+      return;
+#   endif
+]]
+
 for i, constant in ipairs(constants) do
   local name = constant:gsub('^APR_', '')
-  local padding = string.rep(' ', longest_constant - #constant)
-  handle:write(template:format(constant, padding, name, padding))
+  handle:write(template:format(constant, constant, name))
 end
 
 handle:write [[
@@ -220,11 +222,17 @@ handle:write [[
   if (0) ;
 ]]
 
-local template = '  else if (%s(status)) %s{ lua_pushliteral(L, %q); %sreturn; }\n'
+local template = [[
+# ifdef %s
+  else if (%s(status)) {
+    lua_pushliteral(L, %q);
+    return;
+  }
+# endif
+]]
 for i, test in ipairs(tests) do
   local name = test:gsub('^APR_STATUS_IS_', '')
-  local padding = string.rep(' ', longest_test - #test)
-  handle:write(template:format(test, padding, name, padding))
+  handle:write(template:format(test, test, name))
 end
 
 handle:write [[

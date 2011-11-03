@@ -1,7 +1,7 @@
 /* Header file for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: November 1, 2011
+ * Last Change: November 4, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -25,6 +25,9 @@
 #include <apr_thread_proc.h>
 #include <apr_queue.h>
 #include <apr_atomic.h>
+
+#define LUA_APR_HAVE_MEMCACHE \
+  (APR_MAJOR_VERSION > 1 || (APR_MAJOR_VERSION == 1 && APR_MINOR_VERSION >= 3))
 
 /* Macro definitions. {{{1 */
 
@@ -94,6 +97,11 @@
 #define DEBUG_TEST 1
 #else
 #define DEBUG_TEST 0
+#endif
+
+/* Used in I/O buffer handling. */
+#ifndef APR_SIZE_MAX
+#define APR_SIZE_MAX SIZE_MAX
 #endif
 
 /* Enable printing messages to stderr in debug mode, but always compile
@@ -229,8 +237,10 @@ extern lua_apr_objtype lua_apr_dbp_type;
 extern lua_apr_objtype lua_apr_md5_type;
 extern lua_apr_objtype lua_apr_sha1_type;
 extern lua_apr_objtype lua_apr_xml_type;
+#if LUA_APR_HAVE_MEMCACHE
 extern lua_apr_objtype lua_apr_memcache_type;
 extern lua_apr_objtype lua_apr_memcache_server_type;
+#endif
 extern lua_apr_objtype lua_apr_ldap_type;
 
 /* Prototypes. {{{1 */
@@ -453,7 +463,9 @@ int lua_apr_xlate(lua_State*);
 int lua_apr_xml(lua_State*);
 
 /* memcache */
+#if LUA_APR_HAVE_MEMCACHE
 int lua_apr_memcache(lua_State *L);
+#endif
 
 #endif
 

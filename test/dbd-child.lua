@@ -6,6 +6,9 @@ if not status then
   apr = require 'apr'
 end
 
+-- APR 1.2 compatibility?
+local APR_12_COMPAT = apr.strnatcmp(apr.version_get().apr, '1.3')
+
 local helpers = require 'apr.test.helpers'
 local driver = assert(apr.dbd 'sqlite3')
 assert(driver:open ':memory:')
@@ -63,10 +66,16 @@ end
 
 -- Test transactions and rolling back. {{{1
 assert(driver:transaction_start())
-assert(driver:transaction_mode 'rollback')
+if not APR_12_COMPAT then
+  assert(driver:transaction_mode 'rollback')
+end
 assert(count_rows() == 26)
 delete_rows()
 assert(count_rows() == 0)
+if APR_12_COMPAT then
+  -- Trigger an error to rollback the transaction :-) (APR 1.2 doesn't have transaction_mode()).
+  assert(not driver:query 'DROP TABLE presumably_non_existing_table')
+end
 assert(driver:transaction_end())
 assert(count_rows() == 26)
 
@@ -119,90 +128,95 @@ assert(#results == 1)
 helpers.checktuple({ '42', 'hello world!' }, results:tuple(1))
 assert(not results:tuple())
 
--- Named tuple containing number and string. {{{2
-local results = assert(driver:select [[ SELECT 42 AS "num", 'hello world!' AS "str" ]])
-assert(#results == 1)
-helpers.checktuple({ 'num', 'str' }, results:columns())
-assert(not results:columns(0))
-assert(results:columns(1) == 'num')
-assert(results:columns(2) == 'str')
-assert(not results:columns(3))
-helpers.checktuple({ '42', 'hello world!' }, results:tuple(1))
-assert(not results:tuple())
+-- The following is only available since APR 1.3.
+if not APR_12_COMPAT then
 
--- Result set with multiple tuples. {{{2
-local results = assert(driver:select [[
-  SELECT col1, col2, col3
-  FROM apr_dbd_test
-  ORDER BY col1
-]])
-local expected = string.byte 'a'
-helpers.checktuple({ 'col1', 'col2', 'col3' }, results:columns())
-while true do
-  local col1, col2, col3 = results:tuple()
-  if not col1 then break end
-  assert(col1 == string.char(expected))
-  assert(tonumber(col2) == expected)
-  assert(tonumber(col3) == expected)
-  expected = expected + 1
+  -- Named tuple containing number and string. {{{2
+  local results = assert(driver:select [[ SELECT 42 AS "num", 'hello world!' AS "str" ]])
+  assert(#results == 1)
+  helpers.checktuple({ 'num', 'str' }, results:columns())
+  assert(not results:columns(0))
+  assert(results:columns(1) == 'num')
+  assert(results:columns(2) == 'str')
+  assert(not results:columns(3))
+  helpers.checktuple({ '42', 'hello world!' }, results:tuple(1))
+  assert(not results:tuple())
+
+  -- Result set with multiple tuples. {{{2
+  local results = assert(driver:select [[
+    SELECT col1, col2, col3
+    FROM apr_dbd_test
+    ORDER BY col1
+  ]])
+  local expected = string.byte 'a'
+  helpers.checktuple({ 'col1', 'col2', 'col3' }, results:columns())
+  while true do
+    local col1, col2, col3 = results:tuple()
+    if not col1 then break end
+    assert(col1 == string.char(expected))
+    assert(tonumber(col2) == expected)
+    assert(tonumber(col3) == expected)
+    expected = expected + 1
+  end
+  assert(expected == (string.byte 'z' + 1))
+
+  -- Test resultset:rows() iterator. {{{1
+  local results = assert(driver:select [[
+    SELECT col1, col2, col3
+    FROM apr_dbd_test
+    ORDER BY col1
+  ]])
+  local expected = string.byte 'a'
+  for row in results:rows() do
+    assert(helpers.deepequal({
+      col1 = string.char(expected),
+      col2 = tostring(expected),
+      col3 = tostring(expected)
+    }, row))
+    expected = expected + 1
+  end
+  assert(expected == (string.byte 'z' + 1))
+
+  -- Test resultset:row() function. {{{1
+
+  -- Basic usage.
+  local results = assert(driver:select [[ SELECT 42 AS "num", 'hello world!' AS "str" ]])
+  assert(#results == 1)
+  assert(helpers.deepequal({ num = '42', str = 'hello world!' }, results:row(1)))
+  assert(not results:row())
+
+  -- NULL translates to nil.
+  local results = assert(driver:select [[ SELECT 42 AS "num", 'hello world!' AS "str", NULL AS "whatever" ]])
+  assert(#results == 1)
+  assert(helpers.deepequal({ num = '42', str = 'hello world!' }, results:row(1)))
+  assert(not results:row())
+
+  -- True and false translate to 0 and 1.
+  local results = assert(driver:select [[ SELECT (1 == 1) AS "t", (1 == 2) AS "f" ]])
+  assert(#results == 1)
+  assert(helpers.deepequal({ t = '1', f = '0' }, results:row(1)))
+
+  -- Test resultset:pairs() iterator. {{{1
+  local results = assert(driver:select [[
+    SELECT col1, col2, col3
+    FROM apr_dbd_test
+    ORDER BY col1
+  ]])
+  local ii = 1
+  local expected = string.byte 'a'
+  for i, row in results:pairs() do
+    assert(helpers.deepequal({
+      col1 = string.char(expected),
+      col2 = tostring(expected),
+      col3 = tostring(expected)
+    }, row))
+    assert(i == ii)
+    expected = expected + 1
+    ii = ii + 1
+  end
+  assert(expected == (string.byte 'z' + 1))
+
 end
-assert(expected == (string.byte 'z' + 1))
-
--- Test resultset:rows() iterator. {{{1
-local results = assert(driver:select [[
-  SELECT col1, col2, col3
-  FROM apr_dbd_test
-  ORDER BY col1
-]])
-local expected = string.byte 'a'
-for row in results:rows() do
-  assert(helpers.deepequal({
-    col1 = string.char(expected),
-    col2 = tostring(expected),
-    col3 = tostring(expected)
-  }, row))
-  expected = expected + 1
-end
-assert(expected == (string.byte 'z' + 1))
-
--- Test resultset:row() function. {{{1
-
--- Basic usage.
-local results = assert(driver:select [[ SELECT 42 AS "num", 'hello world!' AS "str" ]])
-assert(#results == 1)
-assert(helpers.deepequal({ num = '42', str = 'hello world!' }, results:row(1)))
-assert(not results:row())
-
--- NULL translates to nil.
-local results = assert(driver:select [[ SELECT 42 AS "num", 'hello world!' AS "str", NULL AS "whatever" ]])
-assert(#results == 1)
-assert(helpers.deepequal({ num = '42', str = 'hello world!' }, results:row(1)))
-assert(not results:row())
-
--- True and false translate to 0 and 1.
-local results = assert(driver:select [[ SELECT (1 == 1) AS "t", (1 == 2) AS "f" ]])
-assert(#results == 1)
-assert(helpers.deepequal({ t = '1', f = '0' }, results:row(1)))
-
--- Test resultset:pairs() iterator. {{{1
-local results = assert(driver:select [[
-  SELECT col1, col2, col3
-  FROM apr_dbd_test
-  ORDER BY col1
-]])
-local ii = 1
-local expected = string.byte 'a'
-for i, row in results:pairs() do
-  assert(helpers.deepequal({
-    col1 = string.char(expected),
-    col2 = tostring(expected),
-    col3 = tostring(expected)
-  }, row))
-  assert(i == ii)
-  expected = expected + 1
-  ii = ii + 1
-end
-assert(expected == (string.byte 'z' + 1))
 
 -- Delete all rows in table. {{{1
 delete_rows()
@@ -230,5 +244,5 @@ local statement_results = assert(statement:select())
 assert(apr.type(statement_results) == 'result set')
 
 driver:close()
-check_reinitialized(function() results:row() end)
+check_reinitialized(function() results:tuple() end)
 check_reinitialized(function() statement:select() end)

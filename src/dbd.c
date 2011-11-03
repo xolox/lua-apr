@@ -3,7 +3,7 @@
  * Authors:
  *  - zhiguo zhao <zhaozg@gmail.com>
  *  - Peter Odding <peter@peterodding.com>
- * Last Change: June 30, 2011
+ * Last Change: November 4, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -70,6 +70,10 @@
 
 #include "lua_apr.h"
 #include <apr_dbd.h>
+
+/* Enable compatibility with APR 1.2? (which doesn't
+ * have named columns and explicit transaction modes) */
+#define LUA_APR_DBD_COMPAT (APR_MAJOR_VERSION == 1 && APR_MINOR_VERSION <= 2)
 
 /* Lua object structures. {{{1 */
 
@@ -359,6 +363,8 @@ static int dbr_tuple_cb(lua_State *L, lua_apr_dbr_object *results, apr_dbd_row_t
 
 /* dbr_row_cb() {{{2 */
 
+#if !LUA_APR_DBD_COMPAT
+
 static int dbr_row_cb(lua_State *L, lua_apr_dbr_object *results, apr_dbd_row_t *row)
 {
   lua_apr_dbd_object *driver;
@@ -376,6 +382,8 @@ static int dbr_row_cb(lua_State *L, lua_apr_dbr_object *results, apr_dbd_row_t *
   }
   return is_pairs ? 2 : 1;
 }
+
+#endif
 
 /* dbd_close_impl() {{{2 */
 
@@ -494,7 +502,11 @@ int lua_apr_dbd(lua_State *L)
 static int dbd_open(lua_State *L)
 {
   lua_apr_dbd_object *driver;
+# if LUA_APR_DBD_COMPAT
+  const char *params;
+# else
   const char *params, *error;
+# endif
   apr_status_t status;
 
   driver = check_dbd(L, 1, 0, 0);
@@ -510,13 +522,21 @@ static int dbd_open(lua_State *L)
     driver->generation++;
     driver->handle = NULL;
   }
+# if LUA_APR_DBD_COMPAT
+  status = apr_dbd_open(driver->driver, driver->pool, params,
+      &driver->handle);
+  if (status != APR_SUCCESS)
+    return push_error_status(L, status);
+# else
   status = apr_dbd_open_ex(driver->driver, driver->pool, params,
       &driver->handle, &error);
   if (status != APR_SUCCESS) {
     lua_pushnil(L);
     lua_pushstring(L, error);
-    return 2;
+    status_to_name(L, status);
+    return 3;
   }
+# endif
   lua_pushboolean(L, 1);
   return 1;
 }
@@ -664,6 +684,8 @@ static int dbd_transaction_end(lua_State *L)
   return push_status(L, status);
 }
 
+#if !LUA_APR_DBD_COMPAT
+
 /* driver:transaction_mode([mode]) -> mode {{{2
  *
  * Get or set the transaction mode, one of:
@@ -704,6 +726,8 @@ static int dbd_transaction_mode(lua_State *L)
   assert(0);
   return 0;
 }
+
+#endif
 
 /* Prepared statements. {{{1 */
 
@@ -851,6 +875,8 @@ static int dbp_gc(lua_State *L)
 
 /* Result sets. {{{1 */
 
+#if !LUA_APR_DBD_COMPAT
+
 /* result_set:columns([num]) -> name [, ...] {{{2
  *
  * If no arguments are given return the names of all columns in the result set,
@@ -923,6 +949,8 @@ static int dbr_rows(lua_State *L)
   return 1;
 }
 
+#endif
+
 /* result_set:tuple([rownum]) -> value [, ...] {{{2
  *
  * Return a tuple for the next row in the result set or the row with index
@@ -966,6 +994,8 @@ static int dbr_tuples(lua_State *L)
   return 1;
 }
 
+#if !LUA_APR_DBD_COMPAT
+
 /* result_set:pairs() -> iterator {{{2
  *
  * Return an iterator that produces a row number and a table with named fields
@@ -985,6 +1015,8 @@ static int dbr_pairs(lua_State *L)
   lua_insert(L, 1);
   return 1;
 }
+
+#endif
 
 /* #result_set -> num_tuples {{{2
  *
@@ -1094,7 +1126,9 @@ static luaL_reg dbd_methods[] = {
   { "close", dbd_close },
   { "transaction_start", dbd_transaction_start },
   { "transaction_end", dbd_transaction_end },
+# if !LUA_APR_DBD_COMPAT
   { "transaction_mode", dbd_transaction_mode },
+# endif
   { NULL, NULL }
 };
 
@@ -1113,20 +1147,24 @@ static luaL_reg dbr_metamethods[] = {
   { "__tostring", dbr_tostring },
   { "__eq", objects_equal },
   { "__gc", dbr_gc },
-#if LUA_VERSION_NUM >= 502
+# if LUA_VERSION_NUM >= 502 && !LUA_APR_DBD_COMPAT
   { "__pairs", dbr_rows },
   { "__ipairs", dbr_pairs },
-#endif
+# endif
   { NULL, NULL }
 };
 
 static luaL_reg dbr_methods[] = {
+# if !LUA_APR_DBD_COMPAT
   { "columns", dbr_columns },
+# endif
   { "tuple", dbr_tuple },
   { "tuples", dbr_tuples },
+# if !LUA_APR_DBD_COMPAT
   { "row", dbr_row },
   { "rows", dbr_rows },
   { "pairs", dbr_pairs },
+# endif
   { NULL, NULL }
 };
 

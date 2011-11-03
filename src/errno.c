@@ -1,7 +1,7 @@
 /* Error handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: May 15, 2011
+ * Last Change: November 04, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -77,151 +77,785 @@ void status_to_name(lua_State *L, apr_status_t status)
 {
   /* Use a switch statement for fast number to string mapping: */
   switch (status) {
-    case APR_ANONYMOUS:         lua_pushliteral(L, "ANONYMOUS");         return;
-    case APR_BADARG:            lua_pushliteral(L, "BADARG");            return;
-    case APR_BADCH:             lua_pushliteral(L, "BADCH");             return;
-    case APR_DETACH:            lua_pushliteral(L, "DETACH");            return;
-    case APR_EABOVEROOT:        lua_pushliteral(L, "EABOVEROOT");        return;
-    case APR_EABSOLUTE:         lua_pushliteral(L, "EABSOLUTE");         return;
-    case APR_EACCES:            lua_pushliteral(L, "EACCES");            return;
-    case APR_EAFNOSUPPORT:      lua_pushliteral(L, "EAFNOSUPPORT");      return;
-    case APR_EAGAIN:            lua_pushliteral(L, "EAGAIN");            return;
-    case APR_EBADDATE:          lua_pushliteral(L, "EBADDATE");          return;
-    case APR_EBADF:             lua_pushliteral(L, "EBADF");             return;
-    case APR_EBADIP:            lua_pushliteral(L, "EBADIP");            return;
-    case APR_EBADMASK:          lua_pushliteral(L, "EBADMASK");          return;
-    case APR_EBADPATH:          lua_pushliteral(L, "EBADPATH");          return;
-    case APR_EBUSY:             lua_pushliteral(L, "EBUSY");             return;
-    case APR_ECONNABORTED:      lua_pushliteral(L, "ECONNABORTED");      return;
-    case APR_ECONNREFUSED:      lua_pushliteral(L, "ECONNREFUSED");      return;
-    case APR_ECONNRESET:        lua_pushliteral(L, "ECONNRESET");        return;
-    case APR_EDSOOPEN:          lua_pushliteral(L, "EDSOOPEN");          return;
-    case APR_EEXIST:            lua_pushliteral(L, "EEXIST");            return;
-    case APR_EFTYPE:            lua_pushliteral(L, "EFTYPE");            return;
-    case APR_EGENERAL:          lua_pushliteral(L, "EGENERAL");          return;
-    case APR_EHOSTUNREACH:      lua_pushliteral(L, "EHOSTUNREACH");      return;
-    case APR_EINCOMPLETE:       lua_pushliteral(L, "EINCOMPLETE");       return;
-    case APR_EINIT:             lua_pushliteral(L, "EINIT");             return;
-    case APR_EINPROGRESS:       lua_pushliteral(L, "EINPROGRESS");       return;
-    case APR_EINTR:             lua_pushliteral(L, "EINTR");             return;
-    case APR_EINVAL:            lua_pushliteral(L, "EINVAL");            return;
-    case APR_EINVALSOCK:        lua_pushliteral(L, "EINVALSOCK");        return;
-    case APR_EMFILE:            lua_pushliteral(L, "EMFILE");            return;
-    case APR_EMISMATCH:         lua_pushliteral(L, "EMISMATCH");         return;
-    case APR_ENAMETOOLONG:      lua_pushliteral(L, "ENAMETOOLONG");      return;
-    case APR_ENETUNREACH:       lua_pushliteral(L, "ENETUNREACH");       return;
-    case APR_ENFILE:            lua_pushliteral(L, "ENFILE");            return;
-    case APR_ENODIR:            lua_pushliteral(L, "ENODIR");            return;
-    case APR_ENOENT:            lua_pushliteral(L, "ENOENT");            return;
-    case APR_ENOLOCK:           lua_pushliteral(L, "ENOLOCK");           return;
-    case APR_ENOMEM:            lua_pushliteral(L, "ENOMEM");            return;
-    case APR_ENOPOLL:           lua_pushliteral(L, "ENOPOLL");           return;
-    case APR_ENOPOOL:           lua_pushliteral(L, "ENOPOOL");           return;
-    case APR_ENOPROC:           lua_pushliteral(L, "ENOPROC");           return;
-    case APR_ENOSHMAVAIL:       lua_pushliteral(L, "ENOSHMAVAIL");       return;
-    case APR_ENOSOCKET:         lua_pushliteral(L, "ENOSOCKET");         return;
-    case APR_ENOSPC:            lua_pushliteral(L, "ENOSPC");            return;
-    case APR_ENOSTAT:           lua_pushliteral(L, "ENOSTAT");           return;
-    case APR_ENOTDIR:           lua_pushliteral(L, "ENOTDIR");           return;
-    case APR_ENOTEMPTY:         lua_pushliteral(L, "ENOTEMPTY");         return;
-    case APR_ENOTENOUGHENTROPY: lua_pushliteral(L, "ENOTENOUGHENTROPY"); return;
-    case APR_ENOTHDKEY:         lua_pushliteral(L, "ENOTHDKEY");         return;
-    case APR_ENOTHREAD:         lua_pushliteral(L, "ENOTHREAD");         return;
-    case APR_ENOTIME:           lua_pushliteral(L, "ENOTIME");           return;
-    case APR_ENOTIMPL:          lua_pushliteral(L, "ENOTIMPL");          return;
-    case APR_ENOTSOCK:          lua_pushliteral(L, "ENOTSOCK");          return;
-    case APR_EOF:               lua_pushliteral(L, "EOF");               return;
-    case APR_EPATHWILD:         lua_pushliteral(L, "EPATHWILD");         return;
-    case APR_EPIPE:             lua_pushliteral(L, "EPIPE");             return;
-    case APR_EPROC_UNKNOWN:     lua_pushliteral(L, "EPROC_UNKNOWN");     return;
-    case APR_ERELATIVE:         lua_pushliteral(L, "ERELATIVE");         return;
-    case APR_ESPIPE:            lua_pushliteral(L, "ESPIPE");            return;
-    case APR_ESYMNOTFOUND:      lua_pushliteral(L, "ESYMNOTFOUND");      return;
-    case APR_ETIMEDOUT:         lua_pushliteral(L, "ETIMEDOUT");         return;
-    case APR_EXDEV:             lua_pushliteral(L, "EXDEV");             return;
-    case APR_FILEBASED:         lua_pushliteral(L, "FILEBASED");         return;
-    case APR_INCHILD:           lua_pushliteral(L, "INCHILD");           return;
-    case APR_INCOMPLETE:        lua_pushliteral(L, "INCOMPLETE");        return;
-    case APR_INPARENT:          lua_pushliteral(L, "INPARENT");          return;
-    case APR_KEYBASED:          lua_pushliteral(L, "KEYBASED");          return;
-    case APR_NOTDETACH:         lua_pushliteral(L, "NOTDETACH");         return;
-    case APR_NOTFOUND:          lua_pushliteral(L, "NOTFOUND");          return;
-    case APR_SUCCESS:           lua_pushliteral(L, "SUCCESS");           return;
-    case APR_TIMEUP:            lua_pushliteral(L, "TIMEUP");            return;
+#   ifdef APR_ANONYMOUS
+    case APR_ANONYMOUS:
+      lua_pushliteral(L, "ANONYMOUS");
+      return;
+#   endif
+#   ifdef APR_BADARG
+    case APR_BADARG:
+      lua_pushliteral(L, "BADARG");
+      return;
+#   endif
+#   ifdef APR_BADCH
+    case APR_BADCH:
+      lua_pushliteral(L, "BADCH");
+      return;
+#   endif
+#   ifdef APR_DETACH
+    case APR_DETACH:
+      lua_pushliteral(L, "DETACH");
+      return;
+#   endif
+#   ifdef APR_EABOVEROOT
+    case APR_EABOVEROOT:
+      lua_pushliteral(L, "EABOVEROOT");
+      return;
+#   endif
+#   ifdef APR_EABSOLUTE
+    case APR_EABSOLUTE:
+      lua_pushliteral(L, "EABSOLUTE");
+      return;
+#   endif
+#   ifdef APR_EACCES
+    case APR_EACCES:
+      lua_pushliteral(L, "EACCES");
+      return;
+#   endif
+#   ifdef APR_EAFNOSUPPORT
+    case APR_EAFNOSUPPORT:
+      lua_pushliteral(L, "EAFNOSUPPORT");
+      return;
+#   endif
+#   ifdef APR_EAGAIN
+    case APR_EAGAIN:
+      lua_pushliteral(L, "EAGAIN");
+      return;
+#   endif
+#   ifdef APR_EBADDATE
+    case APR_EBADDATE:
+      lua_pushliteral(L, "EBADDATE");
+      return;
+#   endif
+#   ifdef APR_EBADF
+    case APR_EBADF:
+      lua_pushliteral(L, "EBADF");
+      return;
+#   endif
+#   ifdef APR_EBADIP
+    case APR_EBADIP:
+      lua_pushliteral(L, "EBADIP");
+      return;
+#   endif
+#   ifdef APR_EBADMASK
+    case APR_EBADMASK:
+      lua_pushliteral(L, "EBADMASK");
+      return;
+#   endif
+#   ifdef APR_EBADPATH
+    case APR_EBADPATH:
+      lua_pushliteral(L, "EBADPATH");
+      return;
+#   endif
+#   ifdef APR_EBUSY
+    case APR_EBUSY:
+      lua_pushliteral(L, "EBUSY");
+      return;
+#   endif
+#   ifdef APR_ECONNABORTED
+    case APR_ECONNABORTED:
+      lua_pushliteral(L, "ECONNABORTED");
+      return;
+#   endif
+#   ifdef APR_ECONNREFUSED
+    case APR_ECONNREFUSED:
+      lua_pushliteral(L, "ECONNREFUSED");
+      return;
+#   endif
+#   ifdef APR_ECONNRESET
+    case APR_ECONNRESET:
+      lua_pushliteral(L, "ECONNRESET");
+      return;
+#   endif
+#   ifdef APR_EDSOOPEN
+    case APR_EDSOOPEN:
+      lua_pushliteral(L, "EDSOOPEN");
+      return;
+#   endif
+#   ifdef APR_EEXIST
+    case APR_EEXIST:
+      lua_pushliteral(L, "EEXIST");
+      return;
+#   endif
+#   ifdef APR_EFTYPE
+    case APR_EFTYPE:
+      lua_pushliteral(L, "EFTYPE");
+      return;
+#   endif
+#   ifdef APR_EGENERAL
+    case APR_EGENERAL:
+      lua_pushliteral(L, "EGENERAL");
+      return;
+#   endif
+#   ifdef APR_EHOSTUNREACH
+    case APR_EHOSTUNREACH:
+      lua_pushliteral(L, "EHOSTUNREACH");
+      return;
+#   endif
+#   ifdef APR_EINCOMPLETE
+    case APR_EINCOMPLETE:
+      lua_pushliteral(L, "EINCOMPLETE");
+      return;
+#   endif
+#   ifdef APR_EINIT
+    case APR_EINIT:
+      lua_pushliteral(L, "EINIT");
+      return;
+#   endif
+#   ifdef APR_EINPROGRESS
+    case APR_EINPROGRESS:
+      lua_pushliteral(L, "EINPROGRESS");
+      return;
+#   endif
+#   ifdef APR_EINTR
+    case APR_EINTR:
+      lua_pushliteral(L, "EINTR");
+      return;
+#   endif
+#   ifdef APR_EINVAL
+    case APR_EINVAL:
+      lua_pushliteral(L, "EINVAL");
+      return;
+#   endif
+#   ifdef APR_EINVALSOCK
+    case APR_EINVALSOCK:
+      lua_pushliteral(L, "EINVALSOCK");
+      return;
+#   endif
+#   ifdef APR_EMFILE
+    case APR_EMFILE:
+      lua_pushliteral(L, "EMFILE");
+      return;
+#   endif
+#   ifdef APR_EMISMATCH
+    case APR_EMISMATCH:
+      lua_pushliteral(L, "EMISMATCH");
+      return;
+#   endif
+#   ifdef APR_ENAMETOOLONG
+    case APR_ENAMETOOLONG:
+      lua_pushliteral(L, "ENAMETOOLONG");
+      return;
+#   endif
+#   ifdef APR_ENETUNREACH
+    case APR_ENETUNREACH:
+      lua_pushliteral(L, "ENETUNREACH");
+      return;
+#   endif
+#   ifdef APR_ENFILE
+    case APR_ENFILE:
+      lua_pushliteral(L, "ENFILE");
+      return;
+#   endif
+#   ifdef APR_ENODIR
+    case APR_ENODIR:
+      lua_pushliteral(L, "ENODIR");
+      return;
+#   endif
+#   ifdef APR_ENOENT
+    case APR_ENOENT:
+      lua_pushliteral(L, "ENOENT");
+      return;
+#   endif
+#   ifdef APR_ENOLOCK
+    case APR_ENOLOCK:
+      lua_pushliteral(L, "ENOLOCK");
+      return;
+#   endif
+#   ifdef APR_ENOMEM
+    case APR_ENOMEM:
+      lua_pushliteral(L, "ENOMEM");
+      return;
+#   endif
+#   ifdef APR_ENOPOLL
+    case APR_ENOPOLL:
+      lua_pushliteral(L, "ENOPOLL");
+      return;
+#   endif
+#   ifdef APR_ENOPOOL
+    case APR_ENOPOOL:
+      lua_pushliteral(L, "ENOPOOL");
+      return;
+#   endif
+#   ifdef APR_ENOPROC
+    case APR_ENOPROC:
+      lua_pushliteral(L, "ENOPROC");
+      return;
+#   endif
+#   ifdef APR_ENOSHMAVAIL
+    case APR_ENOSHMAVAIL:
+      lua_pushliteral(L, "ENOSHMAVAIL");
+      return;
+#   endif
+#   ifdef APR_ENOSOCKET
+    case APR_ENOSOCKET:
+      lua_pushliteral(L, "ENOSOCKET");
+      return;
+#   endif
+#   ifdef APR_ENOSPC
+    case APR_ENOSPC:
+      lua_pushliteral(L, "ENOSPC");
+      return;
+#   endif
+#   ifdef APR_ENOSTAT
+    case APR_ENOSTAT:
+      lua_pushliteral(L, "ENOSTAT");
+      return;
+#   endif
+#   ifdef APR_ENOTDIR
+    case APR_ENOTDIR:
+      lua_pushliteral(L, "ENOTDIR");
+      return;
+#   endif
+#   ifdef APR_ENOTEMPTY
+    case APR_ENOTEMPTY:
+      lua_pushliteral(L, "ENOTEMPTY");
+      return;
+#   endif
+#   ifdef APR_ENOTENOUGHENTROPY
+    case APR_ENOTENOUGHENTROPY:
+      lua_pushliteral(L, "ENOTENOUGHENTROPY");
+      return;
+#   endif
+#   ifdef APR_ENOTHDKEY
+    case APR_ENOTHDKEY:
+      lua_pushliteral(L, "ENOTHDKEY");
+      return;
+#   endif
+#   ifdef APR_ENOTHREAD
+    case APR_ENOTHREAD:
+      lua_pushliteral(L, "ENOTHREAD");
+      return;
+#   endif
+#   ifdef APR_ENOTIME
+    case APR_ENOTIME:
+      lua_pushliteral(L, "ENOTIME");
+      return;
+#   endif
+#   ifdef APR_ENOTIMPL
+    case APR_ENOTIMPL:
+      lua_pushliteral(L, "ENOTIMPL");
+      return;
+#   endif
+#   ifdef APR_ENOTSOCK
+    case APR_ENOTSOCK:
+      lua_pushliteral(L, "ENOTSOCK");
+      return;
+#   endif
+#   ifdef APR_EOF
+    case APR_EOF:
+      lua_pushliteral(L, "EOF");
+      return;
+#   endif
+#   ifdef APR_EPATHWILD
+    case APR_EPATHWILD:
+      lua_pushliteral(L, "EPATHWILD");
+      return;
+#   endif
+#   ifdef APR_EPIPE
+    case APR_EPIPE:
+      lua_pushliteral(L, "EPIPE");
+      return;
+#   endif
+#   ifdef APR_EPROC_UNKNOWN
+    case APR_EPROC_UNKNOWN:
+      lua_pushliteral(L, "EPROC_UNKNOWN");
+      return;
+#   endif
+#   ifdef APR_ERELATIVE
+    case APR_ERELATIVE:
+      lua_pushliteral(L, "ERELATIVE");
+      return;
+#   endif
+#   ifdef APR_ESPIPE
+    case APR_ESPIPE:
+      lua_pushliteral(L, "ESPIPE");
+      return;
+#   endif
+#   ifdef APR_ESYMNOTFOUND
+    case APR_ESYMNOTFOUND:
+      lua_pushliteral(L, "ESYMNOTFOUND");
+      return;
+#   endif
+#   ifdef APR_ETIMEDOUT
+    case APR_ETIMEDOUT:
+      lua_pushliteral(L, "ETIMEDOUT");
+      return;
+#   endif
+#   ifdef APR_EXDEV
+    case APR_EXDEV:
+      lua_pushliteral(L, "EXDEV");
+      return;
+#   endif
+#   ifdef APR_FILEBASED
+    case APR_FILEBASED:
+      lua_pushliteral(L, "FILEBASED");
+      return;
+#   endif
+#   ifdef APR_INCHILD
+    case APR_INCHILD:
+      lua_pushliteral(L, "INCHILD");
+      return;
+#   endif
+#   ifdef APR_INCOMPLETE
+    case APR_INCOMPLETE:
+      lua_pushliteral(L, "INCOMPLETE");
+      return;
+#   endif
+#   ifdef APR_INPARENT
+    case APR_INPARENT:
+      lua_pushliteral(L, "INPARENT");
+      return;
+#   endif
+#   ifdef APR_KEYBASED
+    case APR_KEYBASED:
+      lua_pushliteral(L, "KEYBASED");
+      return;
+#   endif
+#   ifdef APR_NOTDETACH
+    case APR_NOTDETACH:
+      lua_pushliteral(L, "NOTDETACH");
+      return;
+#   endif
+#   ifdef APR_NOTFOUND
+    case APR_NOTFOUND:
+      lua_pushliteral(L, "NOTFOUND");
+      return;
+#   endif
+#   ifdef APR_SUCCESS
+    case APR_SUCCESS:
+      lua_pushliteral(L, "SUCCESS");
+      return;
+#   endif
+#   ifdef APR_TIMEUP
+    case APR_TIMEUP:
+      lua_pushliteral(L, "TIMEUP");
+      return;
+#   endif
   }
 
   /* If the switch statement fails we fall back to the following monstrosity :-) */
   if (0) ;
-  else if (APR_STATUS_IS_ANONYMOUS(status))         { lua_pushliteral(L, "ANONYMOUS");         return; }
-  else if (APR_STATUS_IS_BADARG(status))            { lua_pushliteral(L, "BADARG");            return; }
-  else if (APR_STATUS_IS_BADCH(status))             { lua_pushliteral(L, "BADCH");             return; }
-  else if (APR_STATUS_IS_DETACH(status))            { lua_pushliteral(L, "DETACH");            return; }
-  else if (APR_STATUS_IS_EABOVEROOT(status))        { lua_pushliteral(L, "EABOVEROOT");        return; }
-  else if (APR_STATUS_IS_EABSOLUTE(status))         { lua_pushliteral(L, "EABSOLUTE");         return; }
-  else if (APR_STATUS_IS_EACCES(status))            { lua_pushliteral(L, "EACCES");            return; }
-  else if (APR_STATUS_IS_EAFNOSUPPORT(status))      { lua_pushliteral(L, "EAFNOSUPPORT");      return; }
-  else if (APR_STATUS_IS_EAGAIN(status))            { lua_pushliteral(L, "EAGAIN");            return; }
-  else if (APR_STATUS_IS_EBADDATE(status))          { lua_pushliteral(L, "EBADDATE");          return; }
-  else if (APR_STATUS_IS_EBADF(status))             { lua_pushliteral(L, "EBADF");             return; }
-  else if (APR_STATUS_IS_EBADIP(status))            { lua_pushliteral(L, "EBADIP");            return; }
-  else if (APR_STATUS_IS_EBADMASK(status))          { lua_pushliteral(L, "EBADMASK");          return; }
-  else if (APR_STATUS_IS_EBADPATH(status))          { lua_pushliteral(L, "EBADPATH");          return; }
-  else if (APR_STATUS_IS_EBUSY(status))             { lua_pushliteral(L, "EBUSY");             return; }
-  else if (APR_STATUS_IS_ECONNABORTED(status))      { lua_pushliteral(L, "ECONNABORTED");      return; }
-  else if (APR_STATUS_IS_ECONNREFUSED(status))      { lua_pushliteral(L, "ECONNREFUSED");      return; }
-  else if (APR_STATUS_IS_ECONNRESET(status))        { lua_pushliteral(L, "ECONNRESET");        return; }
-  else if (APR_STATUS_IS_EDSOOPEN(status))          { lua_pushliteral(L, "EDSOOPEN");          return; }
-  else if (APR_STATUS_IS_EEXIST(status))            { lua_pushliteral(L, "EEXIST");            return; }
-  else if (APR_STATUS_IS_EFTYPE(status))            { lua_pushliteral(L, "EFTYPE");            return; }
-  else if (APR_STATUS_IS_EGENERAL(status))          { lua_pushliteral(L, "EGENERAL");          return; }
-  else if (APR_STATUS_IS_EHOSTUNREACH(status))      { lua_pushliteral(L, "EHOSTUNREACH");      return; }
-  else if (APR_STATUS_IS_EINCOMPLETE(status))       { lua_pushliteral(L, "EINCOMPLETE");       return; }
-  else if (APR_STATUS_IS_EINIT(status))             { lua_pushliteral(L, "EINIT");             return; }
-  else if (APR_STATUS_IS_EINPROGRESS(status))       { lua_pushliteral(L, "EINPROGRESS");       return; }
-  else if (APR_STATUS_IS_EINTR(status))             { lua_pushliteral(L, "EINTR");             return; }
-  else if (APR_STATUS_IS_EINVAL(status))            { lua_pushliteral(L, "EINVAL");            return; }
-  else if (APR_STATUS_IS_EINVALSOCK(status))        { lua_pushliteral(L, "EINVALSOCK");        return; }
-  else if (APR_STATUS_IS_EMFILE(status))            { lua_pushliteral(L, "EMFILE");            return; }
-  else if (APR_STATUS_IS_EMISMATCH(status))         { lua_pushliteral(L, "EMISMATCH");         return; }
-  else if (APR_STATUS_IS_ENAMETOOLONG(status))      { lua_pushliteral(L, "ENAMETOOLONG");      return; }
-  else if (APR_STATUS_IS_ENETUNREACH(status))       { lua_pushliteral(L, "ENETUNREACH");       return; }
-  else if (APR_STATUS_IS_ENFILE(status))            { lua_pushliteral(L, "ENFILE");            return; }
-  else if (APR_STATUS_IS_ENODIR(status))            { lua_pushliteral(L, "ENODIR");            return; }
-  else if (APR_STATUS_IS_ENOENT(status))            { lua_pushliteral(L, "ENOENT");            return; }
-  else if (APR_STATUS_IS_ENOLOCK(status))           { lua_pushliteral(L, "ENOLOCK");           return; }
-  else if (APR_STATUS_IS_ENOMEM(status))            { lua_pushliteral(L, "ENOMEM");            return; }
-  else if (APR_STATUS_IS_ENOPOLL(status))           { lua_pushliteral(L, "ENOPOLL");           return; }
-  else if (APR_STATUS_IS_ENOPOOL(status))           { lua_pushliteral(L, "ENOPOOL");           return; }
-  else if (APR_STATUS_IS_ENOPROC(status))           { lua_pushliteral(L, "ENOPROC");           return; }
-  else if (APR_STATUS_IS_ENOSHMAVAIL(status))       { lua_pushliteral(L, "ENOSHMAVAIL");       return; }
-  else if (APR_STATUS_IS_ENOSOCKET(status))         { lua_pushliteral(L, "ENOSOCKET");         return; }
-  else if (APR_STATUS_IS_ENOSPC(status))            { lua_pushliteral(L, "ENOSPC");            return; }
-  else if (APR_STATUS_IS_ENOSTAT(status))           { lua_pushliteral(L, "ENOSTAT");           return; }
-  else if (APR_STATUS_IS_ENOTDIR(status))           { lua_pushliteral(L, "ENOTDIR");           return; }
-  else if (APR_STATUS_IS_ENOTEMPTY(status))         { lua_pushliteral(L, "ENOTEMPTY");         return; }
-  else if (APR_STATUS_IS_ENOTENOUGHENTROPY(status)) { lua_pushliteral(L, "ENOTENOUGHENTROPY"); return; }
-  else if (APR_STATUS_IS_ENOTHDKEY(status))         { lua_pushliteral(L, "ENOTHDKEY");         return; }
-  else if (APR_STATUS_IS_ENOTHREAD(status))         { lua_pushliteral(L, "ENOTHREAD");         return; }
-  else if (APR_STATUS_IS_ENOTIME(status))           { lua_pushliteral(L, "ENOTIME");           return; }
-  else if (APR_STATUS_IS_ENOTIMPL(status))          { lua_pushliteral(L, "ENOTIMPL");          return; }
-  else if (APR_STATUS_IS_ENOTSOCK(status))          { lua_pushliteral(L, "ENOTSOCK");          return; }
-  else if (APR_STATUS_IS_EOF(status))               { lua_pushliteral(L, "EOF");               return; }
-  else if (APR_STATUS_IS_EPATHWILD(status))         { lua_pushliteral(L, "EPATHWILD");         return; }
-  else if (APR_STATUS_IS_EPIPE(status))             { lua_pushliteral(L, "EPIPE");             return; }
-  else if (APR_STATUS_IS_EPROC_UNKNOWN(status))     { lua_pushliteral(L, "EPROC_UNKNOWN");     return; }
-  else if (APR_STATUS_IS_ERELATIVE(status))         { lua_pushliteral(L, "ERELATIVE");         return; }
-  else if (APR_STATUS_IS_ESPIPE(status))            { lua_pushliteral(L, "ESPIPE");            return; }
-  else if (APR_STATUS_IS_ESYMNOTFOUND(status))      { lua_pushliteral(L, "ESYMNOTFOUND");      return; }
-  else if (APR_STATUS_IS_ETIMEDOUT(status))         { lua_pushliteral(L, "ETIMEDOUT");         return; }
-  else if (APR_STATUS_IS_EXDEV(status))             { lua_pushliteral(L, "EXDEV");             return; }
-  else if (APR_STATUS_IS_FILEBASED(status))         { lua_pushliteral(L, "FILEBASED");         return; }
-  else if (APR_STATUS_IS_INCHILD(status))           { lua_pushliteral(L, "INCHILD");           return; }
-  else if (APR_STATUS_IS_INCOMPLETE(status))        { lua_pushliteral(L, "INCOMPLETE");        return; }
-  else if (APR_STATUS_IS_INPARENT(status))          { lua_pushliteral(L, "INPARENT");          return; }
-  else if (APR_STATUS_IS_KEYBASED(status))          { lua_pushliteral(L, "KEYBASED");          return; }
-  else if (APR_STATUS_IS_NOTDETACH(status))         { lua_pushliteral(L, "NOTDETACH");         return; }
-  else if (APR_STATUS_IS_NOTFOUND(status))          { lua_pushliteral(L, "NOTFOUND");          return; }
-  else if (APR_STATUS_IS_TIMEUP(status))            { lua_pushliteral(L, "TIMEUP");            return; }
+# ifdef APR_STATUS_IS_ANONYMOUS
+  else if (APR_STATUS_IS_ANONYMOUS(status)) {
+    lua_pushliteral(L, "ANONYMOUS");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_BADARG
+  else if (APR_STATUS_IS_BADARG(status)) {
+    lua_pushliteral(L, "BADARG");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_BADCH
+  else if (APR_STATUS_IS_BADCH(status)) {
+    lua_pushliteral(L, "BADCH");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_DETACH
+  else if (APR_STATUS_IS_DETACH(status)) {
+    lua_pushliteral(L, "DETACH");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_EABOVEROOT
+  else if (APR_STATUS_IS_EABOVEROOT(status)) {
+    lua_pushliteral(L, "EABOVEROOT");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_EABSOLUTE
+  else if (APR_STATUS_IS_EABSOLUTE(status)) {
+    lua_pushliteral(L, "EABSOLUTE");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_EACCES
+  else if (APR_STATUS_IS_EACCES(status)) {
+    lua_pushliteral(L, "EACCES");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_EAFNOSUPPORT
+  else if (APR_STATUS_IS_EAFNOSUPPORT(status)) {
+    lua_pushliteral(L, "EAFNOSUPPORT");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_EAGAIN
+  else if (APR_STATUS_IS_EAGAIN(status)) {
+    lua_pushliteral(L, "EAGAIN");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_EBADDATE
+  else if (APR_STATUS_IS_EBADDATE(status)) {
+    lua_pushliteral(L, "EBADDATE");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_EBADF
+  else if (APR_STATUS_IS_EBADF(status)) {
+    lua_pushliteral(L, "EBADF");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_EBADIP
+  else if (APR_STATUS_IS_EBADIP(status)) {
+    lua_pushliteral(L, "EBADIP");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_EBADMASK
+  else if (APR_STATUS_IS_EBADMASK(status)) {
+    lua_pushliteral(L, "EBADMASK");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_EBADPATH
+  else if (APR_STATUS_IS_EBADPATH(status)) {
+    lua_pushliteral(L, "EBADPATH");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_EBUSY
+  else if (APR_STATUS_IS_EBUSY(status)) {
+    lua_pushliteral(L, "EBUSY");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_ECONNABORTED
+  else if (APR_STATUS_IS_ECONNABORTED(status)) {
+    lua_pushliteral(L, "ECONNABORTED");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_ECONNREFUSED
+  else if (APR_STATUS_IS_ECONNREFUSED(status)) {
+    lua_pushliteral(L, "ECONNREFUSED");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_ECONNRESET
+  else if (APR_STATUS_IS_ECONNRESET(status)) {
+    lua_pushliteral(L, "ECONNRESET");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_EDSOOPEN
+  else if (APR_STATUS_IS_EDSOOPEN(status)) {
+    lua_pushliteral(L, "EDSOOPEN");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_EEXIST
+  else if (APR_STATUS_IS_EEXIST(status)) {
+    lua_pushliteral(L, "EEXIST");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_EFTYPE
+  else if (APR_STATUS_IS_EFTYPE(status)) {
+    lua_pushliteral(L, "EFTYPE");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_EGENERAL
+  else if (APR_STATUS_IS_EGENERAL(status)) {
+    lua_pushliteral(L, "EGENERAL");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_EHOSTUNREACH
+  else if (APR_STATUS_IS_EHOSTUNREACH(status)) {
+    lua_pushliteral(L, "EHOSTUNREACH");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_EINCOMPLETE
+  else if (APR_STATUS_IS_EINCOMPLETE(status)) {
+    lua_pushliteral(L, "EINCOMPLETE");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_EINIT
+  else if (APR_STATUS_IS_EINIT(status)) {
+    lua_pushliteral(L, "EINIT");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_EINPROGRESS
+  else if (APR_STATUS_IS_EINPROGRESS(status)) {
+    lua_pushliteral(L, "EINPROGRESS");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_EINTR
+  else if (APR_STATUS_IS_EINTR(status)) {
+    lua_pushliteral(L, "EINTR");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_EINVAL
+  else if (APR_STATUS_IS_EINVAL(status)) {
+    lua_pushliteral(L, "EINVAL");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_EINVALSOCK
+  else if (APR_STATUS_IS_EINVALSOCK(status)) {
+    lua_pushliteral(L, "EINVALSOCK");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_EMFILE
+  else if (APR_STATUS_IS_EMFILE(status)) {
+    lua_pushliteral(L, "EMFILE");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_EMISMATCH
+  else if (APR_STATUS_IS_EMISMATCH(status)) {
+    lua_pushliteral(L, "EMISMATCH");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_ENAMETOOLONG
+  else if (APR_STATUS_IS_ENAMETOOLONG(status)) {
+    lua_pushliteral(L, "ENAMETOOLONG");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_ENETUNREACH
+  else if (APR_STATUS_IS_ENETUNREACH(status)) {
+    lua_pushliteral(L, "ENETUNREACH");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_ENFILE
+  else if (APR_STATUS_IS_ENFILE(status)) {
+    lua_pushliteral(L, "ENFILE");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_ENODIR
+  else if (APR_STATUS_IS_ENODIR(status)) {
+    lua_pushliteral(L, "ENODIR");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_ENOENT
+  else if (APR_STATUS_IS_ENOENT(status)) {
+    lua_pushliteral(L, "ENOENT");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_ENOLOCK
+  else if (APR_STATUS_IS_ENOLOCK(status)) {
+    lua_pushliteral(L, "ENOLOCK");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_ENOMEM
+  else if (APR_STATUS_IS_ENOMEM(status)) {
+    lua_pushliteral(L, "ENOMEM");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_ENOPOLL
+  else if (APR_STATUS_IS_ENOPOLL(status)) {
+    lua_pushliteral(L, "ENOPOLL");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_ENOPOOL
+  else if (APR_STATUS_IS_ENOPOOL(status)) {
+    lua_pushliteral(L, "ENOPOOL");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_ENOPROC
+  else if (APR_STATUS_IS_ENOPROC(status)) {
+    lua_pushliteral(L, "ENOPROC");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_ENOSHMAVAIL
+  else if (APR_STATUS_IS_ENOSHMAVAIL(status)) {
+    lua_pushliteral(L, "ENOSHMAVAIL");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_ENOSOCKET
+  else if (APR_STATUS_IS_ENOSOCKET(status)) {
+    lua_pushliteral(L, "ENOSOCKET");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_ENOSPC
+  else if (APR_STATUS_IS_ENOSPC(status)) {
+    lua_pushliteral(L, "ENOSPC");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_ENOSTAT
+  else if (APR_STATUS_IS_ENOSTAT(status)) {
+    lua_pushliteral(L, "ENOSTAT");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_ENOTDIR
+  else if (APR_STATUS_IS_ENOTDIR(status)) {
+    lua_pushliteral(L, "ENOTDIR");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_ENOTEMPTY
+  else if (APR_STATUS_IS_ENOTEMPTY(status)) {
+    lua_pushliteral(L, "ENOTEMPTY");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_ENOTENOUGHENTROPY
+  else if (APR_STATUS_IS_ENOTENOUGHENTROPY(status)) {
+    lua_pushliteral(L, "ENOTENOUGHENTROPY");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_ENOTHDKEY
+  else if (APR_STATUS_IS_ENOTHDKEY(status)) {
+    lua_pushliteral(L, "ENOTHDKEY");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_ENOTHREAD
+  else if (APR_STATUS_IS_ENOTHREAD(status)) {
+    lua_pushliteral(L, "ENOTHREAD");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_ENOTIME
+  else if (APR_STATUS_IS_ENOTIME(status)) {
+    lua_pushliteral(L, "ENOTIME");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_ENOTIMPL
+  else if (APR_STATUS_IS_ENOTIMPL(status)) {
+    lua_pushliteral(L, "ENOTIMPL");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_ENOTSOCK
+  else if (APR_STATUS_IS_ENOTSOCK(status)) {
+    lua_pushliteral(L, "ENOTSOCK");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_EOF
+  else if (APR_STATUS_IS_EOF(status)) {
+    lua_pushliteral(L, "EOF");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_EPATHWILD
+  else if (APR_STATUS_IS_EPATHWILD(status)) {
+    lua_pushliteral(L, "EPATHWILD");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_EPIPE
+  else if (APR_STATUS_IS_EPIPE(status)) {
+    lua_pushliteral(L, "EPIPE");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_EPROC_UNKNOWN
+  else if (APR_STATUS_IS_EPROC_UNKNOWN(status)) {
+    lua_pushliteral(L, "EPROC_UNKNOWN");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_ERELATIVE
+  else if (APR_STATUS_IS_ERELATIVE(status)) {
+    lua_pushliteral(L, "ERELATIVE");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_ESPIPE
+  else if (APR_STATUS_IS_ESPIPE(status)) {
+    lua_pushliteral(L, "ESPIPE");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_ESYMNOTFOUND
+  else if (APR_STATUS_IS_ESYMNOTFOUND(status)) {
+    lua_pushliteral(L, "ESYMNOTFOUND");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_ETIMEDOUT
+  else if (APR_STATUS_IS_ETIMEDOUT(status)) {
+    lua_pushliteral(L, "ETIMEDOUT");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_EXDEV
+  else if (APR_STATUS_IS_EXDEV(status)) {
+    lua_pushliteral(L, "EXDEV");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_FILEBASED
+  else if (APR_STATUS_IS_FILEBASED(status)) {
+    lua_pushliteral(L, "FILEBASED");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_INCHILD
+  else if (APR_STATUS_IS_INCHILD(status)) {
+    lua_pushliteral(L, "INCHILD");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_INCOMPLETE
+  else if (APR_STATUS_IS_INCOMPLETE(status)) {
+    lua_pushliteral(L, "INCOMPLETE");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_INPARENT
+  else if (APR_STATUS_IS_INPARENT(status)) {
+    lua_pushliteral(L, "INPARENT");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_KEYBASED
+  else if (APR_STATUS_IS_KEYBASED(status)) {
+    lua_pushliteral(L, "KEYBASED");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_NOTDETACH
+  else if (APR_STATUS_IS_NOTDETACH(status)) {
+    lua_pushliteral(L, "NOTDETACH");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_NOTFOUND
+  else if (APR_STATUS_IS_NOTFOUND(status)) {
+    lua_pushliteral(L, "NOTFOUND");
+    return;
+  }
+# endif
+# ifdef APR_STATUS_IS_TIMEUP
+  else if (APR_STATUS_IS_TIMEUP(status)) {
+    lua_pushliteral(L, "TIMEUP");
+    return;
+  }
+# endif
 
   /* This might be a bug in the script that generated this source code? */
   LUA_APR_DBG("Lua/APR status_to_name(%i) failed, might be a bug?", status);

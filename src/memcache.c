@@ -3,7 +3,7 @@
  * Authors:
  *  - zhiguo zhao <zhaozg@gmail.com>
  *  - Peter Odding <peter@peterodding.com>
- * Last Change: May 15, 2011
+ * Last Change: November 4, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -20,6 +20,8 @@
  */
 
 #include "lua_apr.h"
+#if LUA_APR_HAVE_MEMCACHE
+
 #include <apr_lib.h>
 #include <apr_memcache.h>
 
@@ -610,5 +612,7 @@ lua_apr_objtype lua_apr_memcache_server_type = {
   ms_methods,                             /* methods table */
   ms_metamethods                          /* metamethods table */
 };
+
+#endif
 
 /* vim: set ts=2 sw=2 et tw=79 fen fdm=marker : */

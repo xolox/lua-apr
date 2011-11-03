@@ -5,7 +5,7 @@
  *  - Peter Odding <peter@peterodding.com>
  *  - Parts of this module were based on LuaLDAP 1.1.0 by Roberto
  *    Ierusalimschy, André Carregal and Tomás Guisasola (license below)
- * Last Change: October 29, 2011
+ * Last Change: November 4, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -181,8 +181,12 @@ static struct {
   { "network-timeout",  LDAP_OPT_NETWORK_TIMEOUT,  LUA_APR_LDAP_TT },
 # endif
   { "protocol-version", LDAP_OPT_PROTOCOL_VERSION, LUA_APR_LDAP_TI },
+# ifdef APR_LDAP_OPT_REFHOPLIMIT
   { "refhop-limit",     APR_LDAP_OPT_REFHOPLIMIT,  LUA_APR_LDAP_TI },
+# endif
+# ifdef APR_LDAP_OPT_REFERRALS
   { "referrals",        APR_LDAP_OPT_REFERRALS,    LUA_APR_LDAP_TB },
+# endif
   { "restart",          LDAP_OPT_RESTART,          LUA_APR_LDAP_TB },
   { "size-limit",       LDAP_OPT_SIZELIMIT,        LUA_APR_LDAP_TI },
   { "time-limit",       LDAP_OPT_TIMELIMIT,        LUA_APR_LDAP_TI },
@@ -780,6 +784,8 @@ static int lua_apr_ldap_option_set(lua_State *L)
   return 1;
 }
 
+#if (APR_MAJOR_VERSION > 1 || (APR_MAJOR_VERSION == 1 && APR_MINOR_VERSION >= 3))
+
 /* ldap_conn:rebind_add([who [, password]]) -> status {{{1
  *
  * LDAP servers can return referrals to other servers for requests the server
@@ -851,6 +857,8 @@ static int lua_apr_ldap_rebind_remove(lua_State*L)
 
   return push_status(L, status);
 }
+
+#endif
 
 /* ldap_conn:search(parameters) -> iterator {{{1
  *
@@ -1022,8 +1030,10 @@ static luaL_reg ldap_methods[] = {
   { "unbind", lua_apr_ldap_unbind },
   { "option_get", lua_apr_ldap_option_get },
   { "option_set", lua_apr_ldap_option_set },
+#if (APR_MAJOR_VERSION > 1 || (APR_MAJOR_VERSION == 1 && APR_MINOR_VERSION >= 3))
   { "rebind_add", lua_apr_ldap_rebind_add },
   { "rebind_remove", lua_apr_ldap_rebind_remove },
+#endif
   { "search", lua_apr_ldap_search },
   { NULL, NULL }
 };

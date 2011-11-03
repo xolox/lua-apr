@@ -1,7 +1,7 @@
 /* Miscellaneous functions module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: November 1, 2011
+ * Last Change: November 4, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -35,8 +35,10 @@ lua_apr_objtype *lua_apr_types[] = {
 # if APR_HAS_LDAP
   &lua_apr_ldap_type,
 # endif
+#if LUA_APR_HAVE_MEMCACHE
   &lua_apr_memcache_type,
   &lua_apr_memcache_server_type,
+#endif
   &lua_apr_md5_type,
   &lua_apr_sha1_type,
   &lua_apr_xml_type,
@@ -223,8 +225,10 @@ LUA_APR_EXPORT int luaopen_apr_core(lua_State *L)
     /* xml.c -- XML parsing. */
     { "xml", lua_apr_xml },
 
+#   if LUA_APR_HAVE_MEMCACHE
     /* memcache.c -- memcached client. */
     { "memcache", lua_apr_memcache },
+#   endif
 
     { NULL, NULL }
   };
