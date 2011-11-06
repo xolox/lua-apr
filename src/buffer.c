@@ -1,7 +1,7 @@
 /* Buffered I/O interface for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: June 16, 2011
+ * Last Change: November 6, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -20,14 +20,6 @@
  * Lua/APR binding! The code is quite confusing though and new bugs keep
  * cropping up. Things that should at least be fixed:
  *
- * TODO strspn() is incompatible with unmanaged buffers because it can scan
- * past the end of the buffer when the input is not terminated with a NUL
- * byte (and doing so is out of the question for e.g. shared memory).
- *
- * TODO lua_str2number() can scan past the end of the input buffer but this
- * is easy to fix: just copy MAX(AVAIL(B), LUAI_MAXNUMBER2STR) bytes to a
- * static buffer and terminate that buffer with a NUL byte :-)
- *
  * TODO Binary to text translation is currently impossible in unmanaged
  * buffers (shared memory). Decide whether to document or fix this issue?
  *
@@ -36,9 +28,13 @@
  */
 
 #include "lua_apr.h"
+#include <apr_lib.h>
 
 /* Subtract a from b without producing negative values. */
 #define SAFE_SUB(a, b) ((a) <= (b) ? (b) - (a) : 0)
+
+/* The size of the static buffer used to convert strings to numbers. */
+#define LUA_APR_MAXSTR2NUM (LUAI_MAXNUMBER2STR * 2)
 
 #define CURSOR(B) (&B->data[B->index])
 #define AVAIL(B) SAFE_SUB(B->index, B->limit)
@@ -200,6 +196,7 @@ static apr_status_t read_line(lua_State *L, lua_apr_readbuf *input)
 
 static apr_status_t read_number(lua_State *L, lua_apr_readbuf *input)
 {
+  char buffer[LUA_APR_MAXSTR2NUM + 1];
   lua_apr_buffer *B = &input->buffer;
   apr_status_t status = APR_SUCCESS;
   size_t offset = 0, test;
@@ -207,29 +204,25 @@ static apr_status_t read_number(lua_State *L, lua_apr_readbuf *input)
   char *endptr;
 
   do {
-    /* Make sure there is space in the buffer for a terminating NUL byte
-     * (unmanaged buffers have LUA_APR_BUFSLACK extra bytes available). */
-    if (!(B->unmanaged || B->limit < B->size)) {
-      status = grow_buffer(B);
-      /* TODO What's the best way to handle OOM? */
-      if (!(B->limit < B->size))
-        break;
-    }
-    /* Terminate the buffer with a NUL byte so that strspn() and
-     * lua_str2number() don't scan past the end of the input buffer! */
-    B->data[B->limit + 1] = '\0';
     /* Skip any leading whitespace in the buffered input. */
-    offset += strspn(CURSOR(B) + offset, " \n\t\r\f\v");
+    while (offset < AVAIL(B) && apr_isspace(*(CURSOR(B) + offset)))
+      offset++;
     /* Calculate available bytes but guard against overflow. */
     test = SAFE_SUB(offset, AVAIL(B));
     /* Make sure enough input remains to read full number [or we got EOF]. */
-    if (test >= LUAI_MAXNUMBER2STR || CHECK_FOR_EOF(B, status)) {
+    if (test >= LUA_APR_MAXSTR2NUM || CHECK_FOR_EOF(B, status)) {
       if (test > 0) {
+        /* lua_str2number() needs a terminating nul byte. */
+        if (test > LUA_APR_MAXSTR2NUM)
+          test = LUA_APR_MAXSTR2NUM;
+        memset(buffer, 0, LUA_APR_MAXSTR2NUM + 1);
+        memcpy(buffer, CURSOR(B) + offset, test);
+        endptr = &buffer[0];
         /* Try to parse number at selected position. */
-        value = lua_str2number(CURSOR(B) + offset, &endptr);
-        if (endptr > CURSOR(B) + offset) {
+        value = lua_str2number(buffer, &endptr);
+        if (endptr > buffer) {
           lua_pushnumber(L, value);
-          B->index += endptr - CURSOR(B) + 1;
+          B->index += offset + (endptr - &buffer[0]);
           break;
         }
       }

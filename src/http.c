@@ -1,7 +1,7 @@
 /* HTTP request parsing module for the Lua/APR binding
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: July 1, 2011
+ * Last Change: November 6, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -52,12 +52,7 @@
  * [multipart]: http://en.wikipedia.org/wiki/MIME#Multipart_messages
  */
 
-/* TODO Bind the following functions:
- *  - apreq_parse_urlencoded()
- *  - apreq_quote()
- *  - apreq_quote_once()
- *  - apreq_charset_divine()
- */
+/* TODO Bind apreq_parse_urlencoded(), apreq_quote(), apreq_quote_once(), apreq_charset_divine()? */
 
 #if LUA_APR_HAVE_APREQ
 

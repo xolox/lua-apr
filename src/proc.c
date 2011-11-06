@@ -1,7 +1,7 @@
 /* Process handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: June 16, 2011
+ * Last Change: November 6, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -11,11 +11,7 @@
 #include <apr_strings.h>
 #include <apr_lib.h>
 
-/* TODO Bind useful but missing functions in apr_proc* namespace?
- *  - apr_procattr_limit_set() isn't supported on all platforms?
- *  - apr_procattr_perms_set_register()
- *  - apr_proc_wait_all_procs()
- */
+/* TODO Bind apr_procattr_limit_set(), apr_procattr_perms_set_register(), apr_proc_wait_all_procs() */
 
 /* Structure for process objects. */
 typedef struct {

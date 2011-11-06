@@ -1,7 +1,7 @@
 /* File I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: June 21, 2011
+ * Last Change: November 6, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -14,11 +14,7 @@
 #include <apr_strings.h>
 #include <stdio.h>
 
-/* TODO Bind functions missing from io_file.c
- *  - apr_file_pipe_create_ex()
- *  - apr_file_sync()
- *  - apr_file_datasync()
- */
+/* TODO Bind apr_file_pipe_create_ex(), apr_file_sync(), apr_file_datasync() */
 
 /* Internal functions. {{{1 */
 

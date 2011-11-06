@@ -5,7 +5,7 @@
  *  - Peter Odding <peter@peterodding.com>
  *  - Parts of this module were based on LuaLDAP 1.1.0 by Roberto
  *    Ierusalimschy, André Carregal and Tomás Guisasola (license below)
- * Last Change: November 4, 2011
+ * Last Change: November 6, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *

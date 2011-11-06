@@ -1,7 +1,7 @@
 /* Header file for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: November 4, 2011
+ * Last Change: November 6, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -43,7 +43,7 @@
 #define LUA_APR_POOL_KEY "Lua/APR memory pool"
 #define LUA_APR_POOL_MT "Lua/APR memory pool metamethods"
 
-/* FIXME Pushing onto the stack might not work in this scenario? */
+/* FIXME Pushing onto the stack might not work in this scenario? But then what will?! */
 #define error_message_memory "memory allocation error"
 
 /* Size of error message buffers on stack. */
