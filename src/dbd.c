@@ -3,7 +3,7 @@
  * Authors:
  *  - zhiguo zhao <zhaozg@gmail.com>
  *  - Peter Odding <peter@peterodding.com>
- * Last Change: November 4, 2011
+ * Last Change: November 6, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -113,6 +113,7 @@ typedef struct {
   lua_apr_refobj header;
   lua_apr_dbd_reference parent;
   apr_dbd_prepared_t *statement;
+  int random_access;
 } lua_apr_dbp_object;
 
 /* Internal functions. {{{1 */
@@ -193,9 +194,13 @@ static lua_apr_dbr_object *new_resultset(lua_State *L, int idx, lua_apr_dbd_obje
 
 /* new_statement() {{{2 */
 
-static lua_apr_dbp_object *new_statement(lua_State *L, int idx, lua_apr_dbd_object *driver)
+static lua_apr_dbp_object *new_statement(lua_State *L, int idx, lua_apr_dbd_object *driver, int random_access)
 {
-  return new_subobj(L, &lua_apr_dbp_type, idx, driver, offsetof(lua_apr_dbp_object, parent));
+  lua_apr_dbp_object *statement;
+
+  statement = new_subobj(L, &lua_apr_dbp_type, idx, driver, offsetof(lua_apr_dbp_object, parent));
+  statement->random_access = random_access;
+  return statement;
 }
 
 /* check_dbd_value() {{{2 */
@@ -652,6 +657,8 @@ static int dbd_select(lua_State *L)
  * inherit the error code and any further query/select calls will fail
  * immediately. Put transaction in `'ignore-errors'` mode to avoid that. Use
  * `'rollback'` mode to do explicit rollback.
+ *
+ * TODO Support for transaction objects that have query(), select(), prepare() methods?
  */
 
 static int dbd_transaction_start(lua_State *L)
@@ -731,10 +738,13 @@ static int dbd_transaction_mode(lua_State *L)
 
 /* Prepared statements. {{{1 */
 
-/* driver:prepare(sql) -> prepared_statement {{{2
+/* driver:prepare(sql [, random_access]) -> prepared_statement {{{2
  *
- * Prepare a statement. On success a prepared statement object is returned,
- * otherwise a nil followed by an error message is returned.
+ * Prepare an SQL statement. On success a prepared statement object is
+ * returned, otherwise a nil followed by an error message is returned. The
+ * string @sql gives the query to prepare. If the optional argument
+ * @random_access is true, result sets created by the prepared statement will
+ * support random access.
  *
  * To specify parameters of the prepared query, use `%s`, `%d` etc. (see below
  * for full list) in place of database specific parameter syntax (e.g. for
@@ -772,10 +782,12 @@ static int dbd_prepare(lua_State *L)
   lua_apr_dbp_object *statement;
   const char *query;
   apr_status_t status;
+  int random_access;
 
   driver = check_dbd(L, 1, 1, 0);
   query = luaL_checkstring(L, 2);
-  statement = new_statement(L, 1, driver);
+  random_access = lua_toboolean(L, 3);
+  statement = new_statement(L, 1, driver, random_access);
   status = apr_dbd_prepare(driver->driver, driver->pool, driver->handle,
       query, NULL, &statement->statement);
   if (status != APR_SUCCESS)
@@ -813,7 +825,7 @@ static int dbp_query(lua_State *L)
   return push_query_result(L, driver, nrows, status);
 }
 
-/* prepared_statement:select(random_access, ...) -> result_set {{{2
+/* prepared_statement:select(...) -> result_set {{{2
  *
  * Using a prepared statement, execute an SQL query that returns a result set.
  * On success a result set object is returned, otherwise a nil followed by an
@@ -824,9 +836,6 @@ static int dbp_query(lua_State *L)
  * otherwise all function arguments after @random_access become query
  * parameters.
  *
- * TODO Make the @random_access argument an attribute of the prepared
- * statement object so that we can get rid of the argument here?!
- *
  * *This function is not binary safe.*
  */
 
@@ -836,15 +845,14 @@ static int dbp_select(lua_State *L)
   lua_apr_dbp_object *statement;
   lua_apr_dbr_object *results;
   const char **values;
-  int nargs, status, random_access;
+  int nargs, status;
 
   statement = check_dbp(L, 1);
-  random_access = lua_toboolean(L, 2);
   driver = statement->parent.driver;
-  check_dbd_values(L, 3, &nargs, &values);
-  results = new_resultset(L, 1, driver, random_access);
+  check_dbd_values(L, 2, &nargs, &values);
+  results = new_resultset(L, 1, driver, statement->random_access);
   status = apr_dbd_pselect(driver->driver, driver->pool, driver->handle,
-      &results->results, statement->statement, random_access, nargs, values);
+      &results->results, statement->statement, statement->random_access, nargs, values);
   free((void*) values); /* make MSVC++ 2010 happy */
   if (status != 0)
     return push_dbd_error(L, driver, status);
