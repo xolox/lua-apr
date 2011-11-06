@@ -3,7 +3,7 @@
  Unit tests for the file path manipulation module of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: March 27, 2011
+ Last Change: November 6, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -112,3 +112,8 @@ for i = 1, #parts_in do
     assert(liststr == parts_in[i])
   end
 end
+
+-- Test apr.filepath_which() and apr.filepath_executable(). {{{1
+
+local lua_program = assert(apr.filepath_which 'lua')
+assert(apr.filepath_executable(lua_program))

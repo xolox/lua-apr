@@ -14,7 +14,17 @@
 --]]
 
 local apr = require 'apr.core'
-apr._VERSION = '0.21.5'
+apr._VERSION = '0.21.6'
+
+local function executable(type, user, group, protection)
+  if type == 'file' and user and group and protection then
+    local current_user, current_group = assert(apr.user_get())
+    return (protection:find '^(r.x)(...)(...)$' and user == current_user)
+        or (protection:find '^(...)(r.x)(...)$' and group == current_group)
+        or (protection:find '^(...)(...)(r.[xt])$' and user ~= current_user and group ~= current_group)
+  end
+  return false
+end
 
 -- apr.md5(input [, binary]) -> digest {{{1
 --
@@ -84,8 +94,8 @@ function apr.filepath_which(program, find_all)
   local results = find_all and {}
   for _, directory in ipairs(split(apr.env_get 'PATH')) do
     local candidate = apr.filepath_merge(directory, program)
-    if apr.stat(candidate, 'type') == 'file' then
-      -- TODO if not is_windows check executable bits
+    local t, u, g, p = apr.stat(candidate, 'type', 'user', 'group', 'protection')
+    if t == 'file' and is_windows or executable(t, u, g, p) then
       if not find_all then return candidate end
       results[#results + 1] = candidate
     end
@@ -100,6 +110,17 @@ function apr.filepath_which(program, find_all)
     end
   end
   return results
+end
+
+-- apr.filepath_executable(path) -> is_executable {{{1
+--
+-- Check whether the file pointed to by @path is executable.
+-- Returns true when the file is executable, false otherwise.
+--
+-- Part of the "File path manipulation" module.
+
+function apr.filepath_executable(path)
+  return executable(apr.stat(path, 'type', 'user', 'group', 'protection'))
 end
 
 -- apr.glob(pattern [, ignorecase]) -> iterator {{{1
