@@ -52,9 +52,6 @@
 /* The initial size of I/O buffers. */
 #define LUA_APR_BUFSIZE 1024
 
-/* Slack space at the end of I/O buffers. */
-#define LUA_APR_BUFSLACK 10
-
 #define count(array) \
   (sizeof((array)) / sizeof((array)[0]))
 

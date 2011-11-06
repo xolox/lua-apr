@@ -1,7 +1,7 @@
 /* Shared memory module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: June 16, 2011
+ * Last Change: November 6, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -32,7 +32,7 @@ typedef struct {
 static void init_shm(lua_State *L, lua_apr_shm *object)
 {
   object->base = apr_shm_baseaddr_get(object->handle);
-  object->size = apr_shm_size_get(object->handle) - LUA_APR_BUFSLACK;
+  object->size = apr_shm_size_get(object->handle);
   object->last_op = &object->input.buffer;
   init_unmanaged_buffers(L,
       &object->input, &object->output,
@@ -81,11 +81,7 @@ int lua_apr_shm_create(lua_State *L)
   apr_size_t reqsize;
 
   filename = lua_isnil(L, 1) ? NULL : luaL_checkstring(L, 1);
-
-  /* XXX Add some bytes to reqsize so that we can mark the end of the shared
-   * memory segment with NUL. This is required by the buffered I/O interface
-   * whose name is a bit of a misnomer since I introduced shared memory :-) */
-  reqsize = luaL_checkinteger(L, 2) + LUA_APR_BUFSLACK;
+  reqsize = luaL_checkinteger(L, 2);
 
   object = new_object(L, &lua_apr_shm_type);
   if (object == NULL)

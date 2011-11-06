@@ -44,7 +44,7 @@
 #define DEBUG_BUFFER(B) do { \
   LUA_APR_DBG("buffer.index = %i", (B)->index); \
   LUA_APR_DBG("buffer.limit = %i", (B)->limit); \
-  LUA_APR_DBG("buffer.size  = %i (really %i)", (B)->size, (B)->size + LUA_APR_BUFSLACK); \
+  LUA_APR_DBG("buffer.size  = %i (really %i)", (B)->size, (B)->size); \
 } while (0)
 
 /* Internal functions. {{{1 */
@@ -111,12 +111,12 @@ static apr_status_t grow_buffer(lua_apr_buffer *B)
 
   if (B->size >= newsize)
     newsize = B->size / 2 * 3;
-  newdata = realloc(B->data, newsize + LUA_APR_BUFSLACK);
+  newdata = realloc(B->data, newsize);
   if (newdata != NULL) {
     B->data = newdata;
     B->size = newsize;
     /* TODO Initialize new space to all zero bytes to make Valgrind happy?
-    memset(&B->data[B->limit + 1], 0, B->size + LUA_APR_BUFSLACK - B->limit - 1); */
+    memset(&B->data[B->limit + 1], 0, B->size - B->limit - 1); */
   } else {
     status = APR_ENOMEM;
   }
