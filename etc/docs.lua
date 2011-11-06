@@ -3,7 +3,7 @@
  Documentation generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: October 30, 2011
+ Last Change: November 6, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -28,6 +28,7 @@ local SOURCES = [[
   memcache.c
   getopt.c
   http.c
+  pollset.c
   proc.c
   shm.c
   signal.c
@@ -47,6 +48,7 @@ local SOURCES = [[
   ../examples/download.lua
   ../examples/webserver.lua
   ../examples/threaded-webserver.lua
+  ../examples/async-webserver.lua
 ]]
 
 local modules = {}

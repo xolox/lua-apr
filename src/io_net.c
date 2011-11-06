@@ -1,9 +1,17 @@
 /* Network I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: November 1, 2011
+ * Last Change: November 6, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
+ *
+ * To get started with network programming using the Lua/APR binding, have a
+ * look at any of the following examples:
+ *
+ *  - [HTTP client](#example_http_client)
+ *  - [Single threaded webserver](#example_single_threaded_webserver)
+ *  - [Multi threaded webserver](#example_multi_threaded_webserver)
+ *  - [Asynchronous webserver](#example_asynchronous_webserver)
  */
 
 #include "lua_apr.h"

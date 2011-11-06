@@ -3,23 +3,34 @@
   Example: Single threaded webserver
 
   Author: Peter Odding <peter@peterodding.com>
-  Last Change: March 6, 2011
+  Last Change: November 6, 2011
   Homepage: http://peterodding.com/code/lua/apr/
   License: MIT
 
-  The following script implements a minimalistic webserver on top of Lua/APR.
-  It should work out of the box on Windows and UNIX, although you might get a
-  prompt from your firewall. Once the server is running you can open
-  <http://localhost:8080> in your web browser to see the server in action.
-  Because the server is single threaded I was curious how bad it would perform,
-  so I tested it with [ApacheBench](http://en.wikipedia.org/wiki/ApacheBench):
+  The following script implements a minimalistic webserver on top of Lua/APR
+  [network sockets] [socket_module]. It should work out of the box on Windows
+  and UNIX, although you might get a prompt from your firewall. Once the server
+  is running you can open <http://localhost:8080> in your web browser to see
+  the server in action. Because the server is single threaded I was curious how
+  bad it would perform, so I tested it with [ApacheBench] [ab]:
 
       $ lua examples/webserver.lua &
       $ ab -qt5 http://localhost:8080/ | grep 'Requests per second\|Transfer rate'
       Requests per second:    3672.19 [#/sec] (mean)
       Transfer rate:          2201.88 [Kbytes/sec] received
 
-  That's not too bad for 40 lines of code! Here is the script:
+  That's not too bad for 40 lines of code! For more complex webservers see the
+  [multi threaded] [threaded_server] and [asynchronous] [async_server]
+  webserver examples.
+
+  *Note that all benchmarks are run on my Compaq Presario CQ60 laptop (which
+  features an Intel Core 2 Duo T5800 processor clocked at 2 GHz and 3 GB of
+  RAM) and that the Lua/APR binding was compiled without debugging symbols.*
+
+  [socket_module]: #network_i_o_handling
+  [ab]: http://en.wikipedia.org/wiki/ApacheBench
+  [threaded_server]: #example_multi_threaded_webserver
+  [async_server]: #example_asynchronous_webserver
 
 ]]
 

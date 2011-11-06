@@ -3,34 +3,35 @@
   Example: Multi threaded webserver
 
   Author: Peter Odding <peter@peterodding.com>
-  Last Change: June 19, 2011
+  Last Change: November 6, 2011
   Homepage: http://peterodding.com/code/lua/apr/
   License: MIT
 
   Thanks to the [multi threading] [threading_module] and [thread queue]
   [thread_queues] modules in the Apache Portable Runtime it is possible to
-  improve the performance of the single threaded webserver from the previous
-  example. Here is a benchmark of the multi threaded implementation listed
-  below (again using [ApacheBench] [ab], but now with the `-c` argument):
+  improve the performance of the [single threaded webserver] [simple_server]
+  from the previous example. Here is a benchmark of the multi threaded code
+  listed below (again using [ApacheBench] [ab], but now with the `-c`
+  argument):
 
-      $ NUM_THREADS=4
-      $ lua examples/threaded-webserver.lua $NUM_THREADS &
-      $ ab -qt5 -c$NUM_THREADS http://localhost:8080/ | grep 'Requests per second\|Transfer rate'
+      $ CONCURRENCY=4
+      $ lua examples/threaded-webserver.lua $CONCURRENCY &
+      $ ab -qt5 -c$CONCURRENCY http://localhost:8080/ | grep 'Requests per second\|Transfer rate'
       Requests per second:    9210.72 [#/sec] (mean)
       Transfer rate:          5594.79 [Kbytes/sec] received
 
-  Comparing these numbers to the benchmark of the single threaded webserver we
-  can see that the number of requests per second went from 3670 to 9210, more
-  than doubling the throughput of the webserver on a dual core processor.
-
-  *Note that both benchmarks were run on my Compaq Presario CQ60 laptop (which
-  features an Intel Core 2 Duo T5800 processor clocked at 2 GHz and 3 GB of
-  RAM) and that the Lua/APR binding was compiled without debugging symbols.*
+  Comparing these numbers to the benchmark of the [single threaded webserver]
+  [simple_server] we can see that the number of requests per second went from
+  3670 to 9210, more than doubling the throughput of the webserver on a dual
+  core processor. If you want to know how we can make it even faster, have a
+  look at the [asynchronous webserver] [async_server] example.
 
   [threading_module]: #multi_threading
   [thread_queues]: #thread_queues
+  [simple_server]: #example_single_threaded_webserver
   [ab]: http://en.wikipedia.org/wiki/ApacheBench
   [thread_pool]: http://en.wikipedia.org/wiki/Thread_pool_pattern
+  [async_server]: #example_asynchronous_webserver
 
 ]]
 

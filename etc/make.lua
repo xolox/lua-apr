@@ -3,7 +3,7 @@
  Supporting code for the UNIX makefile of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: October 30, 2011
+ Last Change: November 6, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -135,7 +135,8 @@ local function getcflags()
   mergeflags(flags, 'apu-1-config --includes') -- sometimes this is available
   mergeflags(flags, 'pkg-config --cflags apr-util-1') -- otherwise we fall back to pkg-config
   if #flags == count then
-    message "Warning: Failed to determine APR-util 1 compiler flags."
+    -- This message always triggers so I don't actually need to see it.
+    --message "Warning: Failed to determine APR-util 1 compiler flags."
   end
   count = #flags
   -- Compiler flags for libapreq2.

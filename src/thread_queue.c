@@ -1,12 +1,14 @@
 /* Thread queues module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: June 19, 2011
+ * Last Change: November 6, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
  * The valid types that can be transported through thread queues are documented
- * in the [multi threading](#multi_threading) module.
+ * in the [multi threading](#multi_threading) module. The example of a [multi
+ * threaded webserver](#example_multi_threaded_webserver) uses a thread queue
+ * to pass sockets between the main server thread and several worker threads.
  */
 
 #include "lua_apr.h"
