@@ -1,7 +1,7 @@
 /* Network I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: November 6, 2011
+ * Last Change: November 11, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -19,6 +19,19 @@
 #include <apr_portable.h>
 
 /* Internal functions {{{1 */
+
+/* family_check(L, i) -- check for address family on Lua stack {{{2 */
+
+#if APR_HAVE_IPV6
+const char *family_options[] = { "inet", "inet6", "unspec", NULL };
+const int family_values[] = { APR_INET, APR_INET6, APR_UNSPEC };
+#else
+const char *family_options[] = { "inet", "unspec", NULL };
+const int family_values[] = { APR_INET, APR_UNSPEC };
+#endif
+
+#define family_check(L, i) \
+  family_values[luaL_checkoption(L, i, "inet", family_options)]
 
 /* socket_alloc(L) -- allocate and initialize socket object {{{2 */
 
@@ -54,20 +67,6 @@ static lua_apr_socket* socket_check(lua_State *L, int i, int open)
   if (open && object->handle == NULL)
     luaL_error(L, "attempt to use a closed socket");
   return object;
-}
-
-/* family_check(L, i) -- check for address family on Lua stack {{{2 */
-
-static int family_check(lua_State *L, int i)
-{
-# if APR_HAVE_IPV6
-  const char *options[] = { "inet", "inet6", "unspec", NULL };
-  const int values[] = { APR_INET, APR_INET6, APR_UNSPEC };
-# else
-  const char *options[] = { "inet", "unspec", NULL };
-  const int values[] = { APR_INET, APR_UNSPEC };
-# endif
-  return values[luaL_checkoption(L, i, "inet", options)];
 }
 
 /* option_check(L, i) -- check for socket option on Lua stack {{{2 */
@@ -339,6 +338,75 @@ static int socket_listen(lua_State *L)
   status = apr_socket_listen(object->handle, backlog);
 
   return push_status(L, status);
+}
+
+/* socket:recvfrom([bufsize]) -> address, data {{{1
+ *
+ * Read data from an [UDP] [udp] socket that has been bound to an interface
+ * and/or port. On success two values are returned: A table with the address of
+ * the peer from which the data was sent and a string with the received data.
+ * If the call fails it returns nil followed by an error message.
+ *
+ * By default @bufsize is 1024, this means the resulting @data string will be
+ * truncated to a maximum of 1024 bytes. If you want to receive larger
+ * messages, pass a larger @bufsize.
+ *
+ * The returned @address table contains the following fields:
+ *
+ *  - `address` is the IP address (a string)
+ *  - `port` is the port number
+ *  - `family` is one of the strings `'inet'`, `'inet6'` or `'unspec'`
+ *
+ * [udp]: http://en.wikipedia.org/wiki/User_Datagram_Protocol
+ */
+
+static int socket_recvfrom(lua_State *L)
+{
+  lua_apr_socket *object;
+  apr_status_t status;
+  apr_sockaddr_t address = { 0 };
+  apr_size_t buflen;
+  apr_int32_t flags;
+  char buffer[1024], ip_addr[APRMAXHOSTLEN];
+  char *bufptr;
+  int i;
+
+  /* Validate arguments. */
+  object = socket_check(L, 1, 1);
+  buflen = luaL_optint(L, 2, sizeof buffer);
+
+  /* Use dynamically allocated buffer only when necessary. */
+  bufptr = (buflen > sizeof buffer) ? lua_newuserdata(L, buflen) : &buffer[0];
+
+  flags = 0;
+  status = apr_socket_recvfrom(&address, object->handle, flags, bufptr, &buflen);
+  if (status != APR_SUCCESS)
+    return push_error_status(L, status);
+
+  /* Convert the socket address to a Lua table. */
+  lua_newtable(L);
+
+  /* Get the IP address in numeric format. */
+  status = apr_sockaddr_ip_getbuf(ip_addr, sizeof ip_addr, &address);
+  if (status == APR_SUCCESS)
+    lua_pushstring(L, ip_addr), lua_setfield(L, -2, "address");
+
+  /* Get the port number. */
+  lua_pushnumber(L, address.port), lua_setfield(L, -2, "port");
+
+  /* Get the address family. */
+  for (i = 0; i < count(family_values); i++)
+    if (family_values[i] == address.family) {
+      lua_pushstring(L, family_options[i]);
+      lua_setfield(L, -2, "family");
+      break;
+    }
+
+  /* Push the received data. */
+  lua_pushlstring(L, bufptr, buflen);
+
+  /* Return address table and received data. */
+  return 2;
 }
 
 /* socket:accept() -> client_socket {{{1
@@ -671,6 +739,7 @@ static int socket_gc(lua_State *L)
 luaL_reg socket_methods[] = {
   { "bind", socket_bind },
   { "listen", socket_listen },
+  { "recvfrom", socket_recvfrom },
   { "accept", socket_accept },
   { "connect", socket_connect },
   { "read", socket_read },
