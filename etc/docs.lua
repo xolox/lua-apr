@@ -3,7 +3,7 @@
  Documentation generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: November 6, 2011
+ Last Change: November 11, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -430,6 +430,7 @@ local bsignore = {
   ['mc_client:version'] = true,
   ['md5_context:digest'] = true,
   ['sha1_context:digest'] = true,
+  ['socket:recvfrom'] = true,
   ['socket:listen'] = true,
   ['thread:join'] = true,
   ['thread:status'] = true,

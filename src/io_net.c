@@ -357,6 +357,8 @@ static int socket_listen(lua_State *L)
  *  - `port` is the port number
  *  - `family` is one of the strings `'inet'`, `'inet6'` or `'unspec'`
  *
+ * *This function is binary safe.*
+ *
  * [udp]: http://en.wikipedia.org/wiki/User_Datagram_Protocol
  */
 
