@@ -1,7 +1,7 @@
 /* Multi threading module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: June 30, 2011
+ * Last Change: November 18, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -59,6 +59,7 @@ typedef struct {
   apr_thread_t *handle;
   apr_threadattr_t *attr;
   void *input, *output;
+  char *path, *cpath, *config;
   volatile thread_status_t status;
   int joined;
 } lua_apr_thread;
@@ -115,10 +116,19 @@ static void* lua_apr_cc thread_runner(apr_thread_t *handle, lua_apr_thread *thre
     status = TS_ERROR;
     thread->output = strdup("Failed to create Lua state");
   } else {
-    luaL_openlibs(L); /* load standard library */
-    lua_settop(L, 0); /* normalize stack */
-    lua_pushcfunction(L, error_handler); /* push error handler */
-    push_tuple(L, thread->input); /* push thread arguments */
+    /* Load the standard libraries. */
+    luaL_openlibs(L);
+    /* Apply package.{config,path,cpath} values from parent Lua state. */
+    lua_getglobal(L, "package");
+    lua_pushstring(L, thread->config); lua_setfield(L, -2, "config");
+    lua_pushstring(L, thread->path); lua_setfield(L, -2, "path");
+    lua_pushstring(L, thread->cpath); lua_setfield(L, -2, "cpath");
+    /* Normalize the stack. */
+    lua_settop(L, 0);
+    /* Push the error handler */
+    lua_pushcfunction(L, error_handler);
+    /* Push thread arguments. */
+    push_tuple(L, thread->input);
     function = lua_tolstring(L, 2, &length); /* compile chunk */
     if (luaL_loadbuffer(L, function, length, function)) {
       thread->output = strdup(lua_tostring(L, -1));
@@ -171,7 +181,7 @@ int lua_apr_thread_create(lua_State *L)
     goto fail;
   thread->status = TS_INIT;
 
-  /* Create memory pool for thread (freed by apr_thread_exit()). */
+  /* Create a memory pool for the thread (freed by apr_thread_exit()). */
   status = apr_pool_create(&thread->pool, NULL);
   if (status != APR_SUCCESS)
     goto fail;
@@ -180,6 +190,20 @@ int lua_apr_thread_create(lua_State *L)
    * TODO Dump functions here when supported?! */
   if (!check_tuple(L, 1, top, &thread->input))
     goto fail;
+
+  /* Copy package.{config,path,cpath} to the thread's Lua state. */
+# define get_package_value(fieldname, fieldptr) \
+    lua_getfield(L, -1, fieldname); \
+    if (lua_isstring(L, -1)) \
+      fieldptr = apr_pstrdup(thread->pool, lua_tostring(L, -1)); \
+    lua_pop(L, 1);
+  lua_getglobal(L, "package");
+  if (lua_istable(L, -1)) {
+    get_package_value("config", thread->config);
+    get_package_value("path", thread->path);
+    get_package_value("cpath", thread->cpath);
+  }
+  lua_pop(L, 1);
 
   /* Start the operating system thread. */
   status = apr_threadattr_create(&thread->attr, thread->pool);

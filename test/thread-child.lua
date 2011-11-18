@@ -3,7 +3,7 @@
  Unit tests for the multi threading module of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: July 1, 2011
+ Last Change: November 18, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -28,6 +28,15 @@ local thread = apr.thread(function(threadfile)
   assert(handle:write 'hello world!')
   assert(handle:close())
 end, threadfile)
+assert(thread:join())
+
+-- Test that package.config, package.path and package.cpath are preserved.
+local config, path, cpath = package.config, package.path, package.cpath
+local thread = apr.thread(function(config, path, cpath)
+  assert(package.config == config, "apr.thread() failed to preserve package.config")
+  assert(package.path == path, "apr.thread() failed to preserve package.path")
+  assert(package.cpath == cpath, "apr.thread() failed to preserve package.cpath")
+end, config, path, cpath)
 assert(thread:join())
 
 -- Check that the file was actually created inside the thread.
