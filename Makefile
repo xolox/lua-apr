@@ -1,7 +1,7 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: November 1, 2011
+# Last Change: November 21, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -82,20 +82,28 @@ override CFLAGS += -fprofile-arcs -ftest-coverage
 override LFLAGS += -fprofile-arcs
 endif
 
+# We need this to successfully build Lua/APR on Mac OS X.
+# See also https://github.com/xolox/lua-apr/issues/10.
+ifeq (Darwin,$(shell uname -s))
+LINK_TYPE = -bundle -undefined dynamic_lookup
+else
+LINK_TYPE = -shared
+endif
+
 # Names of compiled object files.
 OBJECTS = $(patsubst %.c,%.o,$(SOURCES))
 
-# The default build rule checks for missing system packages before trying to
-# build Lua/APR (only on supported platforms).
+# The default build rule, just a shortcut for the "apr.so" target.
 default: $(BINARY_MODULE)
 
 # Build the binary module.
 $(BINARY_MODULE): $(OBJECTS) Makefile
-	$(CC) -shared -o $@ $(OBJECTS) $(LFLAGS) || lua etc/make.lua --check
+	$(CC) $(LINK_TYPE) -o $@ $(OBJECTS) $(LFLAGS) || lua etc/make.lua --check
 
-# Build the standalone libapreq2 binding.
+# Build the standalone libapreq2 binding (not sure if anyone out there is
+# actually using this, if you are please speak up or I may remove this :-)
 $(APREQ_BINARY): etc/apreq_standalone.c Makefile
-	$(CC) -Wall -shared -o $@ $(CFLAGS) -fPIC etc/apreq_standalone.c $(LFLAGS) || lua etc/make.lua --check
+	$(CC) -Wall $(LINK_TYPE) -o $@ $(CFLAGS) -fPIC etc/apreq_standalone.c $(LFLAGS) || lua etc/make.lua --check
 
 # Compile individual source code files to object files.
 $(OBJECTS): %.o: %.c src/lua_apr.h Makefile

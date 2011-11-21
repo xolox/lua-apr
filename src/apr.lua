@@ -3,7 +3,7 @@
  Lua source code for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: November 18, 2011
+ Last Change: November 21, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -14,7 +14,7 @@
 --]]
 
 local apr = require 'apr.core'
-apr._VERSION = '0.21.9'
+apr._VERSION = '0.21.10'
 
 local function executable(type, user, group, protection)
   if type == 'file' and user and group and protection then
