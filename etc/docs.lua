@@ -457,7 +457,9 @@ local function dumpentries(functions)
     end
     blocks:add('### %s <a name="%s" href="#%s">`%s`</a>', tc, anchor, anchor, signature)
     blocks:add('%s', preprocess(entry.description))
-    if entry.binarysafe ~= nil and not bsignore[funcname] then
+    if entry.binarysafe ~= nil and not bsignore[funcname]
+        and not entry.description:find 'This function is binary safe'
+        and not entry.description:find 'This function is not binary safe' then
       blocks:add('*This function %s binary safe.*', entry.binarysafe and 'is' or 'is not')
     end
   end
