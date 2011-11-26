@@ -1,7 +1,7 @@
 /* Header file for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: November 6, 2011
+ * Last Change: November 20, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -126,7 +126,7 @@
       case LUA_TBOOLEAN: LUA_APR_DBG(" %i: boolean %s", i, lua_toboolean(L, i) ? "true" : "false"); \
       case LUA_TNUMBER: LUA_APR_DBG(" %i: number %f", i, lua_tonumber(L, i)); break; \
       case LUA_TSTRING: LUA_APR_DBG(" %i: string \"%.*s\"", i, lua_objlen(L, i), lua_tostring(L, i)); break; \
-      default: LUA_APR_DBG(" %i: %s", i, luaL_typename(L, i)); break; \
+      default: LUA_APR_DBG(" %i: %s (%p)", i, luaL_typename(L, i), lua_topointer(L, i)); break; \
     } \
   } \
 } while (0)
@@ -382,6 +382,8 @@ int object_decref(lua_apr_refobj*);
 lua_apr_pool *refpool_alloc(lua_State*);
 apr_pool_t* refpool_incref(lua_apr_pool*);
 void refpool_decref(lua_apr_pool*);
+int lua_apr_ref(lua_State*);
+int lua_apr_deref(lua_State*);
 
 /* permissions.c */
 int push_protection(lua_State*, apr_fileperms_t);
@@ -394,6 +396,12 @@ int lua_apr_pollset(lua_State*);
 int lua_apr_proc_create(lua_State*);
 int lua_apr_proc_detach(lua_State*);
 int lua_apr_proc_fork(lua_State*);
+
+/* serialize.c */
+int lua_apr_ref(lua_State*);
+int lua_apr_deref(lua_State*);
+int lua_apr_serialize(lua_State*, int);
+int lua_apr_unserialize(lua_State*);
 
 /* stat.c */
 void check_stat_request(lua_State*, lua_apr_stat_context*);
@@ -418,15 +426,11 @@ int lua_apr_strfsize(lua_State*);
 int lua_apr_tokenize_to_argv(lua_State*);
 
 /* thread.c */
-int lua_apr_thread_create(lua_State*);
+int lua_apr_thread(lua_State*);
 int lua_apr_thread_yield(lua_State*);
 
 /* thread_queue.c */
 int lua_apr_thread_queue(lua_State*);
-
-/* tuple.c */
-int check_tuple(lua_State*, int, int, void**);
-int push_tuple(lua_State*, void*);
 
 /* time.c */
 int lua_apr_sleep(lua_State*);

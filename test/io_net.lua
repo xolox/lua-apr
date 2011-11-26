@@ -3,7 +3,7 @@
  Unit tests for the network I/O handling module of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: November 11, 2011
+ Last Change: November 20, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -38,13 +38,9 @@ end
 
 -- Test socket:fd_get() and socket:fd_set(). {{{1
 local fd = assert(client:fd_get())
-local thread = apr.thread(function(fd)
+local thread = assert(apr.thread(function()
   -- Load the Lua/APR binding.
-  local status, apr = pcall(require, 'apr')
-  if not status then
-    pcall(require, 'luarocks.require')
-    apr = require 'apr'
-  end
+  local apr = require 'apr'
   -- Convert file descriptor to socket.
   local client = assert(apr.socket_create())
   assert(client:fd_set(fd))
@@ -55,7 +51,7 @@ local thread = apr.thread(function(fd)
   assert(tostring(client):find '^socket %([x%x]+%)$')
   assert(client:close())
   assert(tostring(client):find '^socket %(closed%)$')
-end, fd)
+end))
 assert(thread:join())
 
 -- Test UDP server socket using socket:recvfrom() . {{{1
@@ -64,24 +60,20 @@ local udp_port = math.random(10000, 50000)
 local udp_socket = assert(apr.socket_create 'udp')
 assert(udp_socket:bind('*', udp_port))
 
-local server = apr.thread(function(udp_socket)
+local server = assert(apr.thread(function()
   local client, data = assert(udp_socket:recvfrom())
   assert(client.address == '127.0.0.1')
   assert(client.port >= 1024)
   assert(data == 'booyah!')
-end, udp_socket)
+end))
 
-local client = apr.thread(function(udp_port)
-  local status, apr = pcall(require, 'apr')
-  if not status then
-    pcall(require, 'luarocks.require')
-    apr = require 'apr'
-  end
+local client = assert(apr.thread(function()
+  local apr = require 'apr'
   local socket = assert(apr.socket_create 'udp')
   assert(socket:connect('127.0.0.1', udp_port))
   assert(socket:write 'booyah!')
   assert(socket:close())
-end, udp_port)
+end))
 
 assert(server:join())
 assert(client:join())

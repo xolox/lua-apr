@@ -3,7 +3,7 @@
  Test infrastructure for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: July 2, 2011
+ Last Change: November 20, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -24,6 +24,14 @@ function print(...)
   io.stderr:write(table.concat(t, ' ') .. '\n')
 end
 
+function helpers.pack(...) -- {{{1
+  return { n = select('#', ...), ... }
+end
+
+function helpers.unpack(t) -- {{{1
+  return unpack(t, 1, t.n)
+end
+
 function helpers.message(s, ...) -- {{{1
   io.stderr:write(string.format(s, ...))
   io.stderr:flush()
@@ -35,7 +43,7 @@ function helpers.warning(s, ...) -- {{{1
 end
 
 function helpers.try(body, errorhandler) -- {{{1
-  local status, value = pcall(body)
+  local status, value = xpcall(body, debug.traceback)
   if status then return true end
   errorhandler(value)
   return false
@@ -65,8 +73,9 @@ function helpers.deepequal(a, b) -- {{{1
 end
 
 function helpers.checktuple(expected, ...) -- {{{1
-  assert(select('#', ...) == #expected)
-  for i = 1, #expected do assert(expected[i] == select(i, ...)) end
+  local received = helpers.pack(...)
+  assert(received.n == #expected)
+  for i = 1, #expected do assert(expected[i] == received[i]) end
 end
 
 local testscripts = apr.filepath_parent(helpers.filedefined())

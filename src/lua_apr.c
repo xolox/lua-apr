@@ -1,7 +1,7 @@
 /* Miscellaneous functions module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: November 4, 2011
+ * Last Change: November 20, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -60,6 +60,8 @@ LUA_APR_EXPORT int luaopen_apr_core(lua_State *L)
     { "os_default_encoding", lua_apr_os_default_encoding },
     { "os_locale_encoding", lua_apr_os_locale_encoding },
     { "type", lua_apr_type },
+    { "ref", lua_apr_ref },
+    { "deref", lua_apr_deref },
 
     /* base64.c -- base64 encoding/decoding. */
     { "base64_encode", lua_apr_base64_encode },
@@ -190,7 +192,7 @@ LUA_APR_EXPORT int luaopen_apr_core(lua_State *L)
 #   if APR_HAS_THREADS
 
     /* thread.c -- multi threading. */
-    { "thread_create", lua_apr_thread_create },
+    { "thread", lua_apr_thread },
     { "thread_yield", lua_apr_thread_yield },
 
     /* thread_queue.c -- thread queues. */

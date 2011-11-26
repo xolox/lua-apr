@@ -1,7 +1,7 @@
 /* Object model for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: June 30, 2011
+ * Last Change: November 20, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -39,7 +39,7 @@ void *new_object(lua_State *L, lua_apr_objtype *T)
  * turning the original object into a reference to the object in unmanaged
  * memory. Returns the address of the object in unmanaged memory.
  *
- * XXX Note that this does not increment the reference count!
+ * XXX Note that this does not change the reference count!
  */
 
 void *prepare_reference(lua_apr_objtype *T, lua_apr_refobj *object)
@@ -53,14 +53,14 @@ void *prepare_reference(lua_apr_objtype *T, lua_apr_refobj *object)
     apr_atomic_set32(&clone->refcount, 1);
     clone->unmanaged = 1;
     object->reference = clone;
+    object = clone;
   }
   return object;
 }
 
 /* create_reference() {{{1
  *
- * Create an object of the given type which references another object. Returns
- * the address of the referenced object.
+ * Create an object of the given type which references another object.
  *
  * XXX Note that this does not increment the reference count!
  */

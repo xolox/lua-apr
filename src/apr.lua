@@ -3,7 +3,7 @@
  Lua source code for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: November 21, 2011
+ Last Change: November 26, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -14,7 +14,8 @@
 --]]
 
 local apr = require 'apr.core'
-apr._VERSION = '0.21.10'
+
+apr._VERSION = '0.22'
 
 local function executable(type, user, group, protection)
   if type == 'file' and user and group and protection then
@@ -300,25 +301,27 @@ function apr.getopt(usage, config)
   end
 end
 
-if apr.thread_create then
-
--- apr.thread(body [, arg, ...]) -> thread {{{1
+-- apr.serialize(...) -> string {{{1
 --
--- Shortcut for `apr.thread_create()` that supports actual functions as @body
--- by converting them to byte code using `string.dump()`. This means you don't
--- lose syntax highlighting and debug information. This also calls `assert()`
--- on the results of `apr.thread_create()`. This function won't work in Lua
--- implementations like LuaJIT 2 where `string.dump()` is not available.
+-- Serialize any number of Lua values (a tuple) into a source code string. When
+-- passed to `apr.unserialize()` this string results in a tuple of values that
+-- is structurally identical to the original tuple.
 --
--- Part of the "Multi threading" module.
+-- Part of the "Serialization" module.
 
-function apr.thread(body, ...)
-  if type(body) == 'function' then
-    body = string.dump(body)
-  end
-  return assert(apr.thread_create(body, ...))
+function apr.serialize(...)
+  return require 'apr.serialize' ({ n = select('#', ...), ... })
 end
 
+-- apr.unserialize(string) -> ... {{{1
+--
+-- Unserialize a source code string into one or more Lua values.
+--
+-- Part of the "Serialization" module.
+
+function apr.unserialize(data)
+  local tuple = loadstring(data)()
+  return unpack(tuple, 1, tuple.n)
 end
 
 -- }}}1

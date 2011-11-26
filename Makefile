@@ -1,7 +1,7 @@
 # This is the UNIX makefile for the Lua/APR binding.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: November 21, 2011
+# Last Change: November 26, 2011
 # Homepage: http://peterodding.com/code/lua/apr/
 # License: MIT
 #
@@ -21,6 +21,7 @@ LUA_APR_DOCS = $(LUA_DIR)/share/doc/lua-apr
 
 # Names of source / binary modules to install.
 SOURCE_MODULE = src/apr.lua
+SERIALIZATION_MODULE = src/serialize.lua
 BINARY_MODULE = core.so
 APREQ_BINARY = apreq.so
 
@@ -50,6 +51,7 @@ SOURCES = src/base64.c \
 		  src/permissions.c \
 		  src/pollset.c \
 		  src/proc.c \
+		  src/serialize.c \
 		  src/shm.c \
 		  src/signal.c \
 		  src/stat.c \
@@ -57,7 +59,6 @@ SOURCES = src/base64.c \
 		  src/thread.c \
 		  src/thread_queue.c \
 		  src/time.c \
-		  src/tuple.c \
 		  src/uri.c \
 		  src/user.c \
 		  src/uuid.c \
@@ -117,6 +118,7 @@ src/errno.c: etc/errors.lua Makefile
 install: $(BINARY_MODULE) docs
 	mkdir -p $(LUA_SHAREDIR)/apr/test
 	cp $(SOURCE_MODULE) $(LUA_SHAREDIR)/apr.lua
+	cp $(SERIALIZATION_MODULE) $(LUA_SHAREDIR)/apr/serialize.lua
 	cp test/*.lua $(LUA_SHAREDIR)/apr/test
 	mkdir -p $(LUA_LIBDIR)/apr
 	cp $(BINARY_MODULE) $(LUA_LIBDIR)/apr/$(BINARY_MODULE)

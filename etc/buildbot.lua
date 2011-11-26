@@ -5,7 +5,7 @@
  Multi platform build bot for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: June 16, 2011
+ Last Change: November 13, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -46,6 +46,7 @@ local libname = 'core.' .. libext
 local buildfiles = {
   [libname] = 'apr/' .. libname,
   ['src/apr.lua'] = 'apr.lua',
+  ['src/serialize.lua'] = 'apr/serialize.lua',
   ['test'] = 'apr/test',
 }
 local usage = [[

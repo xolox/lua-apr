@@ -1,7 +1,7 @@
 /* Multi threading module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: November 18, 2011
+ * Last Change: November 20, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -9,13 +9,8 @@
  * execute Lua functions in dedicated [Lua states] [Lua_state] and [operating
  * system threads] [threading]. When you create a thread you can pass it any
  * number of arguments and when a thread exits it can return any number of
- * return values. In both cases the following types are valid:
- *
- *  - nil
- *  - boolean
- *  - number
- *  - string (binary safe)
- *  - any userdata object created by the Lua/APR binding
+ * return values. For details about supported Lua values see the documentation
+ * of the [serialization](#serialization) module.
  *
  * Please consider the following issues when using this module:
  *
@@ -46,7 +41,7 @@
 const char *status_names[] = { "init", "running", "done", "error" };
 
 #define check_thread(L, idx) \
-  (lua_apr_thread*)check_object(L, idx, &lua_apr_thread_type)
+  (lua_apr_thread_object*)check_object(L, idx, &lua_apr_thread_type)
 
 #define thread_busy(T) \
   ((T)->status == TS_INIT || (T)->status == TS_RUNNING)
@@ -62,7 +57,7 @@ typedef struct {
   char *path, *cpath, *config;
   volatile thread_status_t status;
   int joined;
-} lua_apr_thread;
+} lua_apr_thread_object;
 
 /* error_handler(state) {{{2 */
 
@@ -90,10 +85,9 @@ static int error_handler(lua_State *L)
 
 /* thread_destroy(thread) {{{2 */
 
-static void thread_destroy(lua_apr_thread *thread)
+static void thread_destroy(lua_apr_thread_object *thread)
 {
   if (object_collectable((lua_apr_refobj*)thread)) {
-    free(thread->input);
     free(thread->output);
   }
   release_object((lua_apr_refobj*)thread);
@@ -101,7 +95,7 @@ static void thread_destroy(lua_apr_thread *thread)
 
 /* thread_runner(handle, thread) {{{2 */
 
-static void* lua_apr_cc thread_runner(apr_thread_t *handle, lua_apr_thread *thread)
+static void* lua_apr_cc thread_runner(apr_thread_t *handle, lua_apr_thread_object *thread)
 {
   const char *function;
   size_t length;
@@ -123,24 +117,37 @@ static void* lua_apr_cc thread_runner(apr_thread_t *handle, lua_apr_thread *thre
     lua_pushstring(L, thread->config); lua_setfield(L, -2, "config");
     lua_pushstring(L, thread->path); lua_setfield(L, -2, "path");
     lua_pushstring(L, thread->cpath); lua_setfield(L, -2, "cpath");
-    /* Normalize the stack. */
+    /* (0) Normalize the stack. */
     lua_settop(L, 0);
-    /* Push the error handler */
+    /* (1) Push the error handler. */
     lua_pushcfunction(L, error_handler);
-    /* Push thread arguments. */
-    push_tuple(L, thread->input);
-    function = lua_tolstring(L, 2, &length); /* compile chunk */
-    if (luaL_loadbuffer(L, function, length, function)) {
-      thread->output = strdup(lua_tostring(L, -1));
-      status = TS_ERROR;
-    } else {
-      lua_replace(L, 2); /* replace string with function */
+    /* (2..n) Unserialize thread function and arguments.
+     * FIXME What if lua_apr_unserialize() raises an error? */
+    lua_pushstring(L, thread->input);
+    lua_apr_unserialize(L);
+    status = TS_INIT;
+    /* XXX The threading module should work even if the serialization module
+     * fails to serialize function objects, so if the first argument to
+     * apr.thread() is a string, we convert it to a function here. */
+    if (lua_isstring(L, 2)) {
+      function = lua_tolstring(L, 2, &length);
+      if (luaL_loadbuffer(L, function, length, function)) {
+        /* Failed to compile chunk. */
+        thread->output = strdup(lua_tostring(L, -1));
+        status = TS_ERROR;
+      } else {
+        /* Replace string with chunk. */
+        lua_replace(L, 2);
+      }
+    }
+    if (status != TS_ERROR) {
       thread->status = TS_RUNNING;
       if (lua_pcall(L, lua_gettop(L) - 2, LUA_MULTRET, 1)) {
         thread->output = strdup(lua_tostring(L, -1));
         status = TS_ERROR;
       } else {
-        check_tuple(L, 2, lua_gettop(L), &thread->output);
+        lua_apr_serialize(L, 2);
+        thread->output = strdup(lua_tostring(L, -1));
         status = TS_DONE;
       }
     }
@@ -155,25 +162,26 @@ static void* lua_apr_cc thread_runner(apr_thread_t *handle, lua_apr_thread *thre
   return NULL;
 }
 
-/* apr.thread_create(code [, ...]) -> thread {{{1
+/* apr.thread(f [, ...]) -> thread {{{1
  *
- * Execute the Lua code in the string argument @code in a dedicated Lua state
- * and operating system thread. Any extra arguments are passed onto the Lua
- * code (where they can be accessed with the expression `...`). On success a
+ * Execute the Lua function @f in a dedicated Lua state and operating system
+ * thread. Any extra arguments are passed onto the function. On success a
  * thread object is returned, otherwise a nil followed by an error message is
  * returned. You can use `thread:join()` to wait for the thread to finish and
- * get its return values.
+ * get the return values of the thread function.
  *
  * *This function is binary safe.*
  */
 
-int lua_apr_thread_create(lua_State *L)
+int lua_apr_thread(lua_State *L)
 {
-  lua_apr_thread *thread = NULL;
+  lua_apr_thread_object *thread = NULL;
   apr_status_t status = APR_ENOMEM;
-  int top = lua_gettop(L);
+  int input_idx;
 
-  luaL_checktype(L, 1, LUA_TSTRING);
+  /* Serialize the thread function and any arguments. */
+  lua_apr_serialize(L, 1);
+  input_idx = lua_gettop(L);
 
   /* Create the Lua/APR thread object. */
   thread = new_object(L, &lua_apr_thread_type);
@@ -186,17 +194,16 @@ int lua_apr_thread_create(lua_State *L)
   if (status != APR_SUCCESS)
     goto fail;
 
-  /* Save the string of code and any other arguments.
-   * TODO Dump functions here when supported?! */
-  if (!check_tuple(L, 1, top, &thread->input))
-    goto fail;
+  /* Copy the serialized thread function to the thread's memory pool. */
+  thread->input = apr_pstrdup(thread->pool, lua_tostring(L, input_idx));
 
-  /* Copy package.{config,path,cpath} to the thread's Lua state. */
 # define get_package_value(fieldname, fieldptr) \
     lua_getfield(L, -1, fieldname); \
     if (lua_isstring(L, -1)) \
       fieldptr = apr_pstrdup(thread->pool, lua_tostring(L, -1)); \
     lua_pop(L, 1);
+
+  /* Copy package.{config,path,cpath} to the thread's Lua state. */
   lua_getglobal(L, "package");
   if (lua_istable(L, -1)) {
     get_package_value("config", thread->config);
@@ -246,7 +253,7 @@ int lua_apr_thread_yield(lua_State *L)
 
 static int thread_join(lua_State *L)
 {
-  lua_apr_thread *object;
+  lua_apr_thread_object *object;
   apr_status_t status, unused;
 
   object = check_thread(L, 1);
@@ -263,7 +270,8 @@ static int thread_join(lua_State *L)
   /* Push the status and any results. */
   if (object->status == TS_DONE) {
     lua_pushboolean(L, 1);
-    push_tuple(L, object->output);
+    lua_pushstring(L, object->output);
+    lua_apr_unserialize(L);
   } else {
     lua_pushboolean(L, 0);
     lua_pushstring(L, object->output);
@@ -283,7 +291,7 @@ static int thread_join(lua_State *L)
 
 static int thread_status(lua_State *L)
 {
-  lua_apr_thread *object;
+  lua_apr_thread_object *object;
 
   object = check_thread(L, 1);
   lua_pushstring(L, status_names[object->status]);
@@ -295,7 +303,7 @@ static int thread_status(lua_State *L)
 
 static int thread_tostring(lua_State *L)
 {
-  lua_apr_thread *object = check_thread(L, 1);
+  lua_apr_thread_object *object = check_thread(L, 1);
   lua_pushfstring(L, "%s (%s)",
       lua_apr_thread_type.friendlyname,
       status_names[object->status]);
@@ -306,7 +314,7 @@ static int thread_tostring(lua_State *L)
 
 static int thread_gc(lua_State *L)
 {
-  lua_apr_thread *thread;
+  lua_apr_thread_object *thread;
   apr_status_t status, unused;
 
   thread = check_thread(L, 1);
@@ -342,11 +350,11 @@ static luaL_Reg thread_metamethods[] = {
 };
 
 lua_apr_objtype lua_apr_thread_type = {
-  "lua_apr_thread*",      /* metatable name in registry */
-  "thread",               /* friendly object name */
-  sizeof(lua_apr_thread), /* structure size */
-  thread_methods,         /* methods table */
-  thread_metamethods      /* metamethods table */
+  "lua_apr_thread_object*",      /* metatable name in registry */
+  "thread",                      /* friendly object name */
+  sizeof(lua_apr_thread_object), /* structure size */
+  thread_methods,                /* methods table */
+  thread_metamethods             /* metamethods table */
 };
 
 #endif

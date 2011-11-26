@@ -3,7 +3,7 @@
  Documentation generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: November 11, 2011
+ Last Change: November 20, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -41,6 +41,7 @@ local SOURCES = [[
   uuid.c
   xlate.c
   xml.c
+  serialize.c
   apr.lua
   lua_apr.c
   permissions.c
@@ -397,6 +398,8 @@ local bsignore = {
   ['apr.parse_headers'] = true,
   ['apr.parse_multipart'] = true,
   ['apr.parse_query_string'] = true,
+  ['apr.ref'] = true,
+  ['apr.deref'] = true,
   ['apr.platform_get'] = true,
   ['apr.proc_fork'] = true,
   ['apr.signal_names'] = true,
@@ -471,8 +474,8 @@ local custom_sorting = {
     apr.password_get apr.md5_init md5_context:update md5_context:digest
     md5_context:reset apr.sha1 apr.sha1_init sha1_context:update
     sha1_context:digest sha1_context:reset ]],
-  ['thread.c'] = [[ apr.thread apr.thread_create apr.thread_yield
-    thread:status thread:join ]],
+  ['thread.c'] = [[ apr.thread apr.thread_yield thread:status thread:join ]],
+  ['serialize.c'] = [[ apr.serialize apr.unserialize apr.ref apr.deref ]],
 }
 
 for _, module in ipairs(sorted_modules) do

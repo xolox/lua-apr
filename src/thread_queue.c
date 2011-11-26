@@ -1,12 +1,12 @@
 /* Thread queues module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: November 6, 2011
+ * Last Change: November 20, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
  * The valid types that can be transported through thread queues are documented
- * in the [multi threading](#multi_threading) module. The example of a [multi
+ * under the [serialization](#serialization) module. The example of a [multi
  * threaded webserver](#example_multi_threaded_webserver) uses a thread queue
  * to pass sockets between the main server thread and several worker threads.
  */
@@ -41,11 +41,15 @@ typedef apr_status_t (lua_apr_cc *apr_queue_push_func)(apr_queue_t*, void*);
 
 static int queue_push_real(lua_State *L, apr_queue_push_func cb)
 {
-  void *tuple;
-  apr_status_t status = APR_ENOMEM;
-  lua_apr_queue *object = check_queue(L, 1);
-  if (check_tuple(L, 2, lua_gettop(L), &tuple))
-    status = cb(object->handle, tuple);
+  lua_apr_queue *object;
+  apr_status_t status;
+  void *data;
+
+  object = check_queue(L, 1);
+  lua_apr_serialize(L, 2);
+  data = strdup(lua_tostring(L, -1));
+  status = cb(object->handle, data);
+
   return push_status(L, status);
 }
 
@@ -53,24 +57,32 @@ typedef apr_status_t (lua_apr_cc *apr_queue_pop_func)(apr_queue_t*, void**);
 
 static int queue_pop_real(lua_State *L, apr_queue_pop_func cb)
 {
-  void *tuple;
-  int n;
-  lua_apr_queue *object = check_queue(L, 1);
-  apr_status_t status = cb(object->handle, &tuple);
+  lua_apr_queue *object;
+  apr_status_t status;
+  void *data;
+
+  lua_settop(L, 1);
+  object = check_queue(L, 1);
+  status = cb(object->handle, &data);
   if (status != APR_SUCCESS)
     return push_error_status(L, status);
-  n = push_tuple(L, tuple);
-  free(tuple);
-  return n;
+  lua_pushstring(L, data);
+  free(data);
+  lua_apr_unserialize(L);
+  return lua_gettop(L) - 1;
 }
 
 /* apr.thread_queue([capacity]) -> queue {{{1
  *
- * Create a [FIFO queue] [fifo]. The optional argument @capacity controls the
- * maximum size of the queue and defaults to 1. On success the queue object is
- * returned, otherwise a nil followed by an error message is returned.
+ * Create a [FIFO] [fifo] [queue] [wp:queue]. The optional argument @capacity
+ * controls the maximum size of the queue and defaults to 1. On success the
+ * queue object is returned, otherwise a nil followed by an error message is
+ * returned.
  *
- * [fifo]: http://en.wikipedia.org/wiki/FIFO
+ * The capacity of a thread queue cannot be changed after construction.
+ *
+ * [wp:fifo]: http://en.wikipedia.org/wiki/FIFO
+ * [wp:queue]: http://en.wikipedia.org/wiki/Queue_%28abstract_data_type%29
  */
 
 int lua_apr_thread_queue(lua_State *L)
@@ -93,9 +105,9 @@ int lua_apr_thread_queue(lua_State *L)
 
 /* queue:push(value [, ...]) -> status {{{1
  *
- * Add a tuple of one or more values to the queue. This call will block if the
- * queue is full. On success true is returned, otherwise a nil followed by an
- * error message and error code is returned:
+ * Add a tuple of one or more Lua values to the queue. This call will block if
+ * the queue is full. On success true is returned, otherwise a nil followed by
+ * an error message and error code is returned:
  *
  *  - `'EINTR'`: the blocking was interrupted (try again)
  *  - `'EOF'`: the queue has been terminated
@@ -110,9 +122,9 @@ static int queue_push(lua_State *L)
 
 /* queue:pop() -> value [, ...]  {{{1
  *
- * Get an object from the queue. This call will block if the queue is empty. On
- * success true is returned, otherwise a nil followed by an error message and
- * error code is returned:
+ * Get one or more Lua values from the queue. This call will block if the queue
+ * is empty. On success true is returned, otherwise a nil followed by an error
+ * message and error code is returned:
  *
  *  - `'EINTR'`: the blocking was interrupted (try again)
  *  - `'EOF'`: the queue has been terminated
@@ -127,9 +139,9 @@ static int queue_pop(lua_State *L)
 
 /* queue:trypush(value [, ...]) -> status {{{1
  *
- * Add a tuple of one or more values to the queue. This call doesn't block if
- * the queue is full. On success true is returned, otherwise a nil followed by
- * an error message and error code is returned:
+ * Add a tuple of one or more Lua values to the queue. This call doesn't block
+ * if the queue is full. On success true is returned, otherwise a nil followed
+ * by an error message and error code is returned:
  *
  *  - `'EINTR'`: the blocking was interrupted (try again)
  *  - `'EAGAIN'`: the queue is full
@@ -145,9 +157,9 @@ static int queue_trypush(lua_State *L)
 
 /* queue:trypop() -> value [, ...] {{{1
  *
- * Get an object from the queue. This call doesn't block if the queue is empty.
- * On success true is returned, otherwise a nil followed by an error message
- * and error code is returned:
+ * Get a tuple of Lua values from the queue. This call doesn't block if the
+ * queue is empty. On success true is returned, otherwise a nil followed by an
+ * error message and error code is returned:
  *
  *  - `'EINTR'`: the blocking was interrupted (try again)
  *  - `'EAGAIN'`: the queue is empty
