@@ -3,7 +3,7 @@
  Test infrastructure for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: November 20, 2011
+ Last Change: November 26, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -40,6 +40,13 @@ end
 function helpers.warning(s, ...) -- {{{1
   io.stderr:write("\nWarning: ", string.format(s, ...))
   io.stderr:flush()
+end
+
+function helpers.soft_assert(tuple, extramsg) -- {{{1
+  local status, details = helpers.unpack(tuple)
+  if not status then
+    helpers.warning("Assertion failed with %s (%s)", details, extramsg)
+  end
 end
 
 function helpers.try(body, errorhandler) -- {{{1
