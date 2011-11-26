@@ -3,7 +3,7 @@
  Supporting code for the UNIX makefile of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: November 6, 2011
+ Last Change: November 27, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -74,7 +74,11 @@ local function readcmd(command)
   local status = os.execute(command
                   .. ' 1>"' .. stdout .. '"'
                   .. ' 2>"' .. stderr .. '"')
-  return status, readfile(stdout), readfile(stderr)
+  local output = readfile(stdout)
+  local errors = readfile(stderr)
+  os.remove(stdout)
+  os.remove(stderr)
+  return status, output, errors
 end
 
 -- readstdout() -- Get the standard output of a shell command. {{{2
