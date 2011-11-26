@@ -15,7 +15,7 @@
 
 local apr = require 'apr.core'
 
-apr._VERSION = '0.22'
+apr._VERSION = '0.22.1'
 
 local function executable(type, user, group, protection)
   if type == 'file' and user and group and protection then
@@ -102,7 +102,7 @@ function apr.filepath_which(program, find_all)
     end
     if is_windows and #extensions >= 1 then
       for _, extension in ipairs(extensions) do
-        candidate = apr.filepath_merge(directory, program .. '.' .. extension)
+        candidate = apr.filepath_merge(directory, program .. extension)
         if apr.stat(candidate, 'type') == 'file' then
           if not find_all then return candidate end
           results[#results + 1] = candidate
