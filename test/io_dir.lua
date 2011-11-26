@@ -3,7 +3,7 @@
  Unit tests for the directory manipulation module of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: March 27, 2011
+ Last Change: November 27, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -17,14 +17,17 @@ end
 local helpers = require 'apr.test.helpers'
 
 -- Make sure apr.temp_dir_get() returns an existing, writable directory
-assert(helpers.writable(assert(apr.temp_dir_get())))
+local directory = assert(apr.temp_dir_get())
+assert(helpers.writable(directory))
 
 -- Create a temporary workspace directory for the following tests
-assert(apr.dir_make 'io_dir_tests')
+local io_dir_tests = apr.filepath_merge(directory,
+    string.format('lua-apr-io_dir_tests-%i', math.random(1e10)))
+assert(apr.dir_make(io_dir_tests))
 
 -- Change to the temporary workspace directory
 local cwd_save = assert(apr.filepath_get())
-assert(apr.filepath_set 'io_dir_tests')
+assert(apr.filepath_set(io_dir_tests))
 
 -- Test dir_make()
 assert(apr.dir_make 'foobar')
@@ -62,7 +65,6 @@ for name in dir:entries 'name' do entries[#entries+1] = name end
 assert(dir:rewind())
 local rewinded = {}
 for name in dir:entries 'name' do rewinded[#rewinded+1] = name end
--- Test tostring(directory)
 assert(tostring(dir):find '^directory %([x%x]+%)$')
 assert(dir:close())
 assert(tostring(dir):find '^directory %(closed%)$')
@@ -76,4 +78,4 @@ end
 
 -- Remove temporary workspace directory
 assert(apr.filepath_set(cwd_save))
-assert(apr.dir_remove_recursive 'io_dir_tests')
+assert(apr.dir_remove_recursive(io_dir_tests))
