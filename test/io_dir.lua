@@ -22,7 +22,7 @@ assert(helpers.writable(directory))
 
 -- Create a temporary workspace directory for the following tests
 local io_dir_tests = apr.filepath_merge(directory,
-    string.format('lua-apr-io_dir_tests-%i', math.random(1e10)))
+    string.format('lua-apr-io_dir_tests-%i', math.random(1e9)))
 assert(apr.dir_make(io_dir_tests))
 
 -- Change to the temporary workspace directory
