@@ -72,9 +72,16 @@ assert(tostring(dir):find '^directory %(closed%)$')
 table.sort(nonascii)
 table.sort(entries)
 table.sort(rewinded)
-for i = 1, math.max(#nonascii, #entries, #rewinded) do
-  assert(nonascii[i] == entries[i])
-  assert(entries[i] == rewinded[i])
+if not pcall(function()
+  for i = 1, math.max(#nonascii, #entries, #rewinded) do
+    assert(nonascii[i] == entries[i])
+    assert(entries[i] == rewinded[i])
+  end
+end) then
+  error("Directory traversal returned incorrect result?\n"
+    .. 'Input strings:     "' .. table.concat(nonascii, '", "') .. '"\n'
+    .. 'Directory entries: "' .. table.concat(entries, '", "') .. '"\n'
+    .. 'Rewinded entries:  "' .. table.concat(rewinded, '", "') .. '"')
 end
 
 -- Remove temporary workspace directory
