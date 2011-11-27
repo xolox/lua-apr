@@ -49,13 +49,15 @@ local msi = 'Mindless Self Indulgence - Despierta Los Niños'
 local manu_chao = 'Manu Chao - Próxima Estación; Esperanza'
 local cassius = 'Cassius - Au Rêve'
 local yoko_kanno = '菅野 よう子'
-local nonascii_canonical = { msi, manu_chao, cassius, yoko_kanno }
+local nonascii = { msi, manu_chao, cassius, yoko_kanno }
 
--- Mac OS X applies Unicode normalization on the file system level. This means
--- you can write a file without getting any errors, but when you check for the
--- file later it doesn't exist (because the normalized form differs from the
--- original form and the normalized form is reported back by the OS). See
--- also issue 10 on GitHub: https://github.com/xolox/lua-apr/issues/10.
+-- Workarounds for Unicode normalization on Mac OS X. {{{1
+
+-- Mac OS X apparently applies Unicode normalization on file system level. This
+-- means you can write a file without getting any errors, but when you check
+-- for the file later it doesn't exist (because the normalized form differs
+-- from the original form and the normalized form is reported back by the OS).
+-- See also issue 10 on GitHub: https://github.com/xolox/lua-apr/issues/10.
 -- The following table maps the titles above to their normalized form.
 local nonascii_normalized = {
   -- Technically it's superstition that made me write out these normalized
@@ -65,7 +67,6 @@ local nonascii_normalized = {
   [string.char(77, 105, 110, 100, 108, 101, 115, 115, 32, 83, 101, 108, 102, 32, 73, 110, 100, 117, 108, 103, 101, 110, 99, 101, 32, 45, 32, 68, 101, 115, 112, 105, 101, 114, 116, 97, 32, 76, 111, 115, 32, 78, 105, 110, 204, 131, 111, 115)] = msi,
   [string.char(77, 97, 110, 117, 32, 67, 104, 97, 111, 32, 45, 32, 80, 114, 111, 204, 129, 120, 105, 109, 97, 32, 69, 115, 116, 97, 99, 105, 111, 204, 129, 110, 59, 32, 69, 115, 112, 101, 114, 97, 110, 122, 97)] = manu_chao,
   [string.char(67, 97, 115, 115, 105, 117, 115, 32, 45, 32, 65, 117, 32, 82, 101, 204, 130, 118, 101)] = cassius,
-  [string.char(232, 143, 133, 233, 135, 142, 32, 227, 130, 136, 227, 129, 134, 229, 173, 144)] = yoko_kanno,
 }
 
 local warned_about_normalization = false
@@ -73,7 +74,7 @@ local warned_about_normalization = false
 local function handle_normalized_forms(s)
   if nonascii_normalized[s] then
     if not warned_about_normalization then
-      helpers.warning("Detected Unicode normalization at file system level, applying workaround... (you're probably on Mac OS X)")
+      helpers.warning "Detected Unicode normalization on file system level, applying workaround... (you're probably on Mac OS X)\n"
       warned_about_normalization = true
     end
     return nonascii_normalized[s]
@@ -81,6 +82,8 @@ local function handle_normalized_forms(s)
     return s
   end
 end
+
+-- }}}1
 
 for _, name in ipairs(nonascii) do
   assert(apr.dir_make(name))
