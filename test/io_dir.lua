@@ -21,6 +21,7 @@ local directory = assert(apr.temp_dir_get())
 assert(helpers.writable(directory))
 
 -- Create a temporary workspace directory for the following tests
+math.randomseed(os.time())
 local io_dir_tests = apr.filepath_merge(directory,
     string.format('lua-apr-io_dir_tests-%i', math.random(1e9)))
 assert(apr.dir_make(io_dir_tests))
