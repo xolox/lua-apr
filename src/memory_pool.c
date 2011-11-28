@@ -123,7 +123,7 @@ int pool_gc(lua_State *L)
 
 /* lua_apr_pool_register() - Enable others to replace the global memory pool (e.g. mod_lua). {{{1 */
 
-apr_pool_t *lua_apr_pool_register(lua_State *L, apr_pool_t *new_pool)
+LUA_APR_EXPORT apr_pool_t *lua_apr_pool_register(lua_State *L, apr_pool_t *new_pool)
 {
   return pool_register(L, new_pool, 0);
 }
