@@ -1,7 +1,7 @@
 /* Pollset module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: November 6, 2011
+ * Last Change: December 3, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -225,8 +225,8 @@ static int pollset_add(lua_State *L)
 
 static int pollset_remove(lua_State *L)
 {
-  lua_apr_pollset_object *object;
-  lua_apr_socket *socket = APR_SUCCESS;
+  lua_apr_pollset_object *object = APR_SUCCESS;
+  lua_apr_socket *socket;
   apr_pollfd_t *fd;
   apr_status_t status;
 
