@@ -3,7 +3,7 @@
  Supporting code for the UNIX makefile of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: November 27, 2011
+ Last Change: December 4, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -22,6 +22,8 @@
  check" of the external dependencies / system packages.
 
 ]]
+
+local DEBUG = os.getenv 'LUA_APR_DEBUG'
 
 -- Miscellaneous functions. {{{1
 
@@ -124,29 +126,28 @@ local function getcflags()
   mergeflags(flags, 'pkg-config --cflags lua5.1') -- Debian/Ubuntu
   mergeflags(flags, 'pkg-config --cflags lua-5.1') -- FreeBSD
   mergeflags(flags, 'pkg-config --cflags lua') -- Arch Linux
-  if #flags == 0 then
+  if DEBUG and #flags == 0 then
     message "Warning: Failed to determine Lua 5.1 compiler flags."
   end
   count = #flags
   -- Compiler flags for APR 1.
   mergeflags(flags, 'apr-1-config --cflags --cppflags --includes') -- sometimes this is available
   mergeflags(flags, 'pkg-config --cflags apr-1') -- otherwise we fall back to pkg-config
-  if #flags == count then
+  if DEBUG and #flags == count then
     message "Warning: Failed to determine APR 1 compiler flags."
   end
   count = #flags
   -- Compiler flags for APR-util 1.
   mergeflags(flags, 'apu-1-config --includes') -- sometimes this is available
   mergeflags(flags, 'pkg-config --cflags apr-util-1') -- otherwise we fall back to pkg-config
-  if #flags == count then
-    -- This message always triggers so I don't actually need to see it.
-    --message "Warning: Failed to determine APR-util 1 compiler flags."
+  if DEBUG and #flags == count then
+    message "Warning: Failed to determine APR-util 1 compiler flags."
   end
   count = #flags
   -- Compiler flags for libapreq2.
   mergeflags(flags, 'apreq2-config --includes')
   local have_apreq = (#flags > count)
-  if not have_apreq then
+  if DEBUG and not have_apreq then
     message "Warning: Failed to determine libapreq2 compiler flags."
   end
   -- Let the C source code know whether libapreq2 is available.
@@ -161,20 +162,20 @@ local function getlflags()
   -- Linker flags for APR 1.
   mergeflags(flags, 'apr-1-config --link-ld --libs')
   mergeflags(flags, 'pkg-config --libs apr-1')
-  if #flags == 0 then
+  if DEBUG and #flags == 0 then
     message "Warning: Failed to determine APR 1 linker flags."
   end
   count = #flags
   -- Linker flags for APR-util 1.
   mergeflags(flags, 'apu-1-config --link-ld --libs --ldap-libs')
   mergeflags(flags, 'pkg-config --libs apr-util-1')
-  if #flags == count then
+  if DEBUG and #flags == count then
     message "Warning: Failed to determine APR-util 1 linker flags."
   end
   count = #flags
   -- Linker flags for libapreq2.
   mergeflags(flags, 'apreq2-config --link-ld')
-  if #flags == 0 then
+  if DEBUG and #flags == 0 then
     message "Warning: Failed to determine apreq2 linker flags."
   end
   return table.concat(flags, ' ')
