@@ -5,7 +5,7 @@
  Authors:
   - zhiguo zhao <zhaozg@gmail.com>
   - Peter Odding <peter@peterodding.com>
- Last Change: September 16, 2011
+ Last Change: December 3, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -54,6 +54,10 @@ if code == 'ECONNREFUSED' then
   return false
 end
 assert(type(version) == 'string')
+
+-- Print the Memcached server version (may be helpful in debugging).
+helpers.message('\rRunning memcache tests against %s server: ', version)
+
 local stats = assert(client:stats(server))
 assert(type(stats) == 'table')
 assert(stats.version == version)

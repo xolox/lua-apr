@@ -2,10 +2,9 @@
 
 ## New features
 
- * **LDAP directory modification** (creating, changing and deleting LDAP directory entries)
  * **Encrypted network communication**. It appears that APR itself doesn't support this but clearly it's possible because there are dozens of projects that use APR and support encrypted network communication (the [Apache HTTP server] [httpd], [ApacheBench] [ab], [Tomcat] [tomcat], etc.)
  * Make it possible to enable text mode for files, pipes and sockets on platforms where there is no distinction between text/binary mode (because `CR` + `LF` → `LF` translation can be useful on UNIX as well)
- 
+
 [httpd]: http://en.wikipedia.org/wiki/Apache_HTTP_Server
 [ab]: http://en.wikipedia.org/wiki/ApacheBench
 [tomcat]: http://en.wikipedia.org/wiki/Apache_Tomcat
@@ -13,9 +12,11 @@
 ## Known problems
 
  * Find out why **`apr.xlate()` doesn't work on Windows** (I can't seem to get `apr_iconv` working on Windows)
+    * Zhiguo Zhao mentioned that he's using `apr.xlate()` on Windows using the original `libiconv` instead of `apr_iconv` (see [issue #11] [issue_11])
  * Investigate **escaping problem in `apr_proc_create()`** as found by the test for the `apr.namedpipe_create()` function (see `etc/tests.lua` around line 625)
  * Why is the DBD `LD_PRELOAD` trick needed?! [More information] [dbd_trick]
 
+[issue_11]: https://github.com/xolox/lua-apr/issues/11#issuecomment-2888555
 [dbd_trick]: https://answers.launchpad.net/ubuntu/+source/apr-util/+question/143914
 
 ## Anything else?

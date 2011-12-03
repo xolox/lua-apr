@@ -3,17 +3,22 @@
  Unit tests for the LDAP connection handling module of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: July 3, 2011
+ Last Change: December 3, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
  The LDAP client tests need access to an LDAP server so if you want to run
  these tests you have to define the following environment variables:
 
-  - $LUA_APR_LDAP_URL is a URL indicating SSL, host name and port
-  - $LUA_APR_LDAP_WHO is the distinguished name used to bind (login)
-  - $LUA_APR_LDAP_PASSWD is the password used to bind (login)
-  - $LUA_APR_LDAP_BASE is the base of the directory (required to search)
+  - LUA_APR_LDAP_URL is a URL indicating SSL, host name and port
+  - LUA_APR_LDAP_WHO is the distinguished name used to bind (login)
+  - LUA_APR_LDAP_PASSWD is the password used to bind (login)
+  - LUA_APR_LDAP_BASE is the base of the directory (required to search)
+
+ To enable the add()/modify()/compare()/delete() tests you will need to
+ define the following environment variable to the indicated value:
+
+  - LUA_APR_LDAP_WRITE_ALLOWED=yes
 
 --]]
 
@@ -29,6 +34,7 @@ local SERVER = apr.env_get 'LUA_APR_LDAP_URL'
 local ACCOUNT = apr.env_get 'LUA_APR_LDAP_WHO' or nil
 local PASSWD = apr.env_get 'LUA_APR_LDAP_PASSWD' or nil
 local BASE = apr.env_get 'LUA_APR_LDAP_BASE' or nil
+local WRITE_ALLOWED = apr.env_get 'LUA_APR_LDAP_WRITE_ALLOWED' == 'yes'
 
 -- Test apr.ldap_url_check(). {{{1
 assert(apr.ldap_url_check 'ldap://root.openldap.org/dc=openldap,dc=org' == 'ldap')
@@ -53,6 +59,10 @@ if not info then
   os.exit(1)
 end
 assert(type(info) == 'string' and info ~= '')
+
+-- Print the LDAP SDK being used (may be helpful in debugging).
+info = info:gsub('^APR LDAP: Built with ', '')
+helpers.message("\rRunning ldap tests using %s: ", info)
 
 -- Test apr.ldap(). {{{1
 local ldap_conn = assert(apr.ldap(SERVER))
@@ -96,35 +106,82 @@ for option, typename in pairs {
   end
 end
 
--- Test ldap_conn:search(). {{{1
+-- Skip search tests when $LUA_APR_LDAP_BASE isn't set. {{{1
 if not BASE then
-  helpers.warning "Please set $LUA_APR_LDAP_BASE to enable the search tests ..\n"
-else
-  local attributes = {}
-  local valuetypes = {}
-  for dn, attrs in ldap_conn:search { scope = 'sub', base = BASE } do
-    assert(attrs.objectClass, "LDAP search result without objectClass")
-    for k, v in pairs(attrs) do
-      local t = type(v)
-      attributes[k] = (attributes[k] or 0) + 1
-      valuetypes[t] = (valuetypes[t] or 0) + 1
-    end
-  end
-  -- Assuming the search matched some entries...
-  if next(valuetypes) then
-    -- Check that the supported value types were tested.
-    assert(valuetypes.table > 0, "No table attributes (multiple values for one attribute) in LDAP directory")
-    assert(valuetypes.string > 0, "No string attributes in LDAP directory")
-    assert(valuetypes.string > valuetypes.table, "Expecting more string than table attributes")
-  end
-  -- Again, assuming the search matched some entries...
-  if next(attributes) then
-    -- Check that some common attributes were found.
-    assert(attributes.cn > 0, "No common names matched in LDAP directory")
-    assert(attributes.sn > 0, "No last names matched in LDAP directory")
-    assert(attributes.givenName > 0, "No first names matched in LDAP directory")
+  helpers.warning "Please set $LUA_APR_LDAP_BASE to enable the LDAP search tests ..\n"
+  assert(ldap_conn:unbind())
+  return
+end
+
+-- Test ldap_conn:search(). {{{1
+local attributes = {}
+local valuetypes = {}
+for dn, attrs in ldap_conn:search { scope = 'sub', base = BASE } do
+  assert(attrs.objectClass, "LDAP search result without objectClass?!")
+  for k, v in pairs(attrs) do
+    local t = type(v)
+    attributes[k] = (attributes[k] or 0) + 1
+    valuetypes[t] = (valuetypes[t] or 0) + 1
   end
 end
+-- Assuming the search matched some entries...
+if next(valuetypes) then
+  -- Check that the supported value types were tested.
+  assert(valuetypes.table > 0, "No table attributes (multiple values for one attribute) in LDAP directory?!")
+  assert(valuetypes.string > 0, "No string attributes in LDAP directory?!")
+  assert(valuetypes.string > valuetypes.table, "Expecting more string than table attributes?!")
+end
+-- Again, assuming the search matched some entries...
+if next(attributes) then
+  -- Check that some common attributes were found.
+  assert(attributes.cn > 0, "No common names matched in LDAP directory?!")
+  assert(attributes.sn > 0, "No last names matched in LDAP directory?!")
+  assert(attributes.givenName > 0, "No first names matched in LDAP directory?!")
+end
+
+-- Skip modification tests when $LUA_APR_LDAP_WRITE_ALLOWED isn't set. {{{1
+if not WRITE_ALLOWED then
+  helpers.warning "Please set $LUA_APR_LDAP_WRITE_ALLOWED=yes to enable the LDAP modification tests ..\n"
+  assert(ldap_conn:unbind())
+  return
+end
+
+local NEW_USER_GN = 'Lua/APR'
+local NEW_USER_SN = 'Test User'
+local NEW_USER_CN = 'lua_apr_testuser_1'
+local NEW_USER_DN = 'cn=' .. NEW_USER_CN .. ',' .. BASE
+local RENAMED_RDN = 'cn=lua_apr_testuser_2'
+local RENAMED_DN = RENAMED_RDN .. ',' .. BASE
+
+-- Cleanup records from previous (failed) runs.
+ldap_conn:delete(NEW_USER_DN)()
+ldap_conn:delete(RENAMED_DN)()
+
+-- Test ldap_conn:add(). {{{1
+assert(ldap_conn:add(NEW_USER_DN, {
+  objectClass = { 'top', 'person', 'organizationalPerson', 'inetOrgPerson' },
+  cn = NEW_USER_CN, sn = NEW_USER_SN, givenName = NEW_USER_GN,
+})())
+
+-- Test ldap_conn:modify(). {{{1
+
+local function test_modify(operation, attribute, old_value, new_value)
+  -- Apply the modification.
+  assert(ldap_conn:modify(NEW_USER_DN, { operation, [attribute] = new_value })())
+  -- Check that the modification was applied successfully.
+  assert(ldap_conn:compare(NEW_USER_DN, attribute, new_value)() == true)
+end
+
+-- TODO More tests, also for '+' and '-' operations.
+test_modify('=', 'givenName', NEW_USER_GN, NEW_USER_GN .. ' (modified)')
+
+-- Test ldap_conn:rename() and ldap_conn:delete(). {{{1
+assert(ldap_conn:rename(NEW_USER_DN, RENAMED_RDN)()) -- copy record / create another reference.
+assert(ldap_conn:compare(RENAMED_DN, 'sn', NEW_USER_SN)() == true)
+
+-- Test ldap_conn:delete(). {{{1
+assert(ldap_conn:delete(RENAMED_DN)())
+assert(ldap_conn:compare(RENAMED_DN, 'sn', NEW_USER_SN)() ~= true)
 
 -- Test ldap_conn:unbind(). {{{1
 assert(ldap_conn:unbind())

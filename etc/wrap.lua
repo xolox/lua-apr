@@ -3,7 +3,7 @@
  Markdown processor for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: July 1, 2011
+ Last Change: December 3, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -46,7 +46,10 @@ if status and highlighter then
   content = content:gsub('<pre>(.-)</pre>', function(block)
     block = block:match '^<code>(.-)</code>$' or block
     block = block:gsub('&(%w+);', html_entities)
-    return highlighter(block, { encodews = true })
+    return highlighter(block, {
+      encodews = true,
+      formatter = lxsh.formatters.html,
+    })
   end)
 end
 

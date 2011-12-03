@@ -15,7 +15,7 @@
 
 local apr = require 'apr.core'
 
-apr._VERSION = '0.22.3'
+apr._VERSION = '0.23'
 
 local function executable(type, user, group, protection)
   if type == 'file' and user and group and protection then

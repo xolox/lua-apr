@@ -20,6 +20,10 @@ assert(driver:check())
 -- The SQLite driver uses a single database.
 assert(not driver:dbname 'anything')
 
+-- Print the SQLite version (may be helpful in debugging).
+local resultset = driver:select 'SELECT sqlite_version()'
+helpers.message('\rRunning dbd tests using SQLite %s driver: ', resultset:tuple() or '?')
+
 -- Helpers {{{1
 
 function check_label(object, pattern)

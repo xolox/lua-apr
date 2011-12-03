@@ -3,9 +3,9 @@
  * Authors:
  *  - zhiguo zhao <zhaozg@gmail.com>
  *  - Peter Odding <peter@peterodding.com>
- *  - Parts of this module were based on LuaLDAP 1.1.0 by Roberto
+ *  - Large parts of this module were based on LuaLDAP 1.1.0 by Roberto
  *    Ierusalimschy, André Carregal and Tomás Guisasola (license below)
- * Last Change: November 6, 2011
+ * Last Change: December 4, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -21,11 +21,15 @@
  * passwords in a central place (one piece of the puzzle towards [roaming
  * profiles] [roaming]).
  *
+ * This module is based on [LuaLDAP] [lualdap] by Roberto Ierusalimschy, André
+ * Carregal and Tomás Guisasola.
+ *
  * [ldap]: http://en.wikipedia.org/wiki/LDAP
  * [dirs]: http://en.wikipedia.org/wiki/Directory_(databases)
  * [reldbs]: http://en.wikipedia.org/wiki/Relational_database
  * [hierarchy]: http://en.wikipedia.org/wiki/Hierarchical_database_model
  * [roaming]: http://en.wikipedia.org/wiki/Roaming_user_profile
+ * [lualdap]: http://www.keplerproject.org/lualdap/
  */
 
 #include "lua_apr.h"
@@ -89,7 +93,7 @@
  *    http://genecube.med.yale.edu:8080/downloads/python-ldap-2.3.11/Modules/options.c
  *
  *  - The LuaLDAP source code
- *    http://luaforge.net/plugins/scmcvs/cvsweb.php/lualdap/src/lualdap.c?rev=1.48;cvsroot=lualdap
+ *    https://github.com/luaforge/lualdap/blob/master/lualdap/src/lualdap.c
  */
 
 static apr_pool_t *ldap_pool = NULL;
@@ -117,7 +121,7 @@ typedef union {
 #define raise_ldap_error(L, status) \
   luaL_error(L, ldap_err2string(status))
 
-/* Windows LDAP API compatibility from LuaLDAP. */
+/* Windows LDAP API compatibility from LuaLDAP. {{{3 */
 
 #ifndef WINLDAPAPI
 
@@ -134,24 +138,36 @@ typedef union {
 # define timeval l_timeval
 # include <Winber.h>
 
+  /* For some reason MSDN mentions LDAP_RES_MODDN, but not LDAP_RES_MODRDN. */
+# ifndef LDAP_RES_MODDN
+#   define LDAP_RES_MODDN LDAP_RES_MODRDN
+# endif
+
   /* LDAP_SCOPE_DEFAULT is an OpenLDAP extension, so on Windows we will default
    * to LDAP_SCOPE_SUBTREE instead. */
 # ifndef LDAP_SCOPE_DEFAULT
 #   define LDAP_SCOPE_DEFAULT LDAP_SCOPE_SUBTREE
 # endif
 
-  /* MSDN doesn't mention this function at all. Unfortunately, LDAPMessage an opaque type. */
+  /* MSDN doesn't mention this function at all. Unfortunately, LDAPMessage is an opaque type. */
 # define ldap_msgtype(m) ((m)->lm_msgtype)
 
 # define ldap_first_message ldap_first_entry
+
+  /* The WinLDAP API allows comparisons against either string or binary values. */
+# undef ldap_compare_ext
 
   /* The WinLDAP API uses ULONG seconds instead of a struct timeval. */
 # undef ldap_search_ext
 
 # ifdef UNICODE
+#   define ldap_compare_ext(ld, dn, a, v, sc, cc, msg) \
+      ldap_compare_extW(ld, dn, a, 0, v, sc, cc, msg)
 #   define ldap_search_ext(ld, base, scope, f, a, o, sc, cc, t, s, msg) \
       ldap_search_extW(ld, base, scope, f, a, o, sc, cc, (t) ? (t)->tv_sec : 0, s, msg)
 # else
+#   define ldap_compare_ext(ld, dn, a, v, sc, cc, msg) \
+      ldap_compare_extA(ld, dn, a, 0, v, sc, cc, msg)
 #   define ldap_search_ext(ld, base, scope, f, a, o, sc, cc, t, s, msg) \
       ldap_search_extA(ld, base, scope, f, a, o, sc, cc, (t) ? (t)->tv_sec : 0, s, msg)
 # endif
@@ -360,6 +376,276 @@ static int search_iterator(lua_State *L)
   /* shouldn't be reached. */
   ldap_msgfree(result);
   return 0;
+}
+
+/* Support for modifications. {{{2 */
+
+/* Maximum number of attributes manipulated in an operation */
+#ifndef LUA_APR_LDAP_MAX_ATTRS
+#define LUA_APR_LDAP_MAX_ATTRS 128
+#endif
+
+/* Flags for supported LDAP operations. */
+#define LUA_APR_LDAP_MOD_ADD (LDAP_MOD_ADD | LDAP_MOD_BVALUES)
+#define LUA_APR_LDAD_MOD_DEL (LDAP_MOD_DELETE | LDAP_MOD_BVALUES)
+#define LUA_APR_LDAD_MOD_REP (LDAP_MOD_REPLACE | LDAP_MOD_BVALUES)
+#define LUA_APR_LDAP_NOOP 0
+
+/* Size of buffer of NULL-terminated arrays of pointers to struct values */
+#ifndef LUA_APR_LDAP_ARRAY_VALUES_SIZE
+#define LUA_APR_LDAP_ARRAY_VALUES_SIZE (2 * LUA_APR_LDAP_MAX_ATTRS)
+#endif
+
+/* Maximum number of values structures */
+#ifndef LUA_APR_LDAP_MAX_VALUES
+#define LUA_APR_LDAP_MAX_VALUES (LUA_APR_LDAP_ARRAY_VALUES_SIZE / 2)
+#endif
+
+/* LDAP attribute modification structure */
+typedef struct {
+  LDAPMod *attrs[LUA_APR_LDAP_MAX_ATTRS + 1];
+  LDAPMod mods[LUA_APR_LDAP_MAX_ATTRS];
+  int ai;
+  BerValue *values[LUA_APR_LDAP_ARRAY_VALUES_SIZE];
+  int vi;
+  BerValue bvals[LUA_APR_LDAP_MAX_VALUES];
+  int bi;
+} attrs_data;
+
+/* value_error() - Raise error because of invalid attribute value. {{{3 */
+
+static void value_error(lua_State *L, const char *name)
+{
+  luaL_error(L, "invalid value of attribute `%s' (%s)",
+      name, lua_typename(L, lua_type(L, -1)));
+}
+
+/* A_init() - Initialize attributes structure. {{{3 */
+
+static void A_init(attrs_data *attrs)
+{
+  attrs->ai = 0;
+  attrs->attrs[0] = NULL;
+  attrs->vi = 0;
+  attrs->values[0] = NULL;
+  attrs->bi = 0;
+}
+
+/* A_setbval() - Store the string on top of the stack on the attributes {{{3
+ * structure. Increment the bvals counter.
+ */
+
+static BerValue *A_setbval(lua_State *L, attrs_data *a, const char *n)
+{
+  BerValue *ret = &(a->bvals[a->bi]);
+  if (a->bi >= LUA_APR_LDAP_MAX_VALUES) {
+    luaL_error(L, "too many values");
+    return NULL;
+  } else if (!lua_isstring(L, -1)) {
+    value_error(L, n);
+    return NULL;
+  }
+  a->bvals[a->bi].bv_len = lua_strlen(L, -1);
+  a->bvals[a->bi].bv_val = (char *)lua_tostring(L, -1);
+  a->bi++;
+  return ret;
+}
+
+/* A_setval() - Store a pointer to the value on top of the stack on the {{{3
+ * attributes structure. */
+
+static BerValue **A_setval(lua_State *L, attrs_data *a, const char *n)
+{
+  BerValue **ret = &(a->values[a->vi]);
+  if (a->vi >= LUA_APR_LDAP_ARRAY_VALUES_SIZE) {
+    luaL_error(L, "too many values");
+    return NULL;
+  }
+  a->values[a->vi] = A_setbval(L, a, n);
+  a->vi++;
+  return ret;
+}
+
+/* A_nullval() - Store a NULL pointer on the attributes structure. {{{3 */
+
+static BerValue **A_nullval(lua_State *L, attrs_data *a)
+{
+  BerValue **ret = &(a->values[a->vi]);
+  if (a->vi >= LUA_APR_LDAP_ARRAY_VALUES_SIZE) {
+    luaL_error(L, "too many values");
+    return NULL;
+  }
+  a->values[a->vi] = NULL;
+  a->vi++;
+  return ret;
+}
+
+/* A_tab2val() - Store the value of an attribute. Valid values are: {{{3
+ *  - true => no values;
+ *  - string => one value; or
+ *  - table of strings => many values.
+ */
+
+static BerValue **A_tab2val(lua_State *L, attrs_data *a, const char *name)
+{
+  int tab = lua_gettop(L);
+  BerValue **ret = &(a->values[a->vi]);
+  if (lua_isboolean(L, tab) && (lua_toboolean(L, tab) == 1)) /* true */
+    return NULL;
+  else if (lua_isstring(L, tab)) /* string */
+    A_setval(L, a, name);
+  else if (lua_istable(L, tab)) { /* list of strings */
+    int i;
+    int n = lua_strlen(L, tab);
+    for (i = 1; i <= n; i++) {
+      lua_rawgeti(L, tab, i); /* push table element */
+      A_setval(L, a, name);
+    }
+    lua_pop(L, n);
+  } else {
+    value_error(L, name);
+    return NULL;
+  }
+  A_nullval(L, a);
+  return ret;
+}
+
+/* A_setmod() - Set a modification value (which MUST be on top of the stack). {{{3 */
+
+static void A_setmod(lua_State *L, attrs_data *a, int op, const char *name)
+{
+  if (a->ai >= LUA_APR_LDAP_MAX_ATTRS) {
+    luaL_error(L, "too many attributes");
+    return;
+  }
+  a->mods[a->ai].mod_op = op;
+  a->mods[a->ai].mod_type = (char *)name;
+  a->mods[a->ai].mod_bvalues = A_tab2val(L, a, name);
+  a->attrs[a->ai] = &a->mods[a->ai];
+  a->ai++;
+}
+
+/* A_tab2mod() - Convert a Lua table into an array of modifications. {{{3
+ * An array of modifications is a NULL-terminated array of LDAPMod's.
+ */
+
+static void A_tab2mod(lua_State *L, attrs_data *a, int tab, int op)
+{
+  lua_pushnil(L); /* first key for lua_next */
+  while (lua_next(L, tab) != 0) {
+    /* attribute must be a string and not a number */
+    if (!lua_isnumber(L, -2) && lua_isstring(L, -2))
+      A_setmod(L, a, op, lua_tostring(L, -2));
+    /* pop value and leave last key on the stack as next key for lua_next */
+    lua_pop(L, 1);
+  }
+}
+
+/* A_lastattr() - Terminate the array of attributes. {{{3 */
+
+static void A_lastattr(lua_State *L, attrs_data *a)
+{
+  if (a->ai >= LUA_APR_LDAP_MAX_ATTRS) {
+    luaL_error(L, "too many attributes");
+    return;
+  }
+  a->attrs[a->ai] = NULL;
+  a->ai++;
+}
+
+/* result_message() - Get the result message of an operation. {{{3
+ * #1 upvalue == connection
+ * #2 upvalue == msgid
+ * #3 upvalue == result code of the message (ADD, DEL etc.) to be received.
+ */
+
+static int result_message(lua_State *L)
+{
+  struct timeval *timeout = NULL; /* ??? function parameter ??? */
+  LDAPMessage *res;
+  int rc;
+  lua_apr_ldap_object *object = check_ldap_connection(L, lua_upvalueindex(1));
+  int msgid = (int)lua_tonumber(L, lua_upvalueindex(2));
+  /*int res_code = (int)lua_tonumber(L, lua_upvalueindex(3));*/
+
+  luaL_argcheck(L, object->ldap, 1, "LDAP connection is closed");
+  rc = ldap_result(object->ldap, msgid, LDAP_MSG_ONE, timeout, &res);
+
+  if (rc == 0) {
+    return push_error_message(L, "result timeout expired");
+  } else if (rc < 0) {
+    ldap_msgfree(res);
+    return push_error_message(L, "result error");
+  } else {
+    int err, ret = 1;
+    char *mdn, *msg1, *msg2;
+    rc = ldap_parse_result(object->ldap, res, &err, &mdn, &msg1, NULL, NULL, 1);
+    if (rc != LDAP_SUCCESS)
+      return push_error_message(L, ldap_err2string(rc));
+    switch (err) {
+      case LDAP_SUCCESS:
+      case LDAP_COMPARE_TRUE:
+        lua_pushboolean(L, 1);
+        break;
+      case LDAP_COMPARE_FALSE:
+        lua_pushboolean(L, 0);
+        break;
+      default:
+        lua_pushnil(L);
+        /* Either error message string may be NULL. */
+        msg2 = ldap_err2string(err);
+        if (msg1 == NULL && msg2 == NULL) {
+          ret = 1;
+        } else if (msg1 != NULL && msg2 == NULL) {
+          lua_pushstring(L, msg1);
+          ret = 2;
+        } else if (msg1 == NULL && msg2 != NULL) {
+          lua_pushstring(L, msg2);
+          ret = 2;
+        } else {
+          lua_pushstring(L, msg1);
+          lua_pushliteral(L, " (");
+          lua_pushstring(L, msg2);
+          lua_pushliteral(L, ")");
+          lua_concat(L, 4);
+          ret = 2;
+        }
+    }
+    ldap_memfree(mdn);
+    ldap_memfree(msg1);
+    return ret;
+  }
+}
+
+/* create_future() - Push a function to process the LDAP result. {{{3 */
+
+static int create_future(lua_State *L, ldap_int_t rc, int conn, ldap_int_t msgid, int code)
+{
+  if (rc != LDAP_SUCCESS)
+    return push_error_message(L, ldap_err2string(rc));
+  lua_pushvalue(L, conn); /* push connection as #1 upvalue */
+  lua_pushnumber(L, msgid); /* push msgid as #2 upvalue */
+  lua_pushnumber(L, code); /* push code as #3 upvalue */
+  lua_pushcclosure(L, result_message, 3);
+  return 1;
+}
+
+/* op2code() - Convert a string into an internal LDAP_MOD operation code. {{{3 */
+
+static int op2code(const char *s)
+{
+  if (!s)
+    return LUA_APR_LDAP_NOOP;
+  switch (*s) {
+    case '+':
+      return LUA_APR_LDAP_MOD_ADD;
+    case '-':
+      return LUA_APR_LDAD_MOD_DEL;
+    case '=':
+      return LUA_APR_LDAD_MOD_REP;
+    default:
+      return LUA_APR_LDAP_NOOP;
+  }
 }
 
 /* apr.ldap([url [, secure ]]) -> ldap_conn {{{1
@@ -990,6 +1276,136 @@ static int lua_apr_ldap_search(lua_State *L)
   return 1;
 }
 
+/* ldap_conn:add(dn, attrs) -> future {{{1
+ *
+ * Add a new entry to the directory. The string @dn is the distinguished name
+ * of the new entry. The table @attrs contains the attributes and values.
+ * Returns a function to process the LDAP result.
+ */
+
+static int lua_apr_ldap_add(lua_State *L)
+{
+  lua_apr_ldap_object *object;
+  ldap_pchar_t dn;
+  attrs_data attrs;
+  ldap_int_t rc, msgid;
+
+  object = check_ldap_connection(L, 1);
+  dn = (ldap_pchar_t) luaL_checkstring(L, 2);
+
+  A_init(&attrs);
+  if (lua_istable(L, 3))
+    A_tab2mod(L, &attrs, 3, LUA_APR_LDAP_MOD_ADD);
+  A_lastattr(L, &attrs);
+  rc = ldap_add_ext(object->ldap, dn, attrs.attrs, NULL, NULL, &msgid);
+  return create_future(L, rc, 1, msgid, LDAP_RES_ADD);
+}
+
+/* ldap_conn:compare(dn, attr, value) -> future {{{1
+ *
+ * Compare a value against an entry. The string @dn contains the distinguished
+ * name of the entry, the string @attr is the name of the attribute to compare
+ * and the string @value is the value to compare against. Returns a function to
+ * process the LDAP result.
+ */
+
+static int lua_apr_ldap_compare(lua_State *L)
+{
+  lua_apr_ldap_object *object;
+  ldap_pchar_t dn, attr;
+  BerValue bvalue;
+  ldap_int_t rc, msgid;
+
+  object = check_ldap_connection(L, 1);
+  dn = (ldap_pchar_t) luaL_checkstring(L, 2);
+  attr = (ldap_pchar_t) luaL_checkstring(L, 3);
+  bvalue.bv_val = (char *)luaL_checkstring(L, 4);
+  bvalue.bv_len = lua_strlen(L, 4);
+  rc = ldap_compare_ext(object->ldap, dn, attr, &bvalue, NULL, NULL, &msgid);
+  return create_future(L, rc, 1, msgid, LDAP_RES_COMPARE);
+}
+
+/* ldap_conn:delete(dn) -> future {{{1
+ *
+ * Delete an entry. The string @dn is the distinguished name of the entry to
+ * delete. Returns a function to process the LDAP result.
+ */
+
+static int lua_apr_ldap_delete(lua_State *L)
+{
+  lua_apr_ldap_object *object;
+  ldap_pchar_t dn;
+  ldap_int_t rc, msgid;
+
+  object = check_ldap_connection(L, 1);
+  dn = (ldap_pchar_t) luaL_checkstring(L, 2);
+  rc = ldap_delete_ext(object->ldap, dn, NULL, NULL, &msgid);
+  return create_future(L, rc, 1, msgid, LDAP_RES_DELETE);
+}
+
+/* ldap_conn:modify(dn, mods [, ...]) -> future {{{1
+ *
+ * Modify an entry. The string @dn is the distinguished name of the entry to
+ * modify. The table @mods contains modifications to apply. You can pass any
+ * number of additional tables with modifications to apply. On success true is
+ * returned, otherwise a nil followed by an error message is returned.
+ */
+
+static int lua_apr_ldap_modify(lua_State *L)
+{
+  lua_apr_ldap_object *object;
+  ldap_pchar_t dn;
+  attrs_data attrs;
+  ldap_int_t rc, msgid;
+  int param = 3;
+
+  object = check_ldap_connection(L, 1);
+  dn = (ldap_pchar_t) luaL_checkstring(L, 2);
+  A_init (&attrs);
+
+  while (lua_istable(L, param)) {
+    int op;
+    /* get operation ('+','-','=' operations allowed) */
+    lua_rawgeti(L, param, 1);
+    op = op2code(lua_tostring(L, -1));
+    if (op == LUA_APR_LDAP_NOOP)
+      return luaL_error(L, "Forgotten operation on argument #%d!", param);
+    /* get array of attributes and values */
+    A_tab2mod(L, &attrs, param, op);
+    param++;
+  }
+  A_lastattr(L, &attrs);
+  rc = ldap_modify_ext(object->ldap, dn, attrs.attrs, NULL, NULL, &msgid);
+  return create_future(L, rc, 1, msgid, LDAP_RES_MODIFY);
+}
+
+/* ldap_conn:rename(dn, new_rdn [, new_parent [, delete]]) -> future {{{1
+ * 
+ * Change the distinguished name of an entry. The string @dn is the
+ * distinguished name of the entry to rename. The string @new_rdn gives the new
+ * root distinguished name. The optional string @new_parent gives the
+ * distinguished name of the new parent for the entry. If the optional argument
+ * @delete is true the entry is removed from it's old parent. Returns a
+ * function to process the LDAP result.
+ */
+
+static int lua_apr_ldap_rename(lua_State *L)
+{
+  lua_apr_ldap_object *object;
+  ldap_pchar_t dn, rdn, par;
+  ldap_int_t msgid;
+  ldap_int_t rc;
+  int del;
+
+  object = check_ldap_connection(L, 1);
+  dn = (ldap_pchar_t) luaL_checkstring(L, 2);
+  rdn = (ldap_pchar_t) luaL_checkstring(L, 3);
+  par = (ldap_pchar_t) luaL_optstring(L, 4, NULL);
+  del = luaL_optint(L, 5, 0);
+  rc = ldap_rename(object->ldap, dn, rdn, par, del, NULL, NULL, &msgid);
+  return create_future(L, rc, 1, msgid, LDAP_RES_MODDN);
+}
+
 /* tostring(ldap_conn) -> string {{{1 */
 
 static int ldap_tostring(lua_State *L)
@@ -1030,11 +1446,16 @@ static luaL_reg ldap_methods[] = {
   { "unbind", lua_apr_ldap_unbind },
   { "option_get", lua_apr_ldap_option_get },
   { "option_set", lua_apr_ldap_option_set },
-#if (APR_MAJOR_VERSION > 1 || (APR_MAJOR_VERSION == 1 && APR_MINOR_VERSION >= 3))
+# if (APR_MAJOR_VERSION > 1 || (APR_MAJOR_VERSION == 1 && APR_MINOR_VERSION >= 3))
   { "rebind_add", lua_apr_ldap_rebind_add },
   { "rebind_remove", lua_apr_ldap_rebind_remove },
-#endif
+# endif
   { "search", lua_apr_ldap_search },
+  { "add", lua_apr_ldap_add },
+  { "compare", lua_apr_ldap_compare },
+  { "delete", lua_apr_ldap_delete },
+  { "modify", lua_apr_ldap_modify },
+  { "rename", lua_apr_ldap_rename },
   { NULL, NULL }
 };
 
