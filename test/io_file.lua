@@ -3,7 +3,7 @@
  Unit tests for the file I/O handling module of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: June 21, 2011
+ Last Change: December 6, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -107,6 +107,16 @@ for line in testdata:gmatch '[^\n]+' do
   assert(line == otherline)
 end
 assert(#lines == 0)
+
+-- Test file:truncate(). {{{1
+local file_to_truncate = helpers.tmpname()
+helpers.writefile(file_to_truncate, '1234567890')
+assert(apr.file_truncate(file_to_truncate, 10))
+assert(helpers.readfile(file_to_truncate) == '1234567890')
+assert(apr.file_truncate(file_to_truncate, 5))
+assert(helpers.readfile(file_to_truncate) == '12345')
+assert(apr.file_truncate(file_to_truncate))
+assert(helpers.readfile(file_to_truncate) == '')
 
 -- Test tostring(file). {{{1
 assert(tostring(handle):find '^file %([x%x]+%)$')

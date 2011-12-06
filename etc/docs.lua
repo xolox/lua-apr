@@ -3,7 +3,7 @@
  Documentation generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: November 20, 2011
+ Last Change: December 6, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -478,6 +478,12 @@ local custom_sorting = {
     sha1_context:digest sha1_context:reset ]],
   ['thread.c'] = [[ apr.thread apr.thread_yield thread:status thread:join ]],
   ['serialize.c'] = [[ apr.serialize apr.unserialize apr.ref apr.deref ]],
+  ['io_file.c'] = [[ apr.file_link apr.file_copy apr.file_append
+    apr.file_rename apr.file_remove apr.file_truncate apr.file_mtime_set
+    apr.file_attrs_set apr.file_perms_set apr.stat apr.file_open file:stat
+    file:lines file:truncate file:read file:write file:seek file:flush
+    file:lock file:unlock pipe:timeout_get pipe:timeout_set file:fd_get
+    file:inherit_set file:inherit_unset file:close ]],
 }
 
 for _, module in ipairs(sorted_modules) do

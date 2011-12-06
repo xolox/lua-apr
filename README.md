@@ -42,7 +42,7 @@ You can find the source code of the most recently released version under [downlo
 
 [srcdl]: http://peterodding.com/code/lua/apr/downloads
 [github]: http://github.com/xolox/lua-apr
-[winbin]: http://peterodding.com/code/lua/apr/downloads/lua-apr-0.23-win32.zip
+[winbin]: http://peterodding.com/code/lua/apr/downloads/lua-apr-0.23.1-win32.zip
 [lfw]: http://code.google.com/p/luaforwindows/
 
 ### Install using Debian package
@@ -69,7 +69,7 @@ If LuaRocks fails to build the Lua/APR binding this is likely because of missing
 
 The latest rockspec and sources are also available from the author's website (in case the main LuaRocks repository is unavailable or lagging behind):
 
-    $ luarocks install http://peterodding.com/code/lua/apr/downloads/lua-apr-0.23-1.rockspec
+    $ luarocks install http://peterodding.com/code/lua/apr/downloads/lua-apr-0.23.1-1.rockspec
 
 If you have git installed you can also download and install the latest sources directly from [GitHub] [github]:
 
@@ -84,9 +84,9 @@ If you don't have LuaRocks installed the following shell commands should help yo
     $ if which git; then # Get the latest sources using `git'?
     $   git clone git://github.com/xolox/lua-apr.git
     $ else # Or get the most recently released archive using `wget'.
-    $   wget http://peterodding.com/code/lua/apr/downloads/lua-apr-0.23-1.zip
-    $   unzip lua-apr-0.23-1.zip
-    $   mv lua-apr-0.23-1 lua-apr
+    $   wget http://peterodding.com/code/lua/apr/downloads/lua-apr-0.23.1-1.zip
+    $   unzip lua-apr-0.23.1-1.zip
+    $   mv lua-apr-0.23.1-1 lua-apr
     $ fi
     $ cd lua-apr
     $ sudo make install # installs apr.lua and apr/core.so in /usr/local

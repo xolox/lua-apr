@@ -3,7 +3,7 @@
  Lua source code for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: December 3, 2011
+ Last Change: December 6, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -15,7 +15,7 @@
 
 local apr = require 'apr.core'
 
-apr._VERSION = '0.23'
+apr._VERSION = '0.23.1'
 
 local function executable(type, user, group, protection)
   if type == 'file' and user and group and protection then
@@ -75,6 +75,25 @@ function apr.sha1(input, binary)
     end
   end
   return nil, errmsg, errcode
+end
+
+-- apr.file_truncate(path [, offset]) -> status {{{1
+--
+-- Truncate the file's length to the specified @offset (defaults to 0). On
+-- success true is returned, otherwise a nil followed by an error message is
+-- returned.
+--
+-- Part of the "File I/O handling" module.
+
+function apr.file_truncate(path, offset)
+  local status = nil
+  local handle, errmsg, errcode = apr.file_open(path, 'r+')
+  if handle then
+    status, errmsg, errcode = handle:truncate(offset or 0)
+    if status then return handle:close() end
+    handle:close()
+  end
+  return status, errmsg, errcode
 end
 
 -- apr.filepath_which(program [, find_all]) -> pathname {{{1

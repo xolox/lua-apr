@@ -1,7 +1,7 @@
 /* File I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: November 6, 2011
+ * Last Change: December 6, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  */
@@ -515,6 +515,27 @@ static int file_lines(lua_State *L)
   return read_lines(L, &file->input);
 }
 
+/* file:truncate([offset]) -> status {{{1
+ *
+ * Truncate the file's length to the specified @offset (defaults to 0). On
+ * success true is returned, otherwise a nil followed by an error message is
+ * returned. Note that the read/write file offset is repositioned to the
+ * selected offset.
+ */
+
+static int file_truncate(lua_State *L)
+{
+  apr_status_t status;
+  lua_apr_file *file;
+  apr_off_t offset;
+
+  file = file_check(L, 1, 1);
+  offset = luaL_optlong(L, 2, 0);
+  status = apr_file_trunc(file->handle, offset);
+
+  return push_status(L, status);
+}
+
 /* file:read([format, ...]) -> mixed value, ... {{{1
  *
  * This function implements the interface of Lua's `file:read()` function.
@@ -845,6 +866,7 @@ static luaL_Reg file_methods[] = {
   { "flush", file_flush },
   { "lock", file_lock },
   { "lines", file_lines },
+  { "truncate", file_truncate },
   { "read", file_read },
   { "seek", file_seek },
   { "stat", file_stat },
