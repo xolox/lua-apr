@@ -1,7 +1,7 @@
 /* Error handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: November 04, 2011
+ * Last Change: December 07, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -857,7 +857,5 @@ void status_to_name(lua_State *L, apr_status_t status)
   }
 # endif
 
-  /* This might be a bug in the script that generated this source code? */
-  LUA_APR_DBG("Lua/APR status_to_name(%i) failed, might be a bug?", status);
   lua_pushinteger(L, status);
 }

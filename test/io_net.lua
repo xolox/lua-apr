@@ -3,7 +3,7 @@
  Unit tests for the network I/O handling module of the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: November 26, 2011
+ Last Change: December 7, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -18,10 +18,15 @@ local helpers = require 'apr.test.helpers'
 
 -- Test apr.hostname_get(), apr.host_to_addr() and apr.addr_to_host(). {{{1
 local hostname = assert(apr.hostname_get())
-local address = assert(apr.host_to_addr(hostname))
--- https://github.com/xolox/lua-apr/issues/10
-helpers.soft_assert(helpers.pack(apr.addr_to_host(address)),
-    'This test can apparently fail on Mac OS X so I made it a soft assertion')
+local rdns_ok = false
+for i, address in ipairs { assert(apr.host_to_addr(hostname)) } do
+  if apr.addr_to_host(address) then
+    rdns_ok = true
+  end
+end
+if not rdns_ok then
+  helpers.warning "Soft assertion failed: Reverse DNS of local host name failed!\n"
+end
 
 -- Test socket:bind(), socket:listen() and socket:accept(). {{{1
 local server = assert(apr.proc_create 'lua')

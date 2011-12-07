@@ -1,7 +1,7 @@
 /* Network I/O handling module for the Lua/APR binding.
  *
  * Author: Peter Odding <peter@peterodding.com>
- * Last Change: November 11, 2011
+ * Last Change: December 7, 2011
  * Homepage: http://peterodding.com/code/lua/apr/
  * License: MIT
  *
@@ -170,14 +170,19 @@ int lua_apr_hostname_get(lua_State *L)
   return 1;
 }
 
-/* apr.host_to_addr(hostname [, family]) -> ip_address {{{1
+/* apr.host_to_addr(hostname [, family]) -> ip_address, ... {{{1
  *
- * Resolve a host name to an IP-address. On success the IP-address is returned
- * as a string, otherwise a nil followed by an error message is returned. The
- * optional @family argument is documented under `apr.socket_create()`.
+ * Resolve a host name to one or more IP addresses. On success one or more IP
+ * addresses are returned as strings, otherwise a nil followed by an error
+ * message is returned. The optional @family argument is documented under
+ * `apr.socket_create()`.
  *
  *     > = apr.host_to_addr 'www.lua.org'
  *     '89.238.129.35'
+ *     > = apr.host_to_addr 'google.com'
+ *     '173.194.65.104' '173.194.65.106' '173.194.65.147' '173.194.65.103' '173.194.65.105' '173.194.65.99'
+ *     > = apr.host_to_addr('ipv6.google.com', 'inet6')
+ *     '2a00:1450:8005::67'
  */
 
 int lua_apr_host_to_addr(lua_State *L)
@@ -192,14 +197,22 @@ int lua_apr_host_to_addr(lua_State *L)
   pool = to_pool(L);
   host = luaL_checkstring(L, 1);
   family = family_check(L, 2);
+
   status = apr_sockaddr_info_get(&address, host, family, SOCK_STREAM, 0, pool);
-  if (status == APR_SUCCESS)
-    status = apr_sockaddr_ip_get(&ip_address, address);
   if (status != APR_SUCCESS)
     return push_error_status(L, status);
-  lua_pushstring(L, ip_address);
 
-  return 1;
+  lua_settop(L, 0);
+
+  do {
+    status = apr_sockaddr_ip_get(&ip_address, address);
+    if (status != APR_SUCCESS)
+      return push_error_status(L, status);
+    lua_pushstring(L, ip_address);
+    address = address->next;
+  } while (address != NULL);
+
+  return lua_gettop(L);
 }
 
 /* apr.addr_to_host(ip_address [, family]) -> hostname {{{1

@@ -114,11 +114,8 @@ I've also recently created a Windows batch script that bootstraps a Lua/APR deve
 
 The following functionality has not been implemented yet but is on the to-do list:
 
- * **LDAP directory modification** (creating, changing and deleting LDAP directory entries)
- * **Asynchronous network communication** (a binding for the [pollset][pollset] module?)
- * **Encrypted network communication** (unfortunately this isn't provided by APR so [io_net.c][io_net] could get messy…)
+ * **Encrypted network communication** (unfortunately this isn't provided by APR so [io\_net.c][io_net] could get messy…)
 
-[pollset]: http://apr.apache.org/docs/apr/trunk/group__apr__poll.html
 [io_net]: https://github.com/xolox/lua-apr/blob/master/src/io_net.c
 
 ## Contact

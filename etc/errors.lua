@@ -3,7 +3,7 @@
  Error handling code generator for the Lua/APR binding.
 
  Author: Peter Odding <peter@peterodding.com>
- Last Change: November 4, 2011
+ Last Change: December 7, 2011
  Homepage: http://peterodding.com/code/lua/apr/
  License: MIT
 
@@ -230,6 +230,7 @@ local template = [[
   }
 # endif
 ]]
+
 for i, test in ipairs(tests) do
   local name = test:gsub('^APR_STATUS_IS_', '')
   handle:write(template:format(test, test, name))
@@ -237,8 +238,6 @@ end
 
 handle:write [[
 
-  /* This might be a bug in the script that generated this source code? */
-  LUA_APR_DBG("Lua/APR status_to_name(%i) failed, might be a bug?", status);
   lua_pushinteger(L, status);
 }
 ]]
