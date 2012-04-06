@@ -10,24 +10,28 @@
 #define LUA_APR_H
 
 /* Global headers. {{{1 */
+#include "lua_apr_config.h"
 #include <assert.h>
 #include <stdlib.h>
 #include <lua.h>
 #include <lauxlib.h>
 #include <apr.h>
-#include <apu.h>
 #include <apr_version.h>
-#include <apu_version.h>
 #include <apr_general.h>
 #include <apr_file_info.h>
 #include <apr_file_io.h>
 #include <apr_network_io.h>
 #include <apr_thread_proc.h>
-#include <apr_queue.h>
 #include <apr_atomic.h>
+#if LUAAPR_HAVE_ARPUTIL
+#include <apu.h>
+#include <apu_version.h>
+#include <apr_queue.h>
+#endif
 
 #define LUA_APR_HAVE_MEMCACHE \
-  (APR_MAJOR_VERSION > 1 || (APR_MAJOR_VERSION == 1 && APR_MINOR_VERSION >= 3))
+  (LUAAPR_HAVE_APRUTIL && \
+  (APR_MAJOR_VERSION > 1 || (APR_MAJOR_VERSION == 1 && APR_MINOR_VERSION >= 3)))
 
 /* Macro definitions. {{{1 */
 

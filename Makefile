@@ -27,43 +27,46 @@ APREQ_BINARY = apreq.so
 
 # Names of source code files to compile & link (the individual lines enable
 # automatic rebasing between git feature branches and the master branch).
-SOURCES = src/base64.c \
-		  src/buffer.c \
-		  src/crypt.c \
-		  src/date.c \
-		  src/dbd.c \
-		  src/dbm.c \
-		  src/env.c \
-		  src/errno.c \
-		  src/filepath.c \
-		  src/fnmatch.c \
-		  src/getopt.c \
-		  src/http.c \
-		  src/io_dir.c \
-		  src/io_file.c \
-		  src/io_net.c \
-		  src/io_pipe.c \
-		  src/ldap.c \
-		  src/lua_apr.c \
-		  src/memcache.c \
-		  src/memory_pool.c \
-		  src/object.c \
-		  src/permissions.c \
-		  src/pollset.c \
-		  src/proc.c \
-		  src/serialize.c \
-		  src/shm.c \
-		  src/signal.c \
-		  src/stat.c \
-		  src/str.c \
-		  src/thread.c \
-		  src/thread_queue.c \
-		  src/time.c \
-		  src/uri.c \
-		  src/user.c \
-		  src/uuid.c \
-		  src/xlate.c \
-		  src/xml.c
+SOURCES_BASE = \
+	src/buffer.c \
+	src/env.c \
+	src/errno.c \
+	src/filepath.c \
+	src/fnmatch.c \
+	src/getopt.c \
+	src/http.c \
+	src/io_dir.c \
+	src/io_file.c \
+	src/io_net.c \
+	src/io_pipe.c \
+	src/lua_apr.c \
+	src/memory_pool.c \
+	src/object.c \
+	src/permissions.c \
+	src/pollset.c \
+	src/proc.c \
+	src/shm.c \
+	src/signal.c \
+	src/stat.c \
+	src/str.c \
+	src/thread.c \
+	src/thread_queue.c \
+	src/time.c \
+	src/user.c
+SOURCES_APRUTIL = \
+	src/base64.c \
+	src/crypt.c \
+	src/date.c \
+	src/dbd.c \
+	src/dbm.c \
+	src/ldap.c \
+	src/memcache.c \
+	src/serialize.c \
+	src/uri.c \
+	src/uuid.c \
+	src/xlate.c \
+	src/xml.c
+SOURCES = $(SOURCE_BASE) $(SOURCES_APRUTIL)
 
 # Determine compiler flags and linker flags for external dependencies using a
 # combination of pkg-config, apr-1-config, apu-1-config and apreq2-config.
@@ -109,6 +112,10 @@ $(APREQ_BINARY): etc/apreq_standalone.c Makefile
 # Compile individual source code files to object files.
 $(OBJECTS): %.o: %.c src/lua_apr.h Makefile
 	$(CC) -Wall -c $(CFLAGS) -fPIC $< -o $@ || lua etc/make.lua --check
+
+src/lua_apr.h: src/lua_apr_config.h
+src/lua_apr_config.h: src/lua_apr_config.h.in
+	cp $^ $@
 
 # Always try to regenerate the error handling module.
 src/errno.c: etc/errors.lua Makefile

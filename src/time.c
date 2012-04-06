@@ -24,7 +24,9 @@
 
 #include "lua_apr.h"
 #include <apr_time.h>
+#if LUAAPR_HAVE_APRUTIL
 #include <apr_date.h>
+#endif
 
 /* Internal functions {{{1 */
 
