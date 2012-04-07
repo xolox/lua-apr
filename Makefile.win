@@ -43,43 +43,46 @@ LFLAGS = "/LIBPATH:$(LUA_LINKDIR)" lua51.lib "/LIBPATH:$(APR_LIBDIR)" libapr-1.l
 
 # Names of compiled object files (the individual lines enable automatic
 # rebasing between git feature branches and the master branch).
-OBJECTS = src\base64.obj \
-		  src\buffer.obj \
-		  src\crypt.obj \
-		  src\date.obj \
-		  src\dbd.obj \
-		  src\dbm.obj \
-		  src\env.obj \
-		  src\errno.obj \
-		  src\filepath.obj \
-		  src\fnmatch.obj \
-		  src\getopt.obj \
-		  src\http.obj \
-		  src\io_dir.obj \
-		  src\io_file.obj \
-		  src\io_net.obj \
-		  src\io_pipe.obj \
-		  src\ldap.obj \
-		  src\lua_apr.obj \
-		  src\memcache.obj \
-		  src\memory_pool.obj \
-		  src\object.obj \
-		  src\permissions.obj \
-		  src\pollset.obj \
-		  src\proc.obj \
-		  src\serialize.obj \
-		  src\shm.obj \
-		  src\signal.obj \
-		  src\stat.obj \
-		  src\str.obj \
-		  src\thread.obj \
-		  src\thread_queue.obj \
-		  src\time.obj \
-		  src\uri.obj \
-		  src\user.obj \
-		  src\uuid.obj \
-		  src\xlate.obj \
-		  src\xml.obj
+OBJECTS_CORE = \
+	src\buffer.obj \
+	src\env.obj \
+	src\errno.obj \
+	src\filepath.obj \
+	src\fnmatch.obj \
+	src\getopt.obj \
+	src\http.obj \
+	src\io_dir.obj \
+	src\io_file.obj \
+	src\io_net.obj \
+	src\io_pipe.obj \
+	src\lua_apr.obj \
+	src\memory_pool.obj \
+	src\object.obj \
+	src\permissions.obj \
+	src\pollset.obj \
+	src\proc.obj \
+	src\shm.obj \
+	src\signal.obj \
+	src\stat.obj \
+	src\str.obj \
+	src\thread.obj \
+	src\thread_queue.obj \
+	src\time.obj \
+	src\user.obj \
+OBJECTS_APRUTIL = \
+	src\base64.obj \
+	src\crypt.obj \
+	src\date.obj \
+	src\dbd.obj \
+	src\dbm.obj \
+	src\ldap.obj \
+	src\memcache.obj \		  
+	src\serialize.obj \
+	src\uri.obj \
+	src\uuid.obj \
+	src\xlate.obj \
+	src\xml.obj
+OBJECTS = $(OBJECTS_CORE) $(OBJECTS_APRUTIL)
 
 # Create debug builds by default but enable release builds
 # using the command line "NMAKE /f Makefile.win RELEASE=1".
@@ -107,6 +110,10 @@ $(APREQ_BINARY): etc\apreq_standalone.c
 $(OBJECTS): Makefile
 .c.obj:
 	@CL /W3 /nologo /MD /D"WIN32" /D"LUA_BUILD_AS_DLL" $(CFLAGS) /TC /c $< /Fo$@
+
+src/lua_apr.h: src/lua_apr_config.h
+src/lua_apr_config.h: src/lua_apr_config.h.in
+	copy $** $@
 
 # Always try to regenerate the error handling module.
 src\errno.c: etc\errors.lua

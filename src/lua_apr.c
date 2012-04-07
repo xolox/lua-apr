@@ -7,7 +7,9 @@
  */
 
 #include "lua_apr.h"
+#if LUAAPR_HAVE_APRUTIL
 #include <apr_ldap.h> /* APR_HAS_LDAP */
+#endif
 #include <apr_portable.h>
 #include <ctype.h>
 #if LUA_APR_HAVE_APREQ
@@ -28,20 +30,24 @@ lua_apr_objtype *lua_apr_types[] = {
 # endif
   &lua_apr_pollset_type,
   &lua_apr_proc_type,
+# if LUAARP_HAVE_APRUTIL
   &lua_apr_dbm_type,
   &lua_apr_dbd_type,
   &lua_apr_dbr_type,
   &lua_apr_dbp_type,
+# endif
 # if APR_HAS_LDAP
   &lua_apr_ldap_type,
 # endif
-#if LUA_APR_HAVE_MEMCACHE
+# if LUA_APR_HAVE_MEMCACHE
   &lua_apr_memcache_type,
   &lua_apr_memcache_server_type,
-#endif
+# endif
+# if LUAAPR_HAVE_APRUTIL
   &lua_apr_md5_type,
   &lua_apr_sha1_type,
   &lua_apr_xml_type,
+# endif
   NULL
 };
 
@@ -60,30 +66,42 @@ LUA_APR_EXPORT int luaopen_apr_core(lua_State *L)
     { "os_default_encoding", lua_apr_os_default_encoding },
     { "os_locale_encoding", lua_apr_os_locale_encoding },
     { "type", lua_apr_type },
+#if LUAAPR_HAVE_APRUTIL
     { "ref", lua_apr_ref },
     { "deref", lua_apr_deref },
+#endif
 
+#if LUAAPR_HAVE_APRUTIL
     /* base64.c -- base64 encoding/decoding. */
     { "base64_encode", lua_apr_base64_encode },
     { "base64_decode", lua_apr_base64_decode },
+#endif
 
+#if LUAAPR_HAVE_APRUTIL
     /* crypt.c -- cryptographic functions. */
     { "md5_init", lua_apr_md5_init },
     { "md5_encode", lua_apr_md5_encode },
     { "password_get", lua_apr_password_get },
     { "password_validate", lua_apr_password_validate },
     { "sha1_init", lua_apr_sha1_init },
+#endif
 
+#if LUAAPR_HAVE_APRUTIL
     /* date.c -- date parsing. */
     { "date_parse_http", lua_apr_date_parse_http },
     { "date_parse_rfc", lua_apr_date_parse_rfc },
+#endif
 
+#if LUAAPR_HAVE_APRUTIL
     /* dbd.c -- database module. */
     { "dbd", lua_apr_dbd },
+#endif
 
+#if LUAAPR_HAVE_APRUTIL
     /* dbm.c -- dbm routines. */
     { "dbm_open", lua_apr_dbm_open },
     { "dbm_getnames", lua_apr_dbm_getnames },
+#endif
 
     /* env.c -- environment variable handling. */
     { "env_get", lua_apr_env_get },
@@ -171,10 +189,12 @@ LUA_APR_EXPORT int luaopen_apr_core(lua_State *L)
     { "proc_fork", lua_apr_proc_fork },
 #   endif
 
+#if LUAAPR_HAVE_APRUTIL
     /* shm.c -- shared memory. */
     { "shm_create", lua_apr_shm_create },
     { "shm_attach", lua_apr_shm_attach },
     { "shm_remove", lua_apr_shm_remove },
+#endif
 
     /* signal.c -- signal handling. */
     { "signal", lua_apr_signal },
@@ -207,25 +227,33 @@ LUA_APR_EXPORT int luaopen_apr_core(lua_State *L)
     { "time_implode", lua_apr_time_implode },
     { "time_format", lua_apr_time_format },
 
+#if LUAAPR_HAVE_APRUTIL
     /* uri.c -- URI parsing/unparsing. */
     { "uri_parse", lua_apr_uri_parse },
     { "uri_unparse", lua_apr_uri_unparse },
     { "uri_port_of_scheme", lua_apr_uri_port_of_scheme },
+#endif
 
     /* user.c -- user/group identification. */
     { "user_get", lua_apr_user_get },
     { "user_homepath_get", lua_apr_user_homepath_get },
 
+#if LUAAPR_HAVE_APRUTIL
     /* uuid.c -- UUID generation. */
     { "uuid_get", lua_apr_uuid_get },
     { "uuid_format", lua_apr_uuid_format },
     { "uuid_parse", lua_apr_uuid_parse },
+#endif
 
+#if LUAAPR_HAVE_APRUTIL
     /* xlate.c -- character encoding translation. */
     { "xlate", lua_apr_xlate },
+#endif
 
+#if LUAAPR_HAVE_APRUTIL
     /* xml.c -- XML parsing. */
     { "xml", lua_apr_xml },
+#endif
 
 #   if LUA_APR_HAVE_MEMCACHE
     /* memcache.c -- memcached client. */
@@ -337,7 +365,7 @@ int lua_apr_version_get(lua_State *L)
   lua_newtable(L);
   lua_pushstring(L, apr_version_string());
   lua_setfield(L, -2, "apr");
-# if APR_MAJOR_VERSION < 2
+# if LUAAPR_HAVE_APRUTIL && APR_MAJOR_VERSION < 2
   lua_pushstring(L, apu_version_string());
   lua_setfield(L, -2, "aprutil");
 # endif

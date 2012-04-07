@@ -1,0 +1,6 @@
+#ifndef LUAAPR_CONF_H
+#define LUAAPR_CONF_H
+
+#define LUAAPR_HAVE_APRUTIL 1
+
+#endif
